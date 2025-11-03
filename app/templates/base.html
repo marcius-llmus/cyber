@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Llama Coding - AI Development Assistant</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/htmx.org@1.9.6"></script>
-    <script src="https://unpkg.com/htmx.org@1.9.6/dist/ext/ws.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js" integrity="sha384-/TgkGk7p307TH7EXJDuUlgG3Ce1UVolAOFopFekQkkXihi5u/6OCvVKyz1W+idaz" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/htmx-ext-ws@2.0.4" integrity="sha384-1RwI/nvUSrMRuNj7hX1+27J8XDdCoSLf0EjEyF69nacuWyiJYoQ/j39RT1mSnd2G" crossorigin="anonymous"></script>
     <script src="/static/js/htmx-ext-form-json.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.15.1/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"></script>
     <script>
         tailwind.config = {
@@ -157,6 +158,12 @@
         .modal-scroll-content::-webkit-scrollbar-thumb {
             background: #594D73;
         }
+        .htmx-indicator {
+            display: none;
+        }
+        .htmx-request .htmx-indicator {
+            display: inline-block;
+        }
     </style>
 </head>
 <body class="bg-dark text-gray-200 min-h-screen flex" hx-ws="connect:/coder/ws">
@@ -247,7 +254,6 @@
 
         function saveSettings() {
             addLog('Settings saved successfully', 'green');
-            closeSettingsModal();
         }
 
         function openProjectModal() {
@@ -398,6 +404,8 @@
         function clearLogs() {
             document.getElementById('logs-container').innerHTML = '<div class="text-xs text-gray-500 text-center py-6">No logs yet</div>';
         }
+
+        document.body.addEventListener('settingsSaved', saveSettings);
     </script>
 </body>
 </html>

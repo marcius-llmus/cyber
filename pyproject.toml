@@ -13,6 +13,8 @@ dependencies = [
     "llama-index-workflows>=2.8.3",
     "llama-index-core>=0.14.5",
     "llama-index-llms-google-genai>=0.6.2",
+    "llama-index-llms-anthropic>=0.10.0",
+    "llama-index-llms-openai>=0.6.6",
 ]
 
 [dependency-groups]

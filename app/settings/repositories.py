@@ -1,8 +1,9 @@
 from sqlalchemy.orm import Session
 
 from app.commons.repositories import BaseRepository
+from app.llms.enums import LLMProvider
 from app.settings.models import LLMSettings, Settings
-from app.settings.schemas import LLMSettingsCreate, SettingsCreate
+from app.settings.schemas import SettingsCreate
 
 
 class LLMSettingsRepository(BaseRepository[LLMSettings]):
@@ -11,8 +12,16 @@ class LLMSettingsRepository(BaseRepository[LLMSettings]):
     def __init__(self, db: Session):
         super().__init__(db)
 
-    def get_by_model_and_temp(self, model_name: str, temperature: float) -> LLMSettings | None:
-        return self.db.query(LLMSettings).filter_by(model_name=model_name, temperature=temperature).first()
+    def get_by_model_name(self, model_name: str) -> LLMSettings | None:
+        return self.db.query(LLMSettings).filter_by(model_name=model_name).first()
+
+    def update_api_key_for_provider(self, provider: LLMProvider, api_key: str | None) -> None:
+        (
+            self.db.query(self.model)
+            .filter(self.model.provider == provider)
+            .update({"api_key": api_key}, synchronize_session=False)
+        )
+        self.db.flush()
 
 
 class SettingsRepository(BaseRepository[Settings]):
