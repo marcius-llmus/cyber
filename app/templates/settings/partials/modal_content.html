@@ -15,21 +15,29 @@
         hx-swap="outerHTML"
     >
         <div class="p-6 overflow-y-auto flex-1 modal-scroll-content" style="max-height: calc(75vh - 140px);">
-            {% if success %}
-            <div class="bg-green-800 border border-green-600 text-green-300 px-4 py-3 rounded-lg relative mb-4 text-sm" role="alert">
-                <span>{{ success }}</span>
-            </div>
-            {% endif %}
             <div class="space-y-6">
                 <div>
                     <h3 class="text-sm font-semibold text-gray-400 uppercase mb-3">LLM Configuration</h3>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-2">Coding LLM</label>
-                        <select name="coding_llm_settings.model_name" class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm">
-                            <option value="GPT-4" {% if settings.coding_llm_settings.model_name == 'GPT-4' %}selected{% endif %}>GPT-4 - OpenAI</option>
-                            <option value="Claude 3 Opus" {% if settings.coding_llm_settings.model_name == 'Claude 3 Opus' %}selected{% endif %}>Claude 3 Opus - Anthropic</option>
-                            <option value="Llama 3 70B" {% if settings.coding_llm_settings.model_name == 'Llama 3 70B' %}selected{% endif %}>Llama 3 70B - Meta</option>
-                        </select>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Coding LLM</label>
+                            <select
+                                name="coding_llm_settings.model_name"
+                                class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm"
+                                hx-get="/settings/api-key-input"
+                                hx-trigger="change"
+                                hx-target="#api-key-container"
+                                hx-swap="outerHTML">
+                                {% for model, provider in llm_model_providers.items() %}
+                                    <option value="{{ model.value }}" {% if settings.coding_llm_settings.model_name == model.value %}selected{% endif %}>
+                                        {{ model.value }} - {{ provider }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% with provider=settings.coding_llm_settings.provider.value, api_key=settings.coding_llm_settings.api_key %}
+                            {% include "settings/partials/api_key_input.html" %}
+                        {% endwith %}
                     </div>
                 </div>
 
@@ -38,7 +46,7 @@
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">Temperature</label>
-                            <input type="number" name="coding_llm_settings.temperature" step="0.1" min="0" max="2" value="{{ settings.coding_llm_settings.temperature }}" class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm">
+                            <input type="number" name="coding_llm_temperature" step="0.1" min="0" max="1" value="{{ settings.coding_llm_temperature }}" class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">Max History</label>
@@ -61,9 +69,9 @@
             <button type="button" onclick="closeSettingsModal()" class="px-4 py-2 bg-dark-lighter hover:bg-dark-light border border-dark-light rounded-lg text-sm">
                 Cancel
             </button>
-            <button type="submit" class="px-4 py-2 bg-primary hover:bg-primary-dark rounded-lg text-sm font-medium text-white">
-                Save Changes
-            </button>
+            {% set text = "Save Changes" %}
+            {% set button_class = "py-2 bg-primary hover:bg-primary-dark rounded-lg text-sm font-medium text-white w-[130px] h-9 flex items-center justify-center" %}
+            {% include "components/buttons/submit_with_spinner.html" %}
         </div>
     </form>
 </div>
