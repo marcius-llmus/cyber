@@ -31,19 +31,19 @@ class LLMFactory:
             model_name=LLMModel.GEMINI_2_5_FLASH_LITE, provider=LLMProvider.GOOGLE, default_context_window=128000
         ),
         # OpenAI
-        LLMModel.GPT_5: LLM(model_name=LLMModel.GPT_5, provider=LLMProvider.OPENAI, default_context_window=128000),
+        LLMModel.GPT_5: LLM(model_name=LLMModel.GPT_5, provider=LLMProvider.OPENAI, default_context_window=400000),
         LLMModel.GPT_5_MINI: LLM(model_name=LLMModel.GPT_5_MINI, provider=LLMProvider.OPENAI,
-                                 default_context_window=128000),
+                                 default_context_window=400000),
         LLMModel.GPT_5_NANO: LLM(model_name=LLMModel.GPT_5_NANO, provider=LLMProvider.OPENAI,
-                                 default_context_window=128000),
+                                 default_context_window=400000),
         LLMModel.GPT_5_CHAT_LATEST: LLM(
-            model_name=LLMModel.GPT_5_CHAT_LATEST, provider=LLMProvider.OPENAI, default_context_window=128000
+            model_name=LLMModel.GPT_5_CHAT_LATEST, provider=LLMProvider.OPENAI, default_context_window=400000
         ),
         LLMModel.GPT_5_CODEX: LLM(
-            model_name=LLMModel.GPT_5_CODEX, provider=LLMProvider.OPENAI, default_context_window=128000
+            model_name=LLMModel.GPT_5_CODEX, provider=LLMProvider.OPENAI, default_context_window=400000
         ),
         LLMModel.GPT_5_PRO: LLM(model_name=LLMModel.GPT_5_PRO, provider=LLMProvider.OPENAI,
-                                default_context_window=128000),
+                                default_context_window=400000),
         LLMModel.GPT_4_1: LLM(model_name=LLMModel.GPT_4_1, provider=LLMProvider.OPENAI, default_context_window=128000),
         LLMModel.GPT_4_1_MINI: LLM(
             model_name=LLMModel.GPT_4_1_MINI, provider=LLMProvider.OPENAI, default_context_window=128000

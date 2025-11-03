@@ -4,7 +4,11 @@ from app.settings.exceptions import LLMSettingsAlreadyExistsException
 from app.settings.models import LLMSettings, Settings
 from app.settings.repositories import LLMSettingsRepository, SettingsRepository
 from app.settings.exceptions import ContextWindowExceededException, LLMSettingsNotFoundException, SettingsNotFoundException
-from app.settings.schemas import LLMSettingsCreate, SettingsUpdate
+from app.settings.schemas import (
+    LLMSettingsCreate,
+    LLMSettingsUpdate,
+    SettingsUpdate,
+)
 
 
 class LLMSettingsService:
@@ -29,6 +33,12 @@ class LLMSettingsService:
             .first()
         )
         return llm_setting_with_key.api_key if llm_setting_with_key else None
+
+    def update(self, db_obj: LLMSettings, obj_in: LLMSettingsUpdate) -> LLMSettings:
+        return self.llm_settings_repo.update(db_obj=db_obj, obj_in=obj_in)
+
+    def update_api_key_for_provider(self, provider: LLMProvider, api_key: str | None) -> None:
+        return self.llm_settings_repo.update_api_key_for_provider(provider=provider, api_key=api_key)
 
 
 class SettingsService:
@@ -70,11 +80,9 @@ class SettingsService:
                     )
 
             # Update the individual setting for context_window, etc.
-            self.llm_settings_service.llm_settings_repo.update(
-                db_obj=current_llm_settings, obj_in=llm_update_payload
-            )
+            self.llm_settings_service.update(db_obj=current_llm_settings, obj_in=llm_update_payload)
             # Update API key for all models from the same provider
-            self.llm_settings_service.llm_settings_repo.update_api_key_for_provider(
+            self.llm_settings_service.update_api_key_for_provider(
                 provider=current_llm_settings.provider, api_key=llm_update_payload.api_key
             )
 
