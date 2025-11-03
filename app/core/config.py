@@ -1,4 +1,10 @@
+import logging
+from pathlib import Path
+
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 class Settings(BaseSettings):
@@ -8,6 +14,12 @@ class Settings(BaseSettings):
         extra="ignore",
     )
     DATABASE_URL: str = "sqlite:///./database.db"
+    PROJECTS_ROOT_DIR: str = "projects"
 
+    @field_validator("PROJECTS_ROOT_DIR")
+    def make_absolute(cls, v: str) -> str: # noqa
+        if not Path(v).is_absolute():
+            return str(BASE_DIR / v)
+        return v
 
 settings = Settings()

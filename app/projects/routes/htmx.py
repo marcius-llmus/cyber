@@ -4,7 +4,6 @@ from app.commons.fastapi_htmx import htmx
 
 from app.projects.dependencies import get_project_page_service, get_project_service
 from app.projects.exceptions import ProjectNotFoundException
-from app.projects.schemas import ProjectCreate
 from app.projects.services import ProjectPageService, ProjectService
 
 router = APIRouter()
@@ -18,17 +17,6 @@ async def get_project_list(
 ):
     page_data = service.get_projects_page_data()
     return page_data
-
-
-@router.post("/", response_class=HTMLResponse)
-@htmx("projects/partials/project_item")
-async def create_project(
-    request: Request,
-    project_in: ProjectCreate,
-    service: ProjectService = Depends(get_project_service),
-):
-    project = service.create_project(project_in=project_in)
-    return {"project": project}
 
 
 @router.put("/{project_id}/activate", response_class=HTMLResponse)

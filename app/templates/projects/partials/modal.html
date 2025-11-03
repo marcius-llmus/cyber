@@ -1,4 +1,4 @@
-<div id="project-modal" class="modal-overlay fixed inset-0 items-center justify-center z-50">
+<div id="project-modal" class="modal-overlay fixed inset-0 items-start justify-center z-50 pt-20">
     <div class="bg-dark-card rounded-lg w-full max-w-2xl border border-dark-light max-h-[90vh] flex flex-col">
         <div class="px-6 py-4 border-b border-dark-light flex items-center justify-between">
             <h2 class="text-xl font-bold text-white">Select Project</h2>
@@ -9,32 +9,10 @@
             </button>
         </div>
 
-        <div class="p-6 overflow-y-auto flex-1 modal-scroll-content" style="max-height: calc(75vh - 200px);">
+        <div class="p-6 overflow-y-auto flex-1 modal-scroll-content" style="max-height: calc(75vh - 70px);">
             <div class="space-y-2" id="project-list-container">
                 <div class="text-xs text-gray-500 text-center py-6">No projects configured</div>
             </div>
-        </div>
-
-        <div class="px-6 py-4 border-t border-dark-light">
-            <form
-                hx-post="/projects/"
-                hx-target="#project-list-container"
-                hx-swap="beforeend"
-                hx-on::after-request="this.reset()"
-                hx-ext="form-json"
-                class="space-y-3"
-            >
-                <h3 class="text-sm font-semibold text-gray-400 uppercase">Add New Project</h3>
-                <div class="grid grid-cols-2 gap-4">
-                    <input type="text" name="name" placeholder="Project Name" class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm" required>
-                    <input type="text" name="path" placeholder="Absolute Path" class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm" required>
-                </div>
-                <div class="flex justify-end">
-                    <button type="submit" class="px-4 py-2 bg-primary hover:bg-primary-dark rounded-lg text-sm font-medium text-white">
-                        Add Project
-                    </button>
-                </div>
-            </form>
         </div>
     </div>
 </div>
