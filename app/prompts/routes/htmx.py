@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import HTMLResponse
 
 from app.commons.fastapi_htmx import htmx
-from app.core.templating import templates
 from app.blueprints.dependencies import get_blueprint_service
 from app.blueprints.services import BlueprintService
 from app.projects.exceptions import ActiveProjectRequiredException
@@ -16,14 +15,15 @@ router = APIRouter()
 
 
 @router.get("/", response_class=HTMLResponse)
+@htmx("prompts/partials/modal_content")
 async def get_prompts_modal(
     request: Request,
     service: PromptPageService = Depends(get_prompt_page_service),
 ):
     page_data = service.get_prompts_page_data()
-    return templates.TemplateResponse(
-        "prompts/partials/modal_content.html", {"request": request, **page_data, "PromptEventType": PromptEventType}
-    )
+    # Note: Key is capitalized to match the enum class name, allowing for
+    # a consistent syntax like `PromptEventType.MEMBER` in the template.
+    return {**page_data, "PromptEventType": PromptEventType}
 
 
 @router.get("/new/global", response_class=HTMLResponse)

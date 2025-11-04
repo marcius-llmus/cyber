@@ -94,7 +94,7 @@ class PromptService:
             create_data = PromptCreate(
                 name=name, content=content, type=PromptType.BLUEPRINT, project_id=active_project.id, source_path=path
             )
-            new_prompt = self.create_prompt(prompt_in=create_data)
+            new_prompt = self.prompt_repo.create(obj_in=create_data)
             return new_prompt, True
 
     def delete_project_blueprint_prompt(self) -> None:
