@@ -150,7 +150,7 @@ class PromptPageService:
         }
 
     @staticmethod
-    def get_new_global_prompt_form_context(self) -> NewPromptFormContext:
+    def get_new_global_prompt_form_context() -> NewPromptFormContext:
         return {"prompt_type": "global", "target_selector": PromptTargetSelector.GLOBAL}
 
     def get_new_project_prompt_form_context(self) -> NewPromptFormContext:

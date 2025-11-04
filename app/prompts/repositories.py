@@ -13,8 +13,8 @@ class PromptRepository(BaseRepository[Prompt]):
         super().__init__(db)
 
     def list_global(self) -> list[Prompt]:
-        stmt = select(self.model).where(self.model.project_id.is_(None), self.model.type == PromptType.GLOBAL).order_by(self.model.name)
-        return self.db.execute(stmt).scalars().all()
+        stmt = select(self.model).where(self.model.type == PromptType.GLOBAL).order_by(self.model.name)
+        return list(self.db.execute(stmt).scalars().all())
 
     def list_by_project(self, project_id: int) -> list[Prompt]:
         stmt = (
@@ -22,7 +22,7 @@ class PromptRepository(BaseRepository[Prompt]):
             .where(self.model.project_id == project_id, self.model.type == PromptType.PROJECT)
             .order_by(self.model.name)
         )
-        return self.db.execute(stmt).scalars().all()
+        return list(self.db.execute(stmt).scalars().all())
 
     def find_project_blueprint_prompt(self, project_id: int) -> Prompt | None:
         stmt = select(self.model).where(
@@ -37,7 +37,7 @@ class PromptRepository(BaseRepository[Prompt]):
 
     def get_project_attachments(self, project_id: int) -> list[ProjectPromptAttachment]:
         stmt = select(ProjectPromptAttachment).filter_by(project_id=project_id)
-        return self.db.execute(stmt).scalars().all()
+        return list(self.db.execute(stmt).scalars().all())
 
     def attach_to_project(self, prompt_id: int, project_id: int) -> ProjectPromptAttachment:
         attachment = ProjectPromptAttachment(prompt_id=prompt_id, project_id=project_id)
