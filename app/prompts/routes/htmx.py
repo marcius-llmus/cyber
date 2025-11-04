@@ -18,21 +18,21 @@ router = APIRouter()
 @htmx("prompts/partials/modal_content")
 async def get_prompts_modal(
     request: Request,
-    service: PromptPageService = Depends(get_prompt_page_service),
+    page_service: PromptPageService = Depends(get_prompt_page_service),
 ):
-    page_data = service.get_prompts_page_data()
+    context = page_service.get_prompts_modal_context()
     # Note: Key is capitalized to match the enum class name, allowing for
     # a consistent syntax like `PromptEventType.MEMBER` in the template.
-    return {**page_data, "PromptEventType": PromptEventType}
+    return {**context, "PromptEventType": PromptEventType}
 
 
 @router.get("/new/global", response_class=HTMLResponse)
 @htmx("prompts/partials/prompt_form")
 async def get_new_global_prompt_form(
     request: Request,
-    service: PromptPageService = Depends(get_prompt_page_service),
+    page_service: PromptPageService = Depends(get_prompt_page_service),
 ):
-    context = service.get_new_global_prompt_form_context()
+    context = page_service.get_new_global_prompt_form_context()
     return context
 
 
@@ -40,10 +40,10 @@ async def get_new_global_prompt_form(
 @htmx("prompts/partials/prompt_form")
 async def get_new_project_prompt_form(
     request: Request,
-    service: PromptPageService = Depends(get_prompt_page_service),
+    page_service: PromptPageService = Depends(get_prompt_page_service),
 ):
     try:
-        context = service.get_new_project_prompt_form_context()
+        context = page_service.get_new_project_prompt_form_context()
         return context
     except ActiveProjectRequiredException as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

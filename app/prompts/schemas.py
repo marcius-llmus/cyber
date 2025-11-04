@@ -35,7 +35,7 @@ class PromptRead(PromptBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-class PromptsPageData(TypedDict):
+class PromptsPageContext(TypedDict):
     global_prompts: list[Prompt]
     project_prompts: list[Prompt]
     active_project: Project | None

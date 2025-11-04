@@ -8,7 +8,7 @@ from app.prompts.schemas import (
     NewPromptFormContext,
     PromptCreate,
     PromptInternalCreate,
-    PromptsPageData,
+    PromptsPageContext,
     PromptUpdate,
 )
 from app.prompts.enums import PromptType
@@ -136,7 +136,7 @@ class PromptPageService:
         self.project_service = project_service
         self.blueprint_service = blueprint_service
 
-    def get_prompts_page_data(self) -> PromptsPageData:
+    def get_prompts_modal_context(self) -> PromptsPageContext:
         active_project = self.project_service.project_repo.get_active()
         global_prompts = self.prompt_service.get_global_prompts()
         project_prompts = self.prompt_service.get_project_prompts(project=active_project)
