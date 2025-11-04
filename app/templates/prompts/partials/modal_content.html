@@ -1,4 +1,4 @@
-<div id="prompt-modal-content" class="bg-dark-card rounded-lg w-full max-w-2xl border border-dark-light max-h-[90vh] flex flex-col">
+<div id="prompt-modal-content" x-data="{ currentTab: 'global' }" x-init="$watch('currentTab', value => currentPromptTab = value)" class="bg-dark-card rounded-lg w-full max-w-2xl border border-dark-light max-h-[90vh] flex flex-col">
     <div class="px-6 py-4 border-b border-dark-light flex items-center justify-between">
         <h2 class="text-xl font-bold text-white">Prompt Configuration</h2>
         <button onclick="closePromptModal()" class="text-gray-400 hover:text-white">
@@ -10,49 +10,74 @@
 
     <div class="px-6 py-3 border-b border-dark-light flex items-center justify-between">
         <div class="flex">
-            <button class="prompt-tab active text-gray-300" onclick="switchPromptTab('global', this)">
+            <button class="prompt-tab" :class="{ 'active text-gray-300': currentTab === 'global', 'text-gray-500': currentTab !== 'global' }" @click="currentTab = 'global'">
                 Global Prompts
             </button>
-            <button class="prompt-tab text-gray-500" onclick="switchPromptTab('project', this)">
+            <button class="prompt-tab" :class="{ 'active text-gray-300': currentTab === 'project', 'text-gray-500': currentTab !== 'project' }" @click="currentTab = 'project'">
                 Project Prompts
             </button>
-            <button class="prompt-tab text-gray-500" onclick="switchPromptTab('template_app', this)">
-                Template Apps
+            <button class="prompt-tab" :class="{ 'active text-gray-300': currentTab === 'from_blueprint', 'text-gray-500': currentTab !== 'from_blueprint' }" @click="currentTab = 'from_blueprint'">
+                From Blueprint
             </button>
         </div>
     </div>
 
-    <div class="p-6 space-y-4 overflow-y-auto flex-1 modal-scroll-content" style="max-height: calc(75vh - 180px);">
-        <div id="global-prompts">
-            <div class="space-y-2" id="global-prompt-list-container">
-                {% include "prompts/partials/prompt_list.html" with {"prompts": global_prompts} %}
+    <div class="p-6 overflow-y-auto flex-1 modal-scroll-content" style="max-height: calc(75vh - 180px);">
+        <div id="global-prompts" x-show="currentTab === 'global'">
+            <div
+                class="space-y-2 min-h-[60px]"
+                id="global-prompt-list-container"
+                hx-get="/prompts/global/list"
+                hx-trigger="{{ PromptEventType.GLOBAL_PROMPTS_CHANGED }} from:body"
+                hx-swap="innerHTML"
+            >
+                {% set prompts = global_prompts %}
+                {% include "prompts/partials/prompt_list.html" %}
             </div>
         </div>
 
-        <div id="project-prompts" style="display: none;">
-            <div class="space-y-2" id="project-prompt-list-container">
+        <div id="project-prompts" x-show="currentTab === 'project'" style="display: none;">
+            <div class="space-y-2 min-h-[60px]" id="project-prompt-list-container" hx-get="/prompts/project/list"
+                 hx-trigger="{{ PromptEventType.PROJECT_PROMPTS_CHANGED }} from:body" hx-swap="innerHTML">
                  {% if active_project %}
-                    {% include "prompts/partials/prompt_list.html" with {"prompts": project_prompts} %}
+                    {% set prompts = project_prompts %}
+                    {% include "prompts/partials/prompt_list.html" %}
                 {% else %}
-                    <div class="text-xs text-gray-500 text-center py-6">Select a project to see project prompts</div>
+                    <div id="no-active-project-message" class="text-xs text-gray-500 text-center h-[60px] flex items-center justify-center">Select a project to see project prompts</div>
                 {% endif %}
             </div>
         </div>
 
-        <div id="template-apps-prompts" style="display: none;">
-            <div class="space-y-2" id="template-apps-prompt-list-container">
-                {% include "prompts/partials/prompt_list.html" with {"prompts": template_app_prompts} %}
+        <div id="from-blueprint-prompts" x-show="currentTab === 'from_blueprint'" style="display: none;">
+            <div
+                id="blueprint-prompt-container"
+                hx-get="/prompts/blueprints"
+                hx-trigger="{{ PromptEventType.BLUEPRINTS_CHANGED }} from:body"
+                hx-swap="innerHTML"
+            >
+                {% if active_project %}
+                    {% if blueprint_prompt %}
+                        {% set prompt = blueprint_prompt %}
+                        {% include "prompts/partials/blueprint_prompt_item.html" %}
+                    {% else %}
+                        {% include "prompts/partials/blueprint_generator.html" %}
+                    {% endif %}
+                {% else %}
+                    <div class="text-xs text-gray-500 text-center py-6">Select a project to generate a blueprint prompt</div>
+                {% endif %}
             </div>
         </div>
     </div>
 
     <div class="px-6 py-4 border-t border-dark-light flex justify-between">
-        <button id="new-prompt-btn" onclick="createNewPrompt()" class="px-4 py-2 bg-primary hover:bg-primary-dark rounded-lg text-sm font-medium text-white">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-            </svg>
-            <span id="new-prompt-text">New Global Prompt</span>
-        </button>
+        <div>
+            <button id="new-prompt-btn" onclick="createNewPrompt()" x-show="currentTab !== 'from_blueprint'" class="px-4 py-2 bg-primary hover:bg-primary-dark rounded-lg text-sm font-medium text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                <span id="new-prompt-text" x-text="currentTab === 'global' ? 'New Global Prompt' : 'New Project Prompt'">New Global Prompt</span>
+            </button>
+        </div>
         <button onclick="closePromptModal()" class="px-4 py-2 bg-dark-lighter hover:bg-dark-light border border-dark-light rounded-lg text-sm">
             Close
         </button>

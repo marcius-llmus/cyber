@@ -1,25 +1,30 @@
-<div id="prompt-{{ prompt.id }}" class="p-4 bg-dark-lighter rounded-md border-l-2 border-transparent cursor-pointer hover:bg-dark-light">
+<div
+    id="prompt-{{ prompt.id }}"
+    class="prompt-item p-4 rounded-md border-l-2 cursor-pointer {% if is_attached %}border-primary bg-dark-light{% else %}border-transparent bg-dark-lighter hover:bg-dark-light{% endif %}"
+    hx-post="/prompts/{{ prompt.id }}/toggle-attachment"
+    hx-target="#prompt-{{ prompt.id }}"
+    hx-swap="outerHTML"
+>
     <div class="flex items-center justify-between mb-2">
         <h4 class="text-sm font-semibold text-white">{{ prompt.name }}</h4>
         <div class="flex space-x-2">
             <button
                 class="text-xs text-gray-400 hover:text-primary"
-                hx-get="/prompts/{{ prompt.id }}/edit"
+                hx-get="/prompts/{{ prompt.type.value }}/{{ prompt.id }}/edit"
                 hx-target="#prompt-{{ prompt.id }}"
                 hx-swap="outerHTML"
+                onclick="event.stopPropagation()"
             >
                 Edit
             </button>
             <button
                 class="text-xs text-gray-400 hover:text-red-400"
-                hx-delete="/prompts/{{ prompt.id }}"
-                hx-target="closest div"
-                hx-swap="outerHTML"
+                hx-delete="/prompts/{{ prompt.type.value }}/{{ prompt.id }}"
                 hx-confirm="Are you sure you want to delete this prompt?"
+                onclick="event.stopPropagation()"
             >
                 Delete
             </button>
-            <button class="text-xs text-gray-400 hover:text-green-400">Attach</button>
         </div>
     </div>
     <p class="text-xs text-gray-400 truncate">{{ prompt.content }}</p>

@@ -1,0 +1,13 @@
+<div
+    class="p-4 bg-dark-lighter hover:bg-dark-light rounded-md cursor-pointer border-l-2 border-transparent"
+    hx-post="/prompts/from-blueprint"
+    hx-target="#blueprint-prompt-container"
+    hx-swap="innerHTML"
+    hx-ext="form-json"
+    hx-vals='{"path": "{{ blueprint.path }}"}'
+>
+    <div class="flex items-center justify-between mb-2">
+        <h4 class="text-sm font-semibold text-white">{{ blueprint.name }}</h4>
+    </div>
+    <p class="text-xs text-gray-400 truncate">{{ blueprint.path }}</p>
+</div>

@@ -5,9 +5,10 @@ class PromptType(StrEnum):
     SYSTEM = "system"
     GLOBAL = "global"
     PROJECT = "project"
-    TEMPLATE_APP = "template_app"
+    BLUEPRINT = "blueprint"
 
 
-class PromptTargetSelector(StrEnum):
-    GLOBAL = "#global-prompt-list-container"
-    PROJECT = "#project-prompt-list-container"
+class PromptEventType(StrEnum):
+    GLOBAL_PROMPTS_CHANGED = "globalPromptsChanged"
+    PROJECT_PROMPTS_CHANGED = "projectPromptsChanged"
+    BLUEPRINTS_CHANGED = "refreshBlueprints"

@@ -1,4 +1,3 @@
-import logging
 from pathlib import Path
 
 from pydantic import field_validator
@@ -15,8 +14,9 @@ class Settings(BaseSettings):
     )
     DATABASE_URL: str = "sqlite:///./database.db"
     PROJECTS_ROOT_DIR: str = "projects"
+    BLUEPRINTS_ROOT_DIR: str = "blueprints"
 
-    @field_validator("PROJECTS_ROOT_DIR")
+    @field_validator("PROJECTS_ROOT_DIR", "BLUEPRINTS_ROOT_DIR")
     def make_absolute(cls, v: str) -> str: # noqa
         if not Path(v).is_absolute():
             return str(BASE_DIR / v)
