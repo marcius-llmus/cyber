@@ -3,7 +3,6 @@ from app.projects.exceptions import ActiveProjectRequiredException
 from app.blueprints.services import BlueprintService
 from app.projects.services import ProjectService
 from app.prompts.exceptions import (
-    PromptAlreadyExistsException,
     PromptNotFoundException,
     UnsupportedPromptTypeException,
 )
@@ -14,7 +13,7 @@ from app.prompts.schemas import (
     PromptsPageData,
     PromptUpdate,
 )
-from app.prompts.enums import PromptType, PromptTargetSelector
+from app.prompts.enums import PromptType
 from app.prompts.models import Prompt
 
 
@@ -29,7 +28,23 @@ class PromptService:
             raise PromptNotFoundException(f"Prompt with id {prompt_id} not found.")
         return prompt
 
-    def create_prompt(self, prompt_in: PromptCreate) -> Prompt:
+    def create_global_prompt(self, prompt_in: PromptCreate) -> Prompt:
+        """Creates a global prompt."""
+        if prompt_in.type != PromptType.GLOBAL:
+            raise UnsupportedPromptTypeException("Invalid type for a global prompt.")
+        prompt_in.project_id = None  # Ensure project_id is not set for global prompts
+        return self.prompt_repo.create(obj_in=prompt_in)
+
+    def create_project_prompt(self, prompt_in: PromptCreate) -> Prompt:
+        """Creates a project-specific prompt, ensuring an active project exists."""
+        active_project = self.project_service.project_repo.get_active()
+        if not active_project:
+            raise ActiveProjectRequiredException("An active project is required to create a project prompt.")
+
+        if prompt_in.type != PromptType.PROJECT:
+            raise UnsupportedPromptTypeException("Invalid type for a project prompt.")
+
+        prompt_in.project_id = active_project.id  # Ensure it's set to the active project
         return self.prompt_repo.create(obj_in=prompt_in)
 
     def update_prompt(self, prompt_id: int, prompt_in: PromptUpdate) -> Prompt:
@@ -151,7 +166,7 @@ class PromptPageService:
 
     @staticmethod
     def get_new_global_prompt_form_context() -> NewPromptFormContext:
-        return {"prompt_type": "global", "target_selector": PromptTargetSelector.GLOBAL}
+        return {"prompt_type": "global"}
 
     def get_new_project_prompt_form_context(self) -> NewPromptFormContext:
         active_project = self.project_service.project_repo.get_active()
@@ -159,17 +174,16 @@ class PromptPageService:
             raise ActiveProjectRequiredException("An active project is required to create a project prompt.")
         return {
             "prompt_type": "project",
-            "target_selector": PromptTargetSelector.PROJECT,
             "project_id": str(active_project.id),
         }
 
     def get_edit_global_prompt_form_context(self, prompt_id: int) -> dict:
         prompt = self.prompt_service.get_prompt(prompt_id=prompt_id)
-        return {"prompt": prompt, "target_selector": PromptTargetSelector.GLOBAL}
+        return {"prompt": prompt}
 
     def get_edit_project_prompt_form_context(self, prompt_id: int) -> dict:
         prompt = self.prompt_service.get_prompt(prompt_id=prompt_id)
-        return {"prompt": prompt, "target_selector": PromptTargetSelector.PROJECT}
+        return {"prompt": prompt}
 
     def _get_attached_prompt_ids(self, active_project: Project | None) -> set[int]:
         if not active_project:

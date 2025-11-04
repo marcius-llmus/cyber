@@ -42,7 +42,6 @@ class PromptsPageData(TypedDict):
 
 class NewPromptFormContext(TypedDict):
     prompt_type: str
-    target_selector: str
     project_id: NotRequired[str]
 
 

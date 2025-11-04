@@ -2,11 +2,8 @@
     <form
         {% if prompt %}
             hx-put="/prompts/{{ prompt.type.value }}/{{ prompt.id }}"
-            hx-target="{{ target_selector }}"
         {% else %}
             hx-post="/prompts/{{ prompt_type }}"
-            hx-target="{{ target_selector }}"
-            hx-swap="innerHTML"
         {% endif %}
         hx-ext="form-json"
         hx-on::after-request="htmx.find('#prompt-form-container').remove()"

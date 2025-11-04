@@ -20,8 +20,6 @@
             <button
                 class="text-xs text-gray-400 hover:text-red-400"
                 hx-delete="/prompts/{{ prompt.type.value }}/{{ prompt.id }}"
-                hx-target="closest .prompt-item"
-                hx-swap="outerHTML"
                 hx-confirm="Are you sure you want to delete this prompt?"
                 onclick="event.stopPropagation()"
             >

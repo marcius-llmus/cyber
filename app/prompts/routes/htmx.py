@@ -7,8 +7,8 @@ from app.blueprints.dependencies import get_blueprint_service
 from app.blueprints.services import BlueprintService
 from app.projects.exceptions import ActiveProjectRequiredException
 from app.prompts.dependencies import get_prompt_page_service, get_prompt_service
-from app.prompts.enums import PromptTargetSelector
 from app.prompts.exceptions import PromptNotFoundException
+from app.prompts.enums import PromptType
 from app.prompts.schemas import BlueprintRequest, PromptCreate, PromptUpdate
 from app.prompts.services import PromptPageService, PromptService
 
@@ -49,28 +49,49 @@ async def get_new_project_prompt_form(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@router.post("/global", response_class=HTMLResponse)
+@router.get("/global/list", response_class=HTMLResponse)
 @htmx("prompts/partials/prompt_list")
+async def get_global_prompts_list(
+    request: Request,
+    page_service: PromptPageService = Depends(get_prompt_page_service),
+):
+    return page_service.get_global_prompts_list_data()
+
+
+@router.get("/project/list", response_class=HTMLResponse)
+@htmx("prompts/partials/prompt_list")
+async def get_project_prompts_list(
+    request: Request,
+    page_service: PromptPageService = Depends(get_prompt_page_service),
+):
+    return page_service.get_project_prompts_list_data()
+
+
+@router.post("/global")
 async def create_global_prompt(
     request: Request,
     prompt_in: PromptCreate,
     service: PromptService = Depends(get_prompt_service),
-    page_service: PromptPageService = Depends(get_prompt_page_service),
 ):
-    service.create_prompt(prompt_in=prompt_in)
-    return page_service.get_global_prompts_list_data()
+    service.create_global_prompt(prompt_in=prompt_in)
+    response = Response(status_code=status.HTTP_204_NO_CONTENT)
+    response.headers["HX-Trigger"] = "globalPromptsChanged"
+    return response
 
 
-@router.post("/project", response_class=HTMLResponse)
-@htmx("prompts/partials/prompt_list")
+@router.post("/project")
 async def create_project_prompt(
     request: Request,
     prompt_in: PromptCreate,
     service: PromptService = Depends(get_prompt_service),
-    page_service: PromptPageService = Depends(get_prompt_page_service),
 ):
-    service.create_prompt(prompt_in=prompt_in)
-    return page_service.get_project_prompts_list_data()
+    try:
+        service.create_project_prompt(prompt_in=prompt_in)
+        response = Response(status_code=status.HTTP_204_NO_CONTENT)
+        response.headers["HX-Trigger"] = "projectPromptsChanged"
+        return response
+    except ActiveProjectRequiredException as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get("/global/{prompt_id}/edit", response_class=HTMLResponse)
@@ -101,40 +122,40 @@ async def get_edit_project_prompt_form(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
-@router.put("/global/{prompt_id}", response_class=HTMLResponse)
-@htmx("prompts/partials/prompt_list")
+@router.put("/global/{prompt_id}")
 async def update_global_prompt(
     request: Request,
     prompt_id: int,
     prompt_in: PromptUpdate,
     service: PromptService = Depends(get_prompt_service),
-    page_service: PromptPageService = Depends(get_prompt_page_service),
 ):
     try:
         service.update_prompt(prompt_id=prompt_id, prompt_in=prompt_in)
-        return page_service.get_global_prompts_list_data()
+        response = Response(status_code=status.HTTP_204_NO_CONTENT)
+        response.headers["HX-Trigger"] = "globalPromptsChanged"
+        return response
     except PromptNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
-@router.put("/project/{prompt_id}", response_class=HTMLResponse)
-@htmx("prompts/partials/prompt_list")
+@router.put("/project/{prompt_id}")
 async def update_project_prompt(
     request: Request,
     prompt_id: int,
     prompt_in: PromptUpdate,
     service: PromptService = Depends(get_prompt_service),
-    page_service: PromptPageService = Depends(get_prompt_page_service),
 ):
     try:
         service.update_prompt(prompt_id=prompt_id, prompt_in=prompt_in)
-        return page_service.get_project_prompts_list_data()
+        response = Response(status_code=status.HTTP_204_NO_CONTENT)
+        response.headers["HX-Trigger"] = "projectPromptsChanged"
+        return response
     except PromptNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
 @router.delete("/blueprint-prompt")
-async def delete_blueprint_prompt(
+async def delete_blueprint_prompt(  # noqa: ARG001
     request: Request,
     service: PromptService = Depends(get_prompt_service),
 ):
@@ -150,26 +171,30 @@ async def delete_blueprint_prompt(
     return response
 
 
-@router.delete("/global/{prompt_id}", status_code=status.HTTP_200_OK)
+@router.delete("/global/{prompt_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_global_prompt(
     prompt_id: int,
     service: PromptService = Depends(get_prompt_service),
 ):
     try:
         service.delete_prompt(prompt_id=prompt_id)
-        return Response(status_code=status.HTTP_200_OK)
+        response = Response(status_code=status.HTTP_204_NO_CONTENT)
+        response.headers["HX-Trigger"] = "globalPromptsChanged"
+        return response
     except PromptNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
-@router.delete("/project/{prompt_id}", status_code=status.HTTP_200_OK)
+@router.delete("/project/{prompt_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_project_prompt(
     prompt_id: int,
     service: PromptService = Depends(get_prompt_service),
 ):
     try:
         service.delete_prompt(prompt_id=prompt_id)
-        return Response(status_code=status.HTTP_200_OK)
+        response = Response(status_code=status.HTTP_204_NO_CONTENT)
+        response.headers["HX-Trigger"] = "projectPromptsChanged"
+        return response
     except PromptNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
@@ -208,7 +233,7 @@ async def create_prompt_from_blueprint(
 @htmx("prompts/partials/blueprint_generator")
 async def get_blueprint_generator(
     request: Request,
-    blueprint_service: BlueprintService = Depends(get_blueprint_service),
+    service: BlueprintService = Depends(get_blueprint_service),
 ):
-    blueprints = blueprint_service.list_blueprints()
+    blueprints = service.list_blueprints()
     return {"blueprints": blueprints}

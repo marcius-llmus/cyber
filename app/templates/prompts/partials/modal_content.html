@@ -24,14 +24,21 @@
 
     <div class="p-6 overflow-y-auto flex-1 modal-scroll-content" style="max-height: calc(75vh - 180px);">
         <div id="global-prompts" x-show="currentTab === 'global'">
-            <div class="space-y-2 min-h-[60px]" id="global-prompt-list-container">
+            <div
+                class="space-y-2 min-h-[60px]"
+                id="global-prompt-list-container"
+                hx-get="/prompts/global/list"
+                hx-trigger="globalPromptsChanged from:body"
+                hx-swap="innerHTML"
+            >
                 {% set prompts = global_prompts %}
                 {% include "prompts/partials/prompt_list.html" %}
             </div>
         </div>
 
         <div id="project-prompts" x-show="currentTab === 'project'" style="display: none;">
-            <div class="space-y-2 min-h-[60px]" id="project-prompt-list-container">
+            <div class="space-y-2 min-h-[60px]" id="project-prompt-list-container"
+                 hx-get="/prompts/project/list" hx-trigger="projectPromptsChanged from:body" hx-swap="innerHTML">
                  {% if active_project %}
                     {% set prompts = project_prompts %}
                     {% include "prompts/partials/prompt_list.html" %}
