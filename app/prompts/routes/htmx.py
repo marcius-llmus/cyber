@@ -8,7 +8,7 @@ from app.blueprints.services import BlueprintService
 from app.projects.exceptions import ActiveProjectRequiredException
 from app.prompts.dependencies import get_prompt_page_service, get_prompt_service
 from app.prompts.exceptions import PromptNotFoundException
-from app.prompts.enums import PromptType
+from app.prompts.enums import PromptEventType
 from app.prompts.schemas import BlueprintRequest, PromptCreate, PromptUpdate
 from app.prompts.services import PromptPageService, PromptService
 
@@ -22,7 +22,7 @@ async def get_prompts_modal(
 ):
     page_data = service.get_prompts_page_data()
     return templates.TemplateResponse(
-        "prompts/partials/modal_content.html", {"request": request, **page_data}
+        "prompts/partials/modal_content.html", {"request": request, **page_data, "PromptEventType": PromptEventType}
     )
 
 
@@ -75,7 +75,7 @@ async def create_global_prompt(
 ):
     service.create_global_prompt(prompt_in=prompt_in)
     response = Response(status_code=status.HTTP_204_NO_CONTENT)
-    response.headers["HX-Trigger"] = "globalPromptsChanged"
+    response.headers["HX-Trigger"] = PromptEventType.GLOBAL_PROMPTS_CHANGED
     return response
 
 
@@ -88,7 +88,7 @@ async def create_project_prompt(
     try:
         service.create_project_prompt(prompt_in=prompt_in)
         response = Response(status_code=status.HTTP_204_NO_CONTENT)
-        response.headers["HX-Trigger"] = "projectPromptsChanged"
+        response.headers["HX-Trigger"] = PromptEventType.PROJECT_PROMPTS_CHANGED
         return response
     except ActiveProjectRequiredException as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -132,7 +132,7 @@ async def update_global_prompt(
     try:
         service.update_prompt(prompt_id=prompt_id, prompt_in=prompt_in)
         response = Response(status_code=status.HTTP_204_NO_CONTENT)
-        response.headers["HX-Trigger"] = "globalPromptsChanged"
+        response.headers["HX-Trigger"] = PromptEventType.GLOBAL_PROMPTS_CHANGED
         return response
     except PromptNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
@@ -148,7 +148,7 @@ async def update_project_prompt(
     try:
         service.update_prompt(prompt_id=prompt_id, prompt_in=prompt_in)
         response = Response(status_code=status.HTTP_204_NO_CONTENT)
-        response.headers["HX-Trigger"] = "projectPromptsChanged"
+        response.headers["HX-Trigger"] = PromptEventType.PROJECT_PROMPTS_CHANGED
         return response
     except PromptNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
@@ -167,7 +167,7 @@ async def delete_blueprint_prompt(  # noqa: ARG001
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
     response = HTMLResponse(status_code=status.HTTP_204_NO_CONTENT)
-    response.headers["HX-Trigger"] = "refreshBlueprints"
+    response.headers["HX-Trigger"] = PromptEventType.BLUEPRINTS_CHANGED
     return response
 
 
@@ -179,7 +179,7 @@ async def delete_global_prompt(
     try:
         service.delete_prompt(prompt_id=prompt_id)
         response = Response(status_code=status.HTTP_204_NO_CONTENT)
-        response.headers["HX-Trigger"] = "globalPromptsChanged"
+        response.headers["HX-Trigger"] = PromptEventType.GLOBAL_PROMPTS_CHANGED
         return response
     except PromptNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
@@ -193,7 +193,7 @@ async def delete_project_prompt(
     try:
         service.delete_prompt(prompt_id=prompt_id)
         response = Response(status_code=status.HTTP_204_NO_CONTENT)
-        response.headers["HX-Trigger"] = "projectPromptsChanged"
+        response.headers["HX-Trigger"] = PromptEventType.PROJECT_PROMPTS_CHANGED
         return response
     except PromptNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

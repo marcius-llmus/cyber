@@ -166,14 +166,14 @@ class PromptPageService:
 
     @staticmethod
     def get_new_global_prompt_form_context() -> NewPromptFormContext:
-        return {"prompt_type": "global"}
+        return {"prompt_type": PromptType.GLOBAL}
 
     def get_new_project_prompt_form_context(self) -> NewPromptFormContext:
         active_project = self.project_service.project_repo.get_active()
         if not active_project:
             raise ActiveProjectRequiredException("An active project is required to create a project prompt.")
         return {
-            "prompt_type": "project",
+            "prompt_type": PromptType.PROJECT,
             "project_id": str(active_project.id),
         }
 

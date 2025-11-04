@@ -28,7 +28,7 @@
                 class="space-y-2 min-h-[60px]"
                 id="global-prompt-list-container"
                 hx-get="/prompts/global/list"
-                hx-trigger="globalPromptsChanged from:body"
+                hx-trigger="{{ PromptEventType.GLOBAL_PROMPTS_CHANGED }} from:body"
                 hx-swap="innerHTML"
             >
                 {% set prompts = global_prompts %}
@@ -37,8 +37,8 @@
         </div>
 
         <div id="project-prompts" x-show="currentTab === 'project'" style="display: none;">
-            <div class="space-y-2 min-h-[60px]" id="project-prompt-list-container"
-                 hx-get="/prompts/project/list" hx-trigger="projectPromptsChanged from:body" hx-swap="innerHTML">
+            <div class="space-y-2 min-h-[60px]" id="project-prompt-list-container" hx-get="/prompts/project/list"
+                 hx-trigger="{{ PromptEventType.PROJECT_PROMPTS_CHANGED }} from:body" hx-swap="innerHTML">
                  {% if active_project %}
                     {% set prompts = project_prompts %}
                     {% include "prompts/partials/prompt_list.html" %}
@@ -52,7 +52,7 @@
             <div
                 id="blueprint-prompt-container"
                 hx-get="/prompts/blueprints"
-                hx-trigger="refreshBlueprints from:body"
+                hx-trigger="{{ PromptEventType.BLUEPRINTS_CHANGED }} from:body"
                 hx-swap="innerHTML"
             >
                 {% if active_project %}
