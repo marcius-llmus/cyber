@@ -44,10 +44,5 @@ class PromptsPageContext(TypedDict):
     attached_prompt_ids: set[int]
 
 
-class NewPromptFormContext(TypedDict):
-    prompt_type: str
-    project_id: NotRequired[str]
-
-
 class BlueprintRequest(BaseModel):
     path: str

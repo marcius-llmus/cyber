@@ -5,7 +5,6 @@ from app.projects.services import ProjectService
 from app.prompts.exceptions import PromptNotFoundException
 from app.prompts.repositories import PromptRepository
 from app.prompts.schemas import (
-    NewPromptFormContext,
     PromptCreate,
     PromptInternalCreate,
     PromptsPageContext,
@@ -163,17 +162,14 @@ class PromptPageService:
         }
 
     @staticmethod
-    def get_new_global_prompt_form_context() -> NewPromptFormContext:
+    def get_new_global_prompt_form_context() -> dict:
         return {"prompt_type": PromptType.GLOBAL}
 
-    def get_new_project_prompt_form_context(self) -> NewPromptFormContext:
+    def get_new_project_prompt_form_context(self) -> dict:
         active_project = self.project_service.project_repo.get_active()
         if not active_project:
             raise ActiveProjectRequiredException("An active project is required to create a project prompt.")
-        return {
-            "prompt_type": PromptType.PROJECT,
-            "project_id": str(active_project.id),
-        }
+        return {"prompt_type": PromptType.PROJECT}
 
     def get_edit_global_prompt_form_context(self, prompt_id: int) -> dict:
         prompt = self.prompt_service.get_prompt(prompt_id=prompt_id)
