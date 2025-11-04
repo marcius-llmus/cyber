@@ -2,14 +2,12 @@ from app.projects.models import Project
 from app.projects.exceptions import ActiveProjectRequiredException
 from app.blueprints.services import BlueprintService
 from app.projects.services import ProjectService
-from app.prompts.exceptions import (
-    PromptNotFoundException,
-    UnsupportedPromptTypeException,
-)
+from app.prompts.exceptions import PromptNotFoundException
 from app.prompts.repositories import PromptRepository
 from app.prompts.schemas import (
     NewPromptFormContext,
     PromptCreate,
+    PromptInternalCreate,
     PromptsPageData,
     PromptUpdate,
 )
@@ -30,22 +28,18 @@ class PromptService:
 
     def create_global_prompt(self, prompt_in: PromptCreate) -> Prompt:
         """Creates a global prompt."""
-        if prompt_in.type != PromptType.GLOBAL:
-            raise UnsupportedPromptTypeException("Invalid type for a global prompt.")
-        prompt_in.project_id = None  # Ensure project_id is not set for global prompts
-        return self.prompt_repo.create(obj_in=prompt_in)
+        internal_create = PromptInternalCreate(type=PromptType.GLOBAL, project_id=None, **prompt_in.model_dump())
+        return self.prompt_repo.create(obj_in=internal_create)
 
     def create_project_prompt(self, prompt_in: PromptCreate) -> Prompt:
         """Creates a project-specific prompt, ensuring an active project exists."""
         active_project = self.project_service.project_repo.get_active()
         if not active_project:
             raise ActiveProjectRequiredException("An active project is required to create a project prompt.")
-
-        if prompt_in.type != PromptType.PROJECT:
-            raise UnsupportedPromptTypeException("Invalid type for a project prompt.")
-
-        prompt_in.project_id = active_project.id  # Ensure it's set to the active project
-        return self.prompt_repo.create(obj_in=prompt_in)
+        internal_create = PromptInternalCreate(
+            type=PromptType.PROJECT, project_id=active_project.id, **prompt_in.model_dump()
+        )
+        return self.prompt_repo.create(obj_in=internal_create)
 
     def update_prompt(self, prompt_id: int, prompt_in: PromptUpdate) -> Prompt:
         db_obj = self.get_prompt(prompt_id)
@@ -91,8 +85,12 @@ class PromptService:
             updated_prompt = self.update_prompt(prompt_id=existing_prompt.id, prompt_in=update_data)
             return updated_prompt, False
         else:
-            create_data = PromptCreate(
-                name=name, content=content, type=PromptType.BLUEPRINT, project_id=active_project.id, source_path=path
+            create_data = PromptInternalCreate(
+                name=name,
+                content=content,
+                type=PromptType.BLUEPRINT,
+                source_path=path,
+                project_id=active_project.id,
             )
             new_prompt = self.prompt_repo.create(obj_in=create_data)
             return new_prompt, True

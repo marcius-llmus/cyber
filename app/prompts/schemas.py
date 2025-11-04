@@ -11,15 +11,19 @@ from app.prompts.models import Prompt
 class PromptBase(BaseModel):
     name: str
     content: str
-    type: PromptType
 
 
 class PromptCreate(PromptBase):
-    project_id: int | None = None
+    pass
+
+
+class PromptInternalCreate(PromptBase):
+    type: PromptType
     source_path: str | None = None
+    project_id: int | None = None
 
 
-class PromptUpdate(BaseModel):
+class PromptUpdate(PromptBase):
     name: str | None = None
     content: str | None = None
     source_path: str | None = None
