@@ -1,6 +1,6 @@
 <div
     id="project-{{ project.id }}"
-    class="p-4 bg-dark-lighter hover:bg-dark-light rounded-md cursor-pointer border-l-2 {% if project.is_active %}border-primary{% else %}border-transparent{% endif %}"
+    class="p-4 rounded-md cursor-pointer border-l-2 {% if project.is_active %}border-primary bg-dark-light{% else %}border-transparent bg-dark-lighter hover:bg-dark-light{% endif %}"
     hx-put="/projects/{{ project.id }}/activate"
     hx-target="#project-list-container"
     hx-swap="innerHTML"

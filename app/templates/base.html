@@ -4,12 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Llama Coding - AI Development Assistant</title>
+    <link rel="icon" href="data:,">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js" integrity="sha384-/TgkGk7p307TH7EXJDuUlgG3Ce1UVolAOFopFekQkkXihi5u/6OCvVKyz1W+idaz" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/htmx-ext-ws@2.0.4" integrity="sha384-1RwI/nvUSrMRuNj7hX1+27J8XDdCoSLf0EjEyF69nacuWyiJYoQ/j39RT1mSnd2G" crossorigin="anonymous"></script>
     <script src="/static/js/htmx-ext-form-json.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.15.1/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.15.1/dist/cdn.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"></script>
     <script>
         tailwind.config = {
@@ -197,39 +198,21 @@
             });
         }
 
-        function switchPromptTab(tab, element) {
-            currentPromptTab = tab;
-            document.querySelectorAll('.prompt-tab').forEach(t => {
-                t.classList.remove('active');
-                t.classList.add('text-gray-500');
-                t.classList.remove('text-gray-300');
-            });
-            element.classList.add('active');
-            element.classList.remove('text-gray-500');
-            element.classList.add('text-gray-300');
-
-            const promptText = document.getElementById('new-prompt-text');
-            document.getElementById('global-prompts').style.display = 'none';
-            document.getElementById('project-prompts').style.display = 'none';
-
-            if (tab === 'global') {
-                document.getElementById('global-prompts').style.display = 'block';
-                promptText.textContent = 'New Global Prompt';
-            } else if (tab === 'project') {
-                document.getElementById('project-prompts').style.display = 'block';
-                promptText.textContent = 'New Project Prompt';
-            }
-        }
-
         function createNewPrompt() {
             // This function will now trigger an htmx request to get the form
             let target, url;
             if (currentPromptTab === 'global') {
                 target = '#global-prompt-list-container';
-                url = '/prompts/new?type=global';
+                url = '/prompts/new/global';
             } else if (currentPromptTab === 'project') {
+                // Check if the specific "no active project" message exists.
+                if (document.getElementById('no-active-project-message')) {
+                    return;
+                }
                 target = '#project-prompt-list-container';
-                url = '/prompts/new?type=project';
+                url = '/prompts/new/project';
+            } else {
+                return; // Do nothing for 'from_path' tab
             }
 
             if (document.getElementById('prompt-form-container')) {

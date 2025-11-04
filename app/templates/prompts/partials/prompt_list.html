@@ -1,7 +1,9 @@
 {% if prompts %}
     {% for prompt in prompts %}
-        {% include "prompts/partials/prompt_item.html" %}
+        {% with is_attached = prompt.id in attached_prompt_ids %}
+            {% include "prompts/partials/prompt_item.html" %}
+        {% endwith %}
     {% endfor %}
 {% else %}
-    <div class="text-xs text-gray-500 text-center py-6">No prompts found</div>
+    <div class="text-xs text-gray-500 text-center no-prompts-placeholder h-[60px] flex items-center justify-center">No prompts found</div>
 {% endif %}
