@@ -74,7 +74,7 @@
                 </button>
 
                 <button
-                    hx-get="/history/"
+                    hx-get="/history/?active_session_id={{ session.id if session else '' }}"
                     hx-target="#history-list-container"
                     hx-swap="innerHTML"
                     onclick="openHistoryModal()"

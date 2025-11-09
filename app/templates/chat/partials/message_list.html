@@ -1,22 +1,44 @@
 <div class="flex-1 overflow-y-auto p-6 space-y-4" id="message-list">
-    <div class="flex items-start">
-        <div class="w-9 h-9 bg-primary rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
+    {% for message in messages %}
+        {% if message.role.value == 'user' %}
+        <div class="flex items-start gap-4 justify-end" id="user-message-{{ message.id }}">
+            <div class="flex-1">
+                <div class="bg-dark-card rounded-lg p-4 border border-dark-light">
+                    <div class="text-gray-200 text-sm">
+                        {{ message.content }}
+                    </div>
+                </div>
+            </div>
+            <div class="w-9 h-9 bg-gray-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+            </div>
         </div>
-        <div class="bg-dark-card rounded-lg p-4 flex-1 border border-dark-light">
-            <div class="prose prose-invert text-gray-300">
-                <p>Here is an example of a code block I can generate:</p>
-                <div class="code-block-wrapper mt-3">
-                    <button class="copy-code-btn" onclick="copyCode(this)">
-                        <i class="fas fa-copy mr-1"></i> Copy
-                    </button>
-                    <pre class="bg-dark-lighter p-3 rounded text-sm overflow-x-auto"><code>def hello_world():
-    print("Hello from Llama Coding!")
-    return True</code></pre>
+        {% elif message.role.value == 'assistant' %}
+        <div class="flex items-start gap-4" id="ai-message-{{ message.id }}">
+            <div class="w-9 h-9 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+            </div>
+            <div class="flex-1">
+                <div class="bg-dark-card rounded-lg p-4 border border-dark-light">
+                    <div class="text-gray-300 text-sm prose prose-invert max-w-none" id="ai-content-{{ message.id }}">
+                        {{ message.content }}
+                    </div>
+                    <div id="ai-controls-{{ message.id }}">
+                        {% if message and message.cost and message.output_tokens %}
+                        <div class="flex items-center justify-between mt-2">
+                            <span class="cost-badge text-primary" title="Output tokens: {{ message.output_tokens }}">
+                                <i class="fas fa-dollar-sign"></i> {{ "%.4f"|format(message.cost) }}
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+        {% endif %}
+    {% endfor %}
 </div>

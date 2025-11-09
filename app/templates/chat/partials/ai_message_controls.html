@@ -1,0 +1,9 @@
+<div hx-swap-oob="innerHTML:#ai-controls-{{ turn_id }}">
+    {% if message and message.cost and message.output_tokens %}
+    <div class="flex items-center justify-between mt-2">
+        <span class="cost-badge text-primary" title="Output tokens: {{ message.output_tokens }}">
+            <i class="fas fa-dollar-sign"></i> {{ "%.4f"|format(message.cost) }}
+        </span>
+    </div>
+    {% endif %}
+</div>

@@ -29,7 +29,8 @@
     </div>
     <div class="flex-1 overflow-y-auto modal-scroll-content">
         <div class="implicit-scroll-container px-3" id="context-files-container">
-            <div class="text-xs text-gray-500 text-center py-6">No files loaded</div>
+            {% set filepaths = ['app/coder/services.py', 'app/coder/workflow.py'] %}
+            {% include "context/partials/context_file_list_items.html" %}
         </div>
     </div>
 </div>
