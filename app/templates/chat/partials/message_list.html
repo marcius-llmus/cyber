@@ -1,4 +1,22 @@
-<div class="flex-1 overflow-y-auto p-6 space-y-4" id="message-list">
+<div class="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth break-words" id="message-list">
+    <!-- System welcome message -->
+    <div class="flex items-start gap-4" id="ai-message-system">
+        <div class="w-9 h-9 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+        </div>
+        <div class="flex-1">
+            <div class="bg-dark-card rounded-lg p-4 border border-dark-light">
+                <div class="text-gray-300 text-sm prose prose-invert max-w-none" id="ai-content-4">
+                    Hello! How can I assist you today?
+                </div>
+                <div id="ai-controls-4">
+
+                </div>
+            </div>
+        </div>
+    </div>
     {% for message in messages %}
         {% if message.role.value == 'user' %}
         <div class="flex items-start gap-4 justify-end" id="user-message-{{ message.id }}">

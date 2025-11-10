@@ -38,6 +38,14 @@
         *::-webkit-scrollbar {
             display: none;
         }
+        #message-list {
+            -ms-overflow-style: auto;
+            scrollbar-width: auto;
+            scrollbar-color: #79269f #712495;
+        }
+        #message-list::-webkit-scrollbar {
+            width: 4px;
+        }
         #message-list pre {
             -ms-overflow-style: auto !important;
             scrollbar-width: auto !important;
@@ -170,7 +178,7 @@
         }
     </style>
 </head>
-<body class="bg-dark text-gray-200 min-h-screen flex" hx-ext="ws" ws-connect="/coder/ws/session/{{ session.id }}">
+<body class="bg-dark text-gray-200 h-screen flex" hx-ext="ws" ws-connect="/coder/ws/session/{{ session.id }}">
     
     <!-- Tailwind CSS Safelist -->
     <div class="hidden border-red-500 border-green-500 border-blue-500 border-yellow-500"></div>
