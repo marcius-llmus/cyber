@@ -11,6 +11,8 @@ from app.coder.presentation import WebSocketOrchestrator
 from app.commons.websockets import WebSocketConnectionManager
 from app.core.templating import templates
 from app.history.exceptions import ChatSessionNotFoundException
+from app.history.services import HistoryService
+from app.history.dependencies import get_history_service
 
 router = APIRouter()
 
@@ -28,8 +30,10 @@ async def read_session(
     request: Request,
     session_id: int,
     page_service: CoderPageService = Depends(get_coder_page_service),
+    history_service: HistoryService = Depends(get_history_service),
 ):
     try:
+        history_service.set_active_session(session_id=session_id)
         page_data = page_service.get_main_page_data(session_id=session_id)
         return templates.TemplateResponse(
             "chat/pages/main.html", {"request": request, **page_data}

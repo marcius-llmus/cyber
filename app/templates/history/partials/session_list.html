@@ -1,6 +1,6 @@
 <div
     id="session-list-wrapper"
-    hx-get="/history/?active_session_id={{ active_session_id }}"
+    hx-get="/history/"
     hx-trigger="{{ HistoryEventType.SESSIONS_CHANGED }} from:body"
     hx-swap="outerHTML"
 >

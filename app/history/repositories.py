@@ -37,3 +37,8 @@ class ChatSessionRepository(BaseRepository[ChatSession]):
             .order_by(self.model.created_at.desc())
             .first()
         )
+
+    def deactivate_all_for_project(self, project_id: int):
+        self.db.query(self.model).filter_by(
+            project_id=project_id, is_active=True
+        ).update({"is_active": False})

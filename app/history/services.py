@@ -20,12 +20,22 @@ class HistoryService:
     def create_session(self, session_in: ChatSessionCreate) -> ChatSession:
         return self.session_repo.create(obj_in=session_in)
 
-    def delete_session(self, session_id_to_delete: int, active_session_id: int) -> ChatSession | None:
-        """
-        Deletes a chat session, applying business rules.
-        - Prevents deleting the last session for a project.
-        - Returns the next session to redirect to if the active session was deleted.
-        - Returns None if a non-active session was deleted.
+    def set_active_session(self, session_id: int) -> ChatSession:
+        session = self.get_session(session_id=session_id)
+
+        # Deactivate all other sessions for this project
+        self.session_repo.deactivate_all_for_project(project_id=session.project_id)
+
+        # Activate the target session
+        session.is_active = True
+        self.session_repo.db.add(session)
+        return session
+
+    def delete_session(self, session_id_to_delete: int) -> bool:
+        """Deletes a chat session.
+
+        Returns:
+            bool: True if the deleted session was the active one, False otherwise.
         """
         active_project = self.project_service.project_repo.get_active()
         if not active_project:
@@ -35,12 +45,10 @@ class HistoryService:
         if not session_to_delete:
             raise ChatSessionNotFoundException(f"Session with id {session_id_to_delete} not found.")
 
+        was_active = session_to_delete.is_active
         self.session_repo.delete(pk=session_id_to_delete)
 
-        if session_id_to_delete == active_session_id:
-            return self.get_most_recent_session_by_project(project_id=active_project.id)
-
-        return None
+        return was_active
 
     def get_session(self, session_id: int) -> ChatSession:
         session = self.session_repo.get_with_messages(session_id=session_id)
