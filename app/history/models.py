@@ -3,6 +3,7 @@ from sqlalchemy import (
     DateTime,
     Enum,
     Float,
+    Boolean,
     ForeignKey,
     Integer,
     String,
@@ -22,6 +23,7 @@ class ChatSession(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     created_at = Column(DateTime, nullable=False, server_default=func.now())
+    is_active = Column(Boolean, default=False, nullable=False, server_default="f")
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
 
     project = relationship("Project", back_populates="chat_sessions")

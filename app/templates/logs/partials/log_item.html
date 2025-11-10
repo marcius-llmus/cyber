@@ -1,4 +1,7 @@
-<div hx-swap-oob="afterbegin:#logs-container" class="p-2 rounded-md bg-dark-card hover:bg-dark-light border-l-2 border-{{ color }}-500 my-1 text-xs">
-    <div class="text-gray-300">{{ message }}</div>
-    <div class="text-gray-500 text-[10px] mt-0.5">{{ timestamp }}</div>
+<div hx-swap-oob="delete:#no-logs-placeholder"></div>
+<div hx-swap-oob="afterbegin:#logs-container">
+    <div class="p-2 rounded-md bg-dark-card hover:bg-dark-light border-l-2 border-{{ color }}-500 my-1 text-xs">
+        <div class="text-gray-300 whitespace-pre-wrap">{{ message }}</div>
+        <div class="text-gray-500 text-[10px] mt-0.5">{{ timestamp }}</div>
+    </div>
 </div>

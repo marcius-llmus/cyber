@@ -1,18 +1,18 @@
 <form
+    id="message-form"
     class="p-6 border-t border-dark-light bg-dark-lighter"
-    hx-ws="send"
-    _="on htmx:wsAfterSend reset() me"
-    hx-on::after-request="this.reset()"
-    hx-ext="form-json"
+    ws-send
+    hx-on:htmx:ws-after-send="this.reset(); this.querySelector('textarea').style.height = 'auto'"
 >
     <div class="relative">
         <textarea
-            id="message-input"
             name="message"
             rows="1"
             class="w-full bg-dark-card border border-dark-light rounded-lg px-4 py-3 pr-14 resize-none text-gray-200"
             placeholder="Ask me anything about your code..."
             onkeydown="handleKeydown(event)"
+            oninput="this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px'"
+            id="message-input"
         ></textarea>
         <button type="submit" class="absolute right-2 bottom-2 p-2 rounded-lg bg-primary hover:bg-primary-dark">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">

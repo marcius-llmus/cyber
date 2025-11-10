@@ -10,7 +10,7 @@
             <span class="text-sm text-gray-300">{{ item.name }}</span>
         {% else %}
             <span class="w-5 mr-1"></span>
-            <input type="checkbox" class="file-checkbox mr-2 bg-dark-card border-dark-light focus:ring-primary" data-filepath="{{ item.path }}">
+            <input type="checkbox" class="file-checkbox mr-2 bg-dark-card border-dark-light focus:ring-primary" name="filepaths" value="{{ item.path }}" checked>
             <i class="fas fa-file-code text-gray-400 mr-2"></i>
             <span class="text-sm text-gray-400">{{ item.name }}</span>
         {% endif %}

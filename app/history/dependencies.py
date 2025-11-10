@@ -14,8 +14,9 @@ def get_session_repository(db: Session = Depends(get_db)) -> ChatSessionReposito
 
 def get_history_service(
     repo: ChatSessionRepository = Depends(get_session_repository),
+    project_service: ProjectService = Depends(get_project_service),
 ) -> HistoryService:
-    return HistoryService(session_repo=repo)
+    return HistoryService(session_repo=repo, project_service=project_service)
 
 
 def get_history_page_service(
