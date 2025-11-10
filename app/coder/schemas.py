@@ -3,8 +3,6 @@ from enum import StrEnum
 from pydantic import BaseModel
 from typing import Union
 
-from app.coder.enums import CoderEventType
-
 
 class LogLevel(StrEnum):
     INFO = "info"
