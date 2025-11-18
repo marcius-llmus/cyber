@@ -11,12 +11,7 @@ async def get_db() -> AsyncIterator[AsyncSession]:
     FastAPI dependency that provides a transactional database session.
     """
     async with sessionmanager.session() as session:
-        try:
-            yield session
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
+        yield session
 
 
 @contextlib.asynccontextmanager

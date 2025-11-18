@@ -12,6 +12,7 @@ class BlueprintService:
 
     @staticmethod
     def _list_blueprints_sync() -> list[Blueprint]:
+        """I was not able to find async interface for OS lol"""
         root_dir = settings.BLUEPRINTS_ROOT_DIR
         if not os.path.isdir(root_dir):
             os.makedirs(root_dir, exist_ok=True)
@@ -21,5 +22,6 @@ class BlueprintService:
         for name in sorted(os.listdir(root_dir)):
             path = os.path.join(root_dir, name)
             if os.path.isdir(path):
+                # this replace is required to show relative only
                 blueprints.append(Blueprint(name=name, path=path.replace(f"{root_dir}/", "")))
         return blueprints

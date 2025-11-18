@@ -65,6 +65,7 @@ class LLMFactory:
         """Returns a list of all registered LLM instances."""
         return list(self._MODEL_REGISTRY.values())
 
+    # todo: maybe cache by frontend session, passing session as arg as every session should be its own llm client?
     @alru_cache
     async def get_client(self, model_name: LLMModel, temperature: float, api_key: str) -> Union[OpenAI, Anthropic, GoogleGenAI]:
         """
