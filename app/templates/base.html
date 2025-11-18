@@ -191,11 +191,11 @@
         {% include "layout/right_sidebar.html" %}
     </main>
 
-    {% include "settings/partials/modal.html" %}
-    {% include "projects/partials/modal.html" %}
-    {% include "prompts/partials/modal.html" %}
-    {% include "context/partials/file_selection_modal.html" %}
-    {% include "history/partials/modal.html" %}
+    {% include "settings/settings_modal.html" %}
+    {% include "projects/projects_modal.html" %}
+    {% include "prompts/prompts_modal.html" %}
+    {% include "history/history_modal.html" %}
+    {% include "context/context_file_selection_modal.html" %}
 
     {% include "components/alerts/toast.html" %}
 
@@ -214,78 +214,13 @@
             });
         }
 
-        function createNewPrompt() {
-            // This function will now trigger an htmx request to get the form
-            let target, url;
-            if (currentPromptTab === 'global') {
-                target = '#global-prompt-list-container';
-                url = '/prompts/new/global';
-            } else if (currentPromptTab === 'project') {
-                // Check if the specific "no active project" message exists.
-                if (document.getElementById('no-active-project-message')) {
-                    return;
-                }
-                target = '#project-prompt-list-container';
-                url = '/prompts/new/project';
-            } else {
-                return; // Do nothing for 'from_path' tab
-            }
-
-            if (document.getElementById('prompt-form-container')) {
-                return;
-            }
-
-            htmx.ajax('GET', url, { target: target, swap: 'afterbegin' });
-        }
-
         function clearHistory() {
             addLog('History cleared', 'blue');
-            closeHistoryModal();
-        }
-
-        function openSettingsModal() {
-            document.getElementById('settings-modal').classList.add('active');
-        }
-
-        function closeSettingsModal() {
-            document.getElementById('settings-modal').classList.remove('active');
+            document.getElementById('history-modal').classList.remove('active');
         }
 
         function saveSettings() {
             addLog('Settings saved successfully', 'green');
-        }
-
-        function openProjectModal() {
-            document.getElementById('project-modal').classList.add('active');
-        }
-
-        function closeProjectModal() {
-            document.getElementById('project-modal').classList.remove('active');
-        }
-
-        function openPromptModal() {
-            document.getElementById('prompt-modal').classList.add('active');
-        }
-
-        function closePromptModal() {
-            document.getElementById('prompt-modal').classList.remove('active');
-        }
-
-        function openFileSelectionModal() {
-            document.getElementById('file-selection-modal').classList.add('active');
-            initializeFileTree();
-        }
-
-        function closeFileSelectionModal() {
-            document.getElementById('file-selection-modal').classList.remove('active');
-        }
-
-        function openHistoryModal() {
-            document.getElementById('history-modal').classList.add('active');
-        }
-
-        function closeHistoryModal() {
-            document.getElementById('history-modal').classList.remove('active');
         }
 
         function initializeFileTree() {
@@ -356,10 +291,13 @@
 
             const logEntry = document.createElement('div');
             logEntry.className = `p-2 rounded-md bg-dark-card hover:bg-dark-light border-l-2 border-${color}-500 my-1 text-xs`;
-            logEntry.innerHTML = `
-                <div class="text-gray-300">${message}</div>
-                <div class="text-gray-500 text-[10px] mt-0.5">${new Date().toLocaleTimeString()}</div>
-            `;
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'text-gray-300';
+            messageDiv.textContent = message;
+            const timestampDiv = document.createElement('div');
+            timestampDiv.className = 'text-gray-500 text-[10px] mt-0.5';
+            timestampDiv.textContent = new Date().toLocaleTimeString();
+            logEntry.append(messageDiv, timestampDiv);
             logsContainer.insertBefore(logEntry, logsContainer.firstChild);
 
             if (logsContainer.children.length > 30) {
@@ -390,6 +328,29 @@
                 }
             }));
         });
+
+        document.body.addEventListener('click', function(event) {
+            const openButton = event.target.closest('[data-modal-open]');
+            const closeButton = event.target.closest('[data-modal-close]');
+
+            if (openButton) {
+                const modalId = openButton.getAttribute('data-modal-open');
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    modal.classList.add('active');
+                    if (modalId === 'file-selection-modal') {
+                        initializeFileTree();
+                    }
+                }
+            } else if (closeButton) {
+                const modal = closeButton.closest('.modal-overlay');
+                if (modal) {
+                    modal.classList.remove('active');
+                }
+            }
+        });
+
+
     </script>
 </body>
 </html>

@@ -21,7 +21,7 @@ router = APIRouter()
 async def redirect_to_session(
     chat_service: ChatService = Depends(get_chat_service),
 ):
-    session = chat_service.get_or_create_active_session()
+    session = await chat_service.get_or_create_active_session()
     return RedirectResponse(url=f"session/{session.id}")
 
 
@@ -33,8 +33,8 @@ async def read_session(
     history_service: HistoryService = Depends(get_history_service),
 ):
     try:
-        history_service.set_active_session(session_id=session_id)
-        page_data = page_service.get_main_page_data(session_id=session_id)
+        await history_service.set_active_session(session_id=session_id)
+        page_data = await page_service.get_main_page_data(session_id=session_id)
         return templates.TemplateResponse(
             "chat/pages/main.html", {"request": request, **page_data}
         )

@@ -1,13 +1,13 @@
 import logging
 from decimal import Decimal
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 logger = logging.getLogger(__name__)
 
 
-def initialize_application_settings(db: Session) -> None:
+async def initialize_application_settings(db: AsyncSession) -> None:
     """
     Checks if application settings exist. If not, creates default settings.
     This should be called once at application startup.
@@ -21,7 +21,7 @@ def initialize_application_settings(db: Session) -> None:
 
 
     settings_repo = SettingsRepository(db)
-    existing_settings = settings_repo.get(pk=1)
+    existing_settings = await settings_repo.get(pk=1)
 
     if existing_settings:
         logger.info("Application settings already initialized.")
@@ -32,11 +32,11 @@ def initialize_application_settings(db: Session) -> None:
     # Use repository directly for seeding to avoid service-layer exceptions on not-found.
     llm_settings_repo = LLMSettingsRepository(db)
     llm_factory = LLMFactory()
-    all_llms = llm_factory.get_all_llms()
+    all_llms = await llm_factory.get_all_llms()
     for llm in all_llms:
-        existing_llm_setting = llm_settings_repo.get_by_model_name(llm.model_name)
+        existing_llm_setting = await llm_settings_repo.get_by_model_name(llm.model_name)
         if not existing_llm_setting:
-            llm_settings_repo.create(
+            await llm_settings_repo.create(
                 LLMSettingsCreate(
                     model_name=llm.model_name,
                     provider=llm.provider,
@@ -46,12 +46,12 @@ def initialize_application_settings(db: Session) -> None:
             )
 
     # Set the default coding LLM for the main settings
-    default_llm = llm_settings_repo.get_by_model_name(LLMModel.GPT_4_1)
+    default_llm = await llm_settings_repo.get_by_model_name(LLMModel.GPT_4_1)
     if not default_llm:
         # This should be unreachable if the factory contains GPT_4_1, but it's a safe fallback.
         raise RuntimeError("Default LLM model GPT-4.1 not found after seeding. Check llms.factory._MODEL_REGISTRY.")
 
-    settings_repo.create(
+    await settings_repo.create(
         SettingsCreate(
             operational_mode=OperationalMode.CODE,
             coding_mode=CodingMode.AGENT,
@@ -62,5 +62,5 @@ def initialize_application_settings(db: Session) -> None:
             coding_llm_settings_id=default_llm.id,
         )
     )
-    db.commit()
+    await db.commit()
     logger.info("Application settings initialized successfully.")

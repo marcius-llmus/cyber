@@ -14,10 +14,7 @@
                 <span class="text-xs">Clear</span>
             </button>
             <button
-                onclick="openFileSelectionModal()"
-                hx-get="/context/file-tree"
-                hx-target="#file-tree"
-                hx-swap="innerHTML"
+                data-modal-open="file-selection-modal"
                 class="text-gray-400 hover:text-green-400 px-2 py-1 rounded hover:bg-dark-light flex items-center transition-colors" title="Add"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">

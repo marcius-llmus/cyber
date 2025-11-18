@@ -9,6 +9,4 @@ class PromptType(StrEnum):
 
 
 class PromptEventType(StrEnum):
-    GLOBAL_PROMPTS_CHANGED = "globalPromptsChanged"
-    PROJECT_PROMPTS_CHANGED = "projectPromptsChanged"
     BLUEPRINTS_CHANGED = "refreshBlueprints"

@@ -1,5 +1,5 @@
 from fastapi import Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.commons.dependencies import get_db
 from app.llms.dependencies import get_llm_factory
@@ -12,21 +12,21 @@ from app.settings.services import (
 )
 
 
-def get_llm_settings_repository(db: Session = Depends(get_db)) -> LLMSettingsRepository:
+async def get_llm_settings_repository(db: AsyncSession = Depends(get_db)) -> LLMSettingsRepository:
     return LLMSettingsRepository(db=db)
 
 
-def get_settings_repository(db: Session = Depends(get_db)) -> SettingsRepository:
+async def get_settings_repository(db: AsyncSession = Depends(get_db)) -> SettingsRepository:
     return SettingsRepository(db=db)
 
 
-def get_llm_settings_service(
+async def get_llm_settings_service(
     llm_settings_repo: LLMSettingsRepository = Depends(get_llm_settings_repository),
 ) -> LLMSettingsService:
     return LLMSettingsService(llm_settings_repo=llm_settings_repo)
 
 
-def get_settings_service(
+async def get_settings_service(
     settings_repo: SettingsRepository = Depends(get_settings_repository),
     llm_settings_service: LLMSettingsService = Depends(get_llm_settings_service),
     llm_factory: LLMFactory = Depends(get_llm_factory),
@@ -38,7 +38,7 @@ def get_settings_service(
     )
 
 
-def get_settings_page_service(
+async def get_settings_page_service(
     settings_service: SettingsService = Depends(get_settings_service),
     llm_factory: LLMFactory = Depends(get_llm_factory),
 ) -> SettingsPageService:

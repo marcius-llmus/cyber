@@ -13,9 +13,12 @@ class Project(Base):
     is_active = Column(Boolean, nullable=False, default=False)
 
     chat_sessions = relationship(
-        "ChatSession", back_populates="project", cascade="all, delete-orphan"
+        "ChatSession", back_populates="project", cascade="all, delete-orphan", lazy="selectin"
     )
-    prompts = relationship("Prompt", back_populates="project")
+    prompts = relationship("Prompt", back_populates="project", lazy="selectin")
     prompt_attachments = relationship(
-        "ProjectPromptAttachment", back_populates="project", cascade="all, delete-orphan"
+        "ProjectPromptAttachment",
+        back_populates="project",
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )

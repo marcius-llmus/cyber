@@ -1,5 +1,5 @@
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.commons.repositories import BaseRepository
 from app.projects.exceptions import MultipleActiveProjectsException
@@ -9,14 +9,29 @@ from app.projects.models import Project
 class ProjectRepository(BaseRepository[Project]):
     model = Project
 
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         super().__init__(db)
 
-    def list(self) -> list[Project]:
-        return list(self.db.execute(select(self.model).order_by(self.model.name)).scalars().all())
+    async def list(self) -> list[Project]:
+        result = await self.db.execute(select(self.model).order_by(self.model.name))
+        return list(result.scalars().all())
 
-    def get_active(self) -> Project | None:
-        active_projects = self.db.execute(select(self.model).where(self.model.is_active)).scalars().all()
+    async def get_active(self) -> Project | None:
+        active_projects = list((await self.db.execute(select(self.model).where(self.model.is_active))).scalars().all())
         if len(active_projects) > 1:
             raise MultipleActiveProjectsException("Multiple active projects found.")
         return active_projects[0] if active_projects else None
+
+    async def activate(self, project: Project) -> Project:
+        project.is_active = True
+        self.db.add(project)
+        await self.db.flush()
+        await self.db.refresh(project)
+        return project
+
+    async def deactivate(self, project: Project) -> Project:
+        project.is_active = False
+        self.db.add(project)
+        await self.db.flush()
+        await self.db.refresh(project)
+        return project

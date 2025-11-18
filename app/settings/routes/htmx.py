@@ -14,18 +14,18 @@ from app.settings.services import SettingsPageService, SettingsService
 router = APIRouter()
 
 
-@router.get("/", response_class=HTMLResponse)
-async def get_settings_modal(
+@router.get("/form", response_class=HTMLResponse)
+async def get_settings_form(
     request: Request,
     service: SettingsPageService = Depends(get_settings_page_service),
 ):
     try:
-        page_data = service.get_settings_page_data()
+        page_data = await service.get_settings_page_data()
     except SettingsNotFoundException as e:
         # This is a server error, as settings should always be initialized
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
     return templates.TemplateResponse(
-        "settings/partials/modal_content.html", {"request": request, **page_data}
+        "settings/partials/settings_form.html", {"request": request, **page_data}
     )
 
 
@@ -35,7 +35,7 @@ async def get_api_key_input(
     model_name: str = Query(..., alias="coding_llm_settings.model_name"),
     service: SettingsPageService = Depends(get_settings_page_service),
 ):
-    context = service.get_api_key_input_data(model_name)
+    context = await service.get_api_key_input_data(model_name)
     return templates.TemplateResponse(
         "settings/partials/api_key_input.html",
         {"request": request, **context},
@@ -49,7 +49,7 @@ async def update_settings(
     service: SettingsService = Depends(get_settings_service),
 ):
     try:
-        service.update_settings(settings_in=settings_in)
+        await service.update_settings(settings_in=settings_in)
         return Response(status_code=status.HTTP_204_NO_CONTENT, headers={"HX-Trigger": "settingsSaved"})
     except (SettingsNotFoundException, LLMSettingsNotFoundException) as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

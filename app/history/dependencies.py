@@ -1,5 +1,5 @@
 from fastapi import Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.commons.dependencies import get_db
 from app.projects.dependencies import get_project_service
@@ -8,18 +8,18 @@ from app.history.repositories import ChatSessionRepository
 from app.history.services import HistoryPageService, HistoryService
 
 
-def get_session_repository(db: Session = Depends(get_db)) -> ChatSessionRepository:
+async def get_session_repository(db: AsyncSession = Depends(get_db)) -> ChatSessionRepository:
     return ChatSessionRepository(db=db)
 
 
-def get_history_service(
+async def get_history_service(
     repo: ChatSessionRepository = Depends(get_session_repository),
     project_service: ProjectService = Depends(get_project_service),
 ) -> HistoryService:
     return HistoryService(session_repo=repo, project_service=project_service)
 
 
-def get_history_page_service(
+async def get_history_page_service(
     history_service: HistoryService = Depends(get_history_service),
     project_service: ProjectService = Depends(get_project_service),
 ) -> HistoryPageService:

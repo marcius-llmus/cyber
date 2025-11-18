@@ -1,0 +1,15 @@
+{% if prompt %}
+    {% include "prompts/partials/blueprint_prompt_item.html" %}
+{% else %}
+    <div class="space-y-2">
+        {% if blueprints %}
+            {% for blueprint in blueprints %}
+                {% include "prompts/partials/blueprint_item.html" %}
+            {% endfor %}
+        {% else %}
+            <div class="text-xs text-gray-500 text-center py-6">No blueprints found</div>
+        {% endif %}
+    </div>
+{% endif %}
+
+<button id="new-prompt-btn" hx-swap-oob="true" style="display: none;"></button>

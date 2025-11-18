@@ -14,5 +14,5 @@ async def get_file_tree(
     request: Request,
     service: ContextPageService = Depends(get_context_page_service),
 ):
-    page_data = service.get_file_tree_page_data()
+    page_data = await service.get_file_tree_page_data()
     return page_data

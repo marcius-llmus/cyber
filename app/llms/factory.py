@@ -1,5 +1,6 @@
-from functools import lru_cache
 from typing import Union
+
+from async_lru import alru_cache
 
 from llama_index.llms.anthropic import Anthropic
 from llama_index.llms.google_genai import GoogleGenAI
@@ -53,19 +54,19 @@ class LLMFactory:
         ),
     }
 
-    def get_llm(self, model_name: LLMModel) -> LLM:
+    async def get_llm(self, model_name: LLMModel) -> LLM:
         """
         Retrieves an LLM instance from the registry.
         Raises KeyError if the model is not found.
         """
         return self._MODEL_REGISTRY[model_name]
 
-    def get_all_llms(self) -> list[LLM]:
+    async def get_all_llms(self) -> list[LLM]:
         """Returns a list of all registered LLM instances."""
         return list(self._MODEL_REGISTRY.values())
 
-    @lru_cache
-    def get_client(self, model_name: LLMModel, temperature: float, api_key: str) -> Union[OpenAI, Anthropic, GoogleGenAI]:
+    @alru_cache
+    async def get_client(self, model_name: LLMModel, temperature: float, api_key: str) -> Union[OpenAI, Anthropic, GoogleGenAI]:
         """
         Retrieves an initialized LlamaIndex LLM client for the given model name.
         This method is cached to avoid re-creating clients with the same configuration.

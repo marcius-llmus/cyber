@@ -33,11 +33,7 @@
 
             <div class="pt-2 border-t border-dark-light space-y-2">
                 <button
-                    hx-get="/settings/"
-                    hx-target="#settings-modal-content"
-                    hx-swap="outerHTML"
-                    hx-trigger="click"
-                    onclick="openSettingsModal()"
+                    data-modal-open="settings-modal"
                     class="w-full text-left px-4 py-3 rounded-lg bg-dark-card hover:bg-dark-light border border-dark-light text-sm flex items-center text-gray-300">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -47,10 +43,7 @@
                 </button>
 
                 <button
-                    hx-get="/projects/"
-                    hx-target="#project-list-container"
-                    hx-swap="innerHTML"
-                    onclick="openProjectModal()"
+                    data-modal-open="project-modal"
                     class="w-full text-left px-4 py-3 rounded-lg bg-dark-card hover:bg-dark-light border border-dark-light text-sm flex items-center text-gray-300"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -60,11 +53,7 @@
                 </button>
 
                 <button
-                    hx-get="/prompts/"
-                    hx-target="#prompt-modal-content"
-                    hx-swap="outerHTML"
-                    hx-trigger="click"
-                    onclick="openPromptModal()"
+                    data-modal-open="prompt-modal"
                     class="w-full text-left px-4 py-3 rounded-lg bg-dark-card hover:bg-dark-light border border-dark-light text-sm flex items-center text-gray-300"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -74,10 +63,7 @@
                 </button>
 
                 <button
-                    hx-get="/history/?active_session_id={{ session.id if session else '' }}"
-                    hx-target="#history-list-container"
-                    hx-swap="innerHTML"
-                    onclick="openHistoryModal()"
+                    data-modal-open="history-modal"
                     class="w-full text-left px-4 py-3 rounded-lg bg-dark-card hover:bg-dark-light border border-dark-light text-sm flex items-center text-gray-300"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">

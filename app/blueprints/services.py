@@ -1,4 +1,5 @@
 import os
+import asyncio
 
 from app.core.config import settings
 from app.blueprints.schemas import Blueprint
@@ -6,7 +7,11 @@ from app.blueprints.schemas import Blueprint
 
 class BlueprintService:
     @staticmethod
-    def list_blueprints() -> list[Blueprint]:
+    async def list_blueprints() -> list[Blueprint]:
+        return await asyncio.to_thread(BlueprintService._list_blueprints_sync)
+
+    @staticmethod
+    def _list_blueprints_sync() -> list[Blueprint]:
         root_dir = settings.BLUEPRINTS_ROOT_DIR
         if not os.path.isdir(root_dir):
             os.makedirs(root_dir, exist_ok=True)

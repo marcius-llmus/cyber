@@ -15,7 +15,7 @@ async def get_project_list(
     request: Request,
     service: ProjectPageService = Depends(get_project_page_service),
 ):
-    page_data = service.get_projects_page_data()
+    page_data = await service.get_projects_page_data()
     return page_data
 
 
@@ -27,7 +27,7 @@ async def set_active_project(
     service: ProjectService = Depends(get_project_service),
 ):
     try:
-        projects = service.set_active_project(project_id=project_id)
+        projects = await service.set_active_project(project_id=project_id)
         return {"projects": projects}
     except ProjectNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

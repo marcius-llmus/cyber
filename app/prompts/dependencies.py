@@ -1,5 +1,5 @@
 from fastapi import Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.commons.dependencies import get_db
 from app.blueprints.dependencies import get_blueprint_service
@@ -10,18 +10,18 @@ from app.prompts.repositories import PromptRepository
 from app.prompts.services import PromptPageService, PromptService
 
 
-def get_prompt_repository(db: Session = Depends(get_db)) -> PromptRepository:
+async def get_prompt_repository(db: AsyncSession = Depends(get_db)) -> PromptRepository:
     return PromptRepository(db=db)
 
 
-def get_prompt_service(
+async def get_prompt_service(
     repo: PromptRepository = Depends(get_prompt_repository),
     project_service: ProjectService = Depends(get_project_service),
 ) -> PromptService:
     return PromptService(prompt_repo=repo, project_service=project_service)
 
 
-def get_prompt_page_service(
+async def get_prompt_page_service(
     prompt_service: PromptService = Depends(get_prompt_service),
     project_service: ProjectService = Depends(get_project_service),
     blueprint_service: BlueprintService = Depends(get_blueprint_service),

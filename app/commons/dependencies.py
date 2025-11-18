@@ -1,30 +1,28 @@
-from sqlalchemy.orm import Session
-from app.core.db import engine
-from contextlib import contextmanager
+import contextlib
+from typing import AsyncIterator
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.db import sessionmanager
 
 
-def get_db():
+async def get_db() -> AsyncIterator[AsyncSession]:
     """
     FastAPI dependency that provides a transactional database session.
     """
-    with Session(engine) as session:
+    async with sessionmanager.session() as session:
         try:
             yield session
-            session.commit()
+            await session.commit()
         except Exception:
-            session.rollback()
+            await session.rollback()
             raise
 
 
-@contextmanager
-def db_session_manager():
+@contextlib.asynccontextmanager
+async def db_session_manager() -> AsyncIterator[AsyncSession]:
     """
     Context manager for a transactional database session, for use in non-request contexts like WebSockets.
     """
-    with Session(engine) as session:
-        try:
-            yield session
-            session.commit()
-        except Exception:
-            session.rollback()
-            raise
+    async with sessionmanager.session() as session:
+        yield session

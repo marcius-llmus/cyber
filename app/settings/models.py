@@ -26,7 +26,9 @@ class Settings(Base):
     ast_token_limit = Column(Integer, nullable=False)
     coding_llm_settings_id = Column(Integer, ForeignKey("llm_settings.id"), nullable=False)
 
-    coding_llm_settings = relationship("LLMSettings", foreign_keys="Settings.coding_llm_settings_id")
+    coding_llm_settings = relationship(
+        "LLMSettings", foreign_keys="Settings.coding_llm_settings_id", lazy="selectin"
+    )
 
 
 class LLMSettings(Base):

@@ -19,35 +19,35 @@ class ChatService:
         self.history_service = history_service
         self.project_service = project_service
 
-    def get_or_create_active_session(self) -> ChatSession:
-        active_project = self.project_service.project_repo.get_active()
+    async def get_or_create_active_session(self) -> ChatSession:
+        active_project = await self.project_service.project_repo.get_active()
         if not active_project:
             raise ActiveProjectRequiredException("Cannot start a chat without an active project.")
 
-        if session := self.history_service.get_most_recent_session_by_project(project_id=active_project.id):
+        if session := await self.history_service.get_most_recent_session_by_project(project_id=active_project.id):
             return session
 
         session_in = ChatSessionCreate(name="New Session", project_id=active_project.id)
-        return self.history_service.create_session(session_in=session_in)
+        return await self.history_service.create_session(session_in=session_in)
 
-    def add_user_message(self, *, content: str, session_id: int) -> Message:
+    async def add_user_message(self, *, content: str, session_id: int) -> Message:
         message_in = MessageCreate(
             session_id=session_id,
             role=MessageRole.USER,
             content=content,
         )
-        return self.message_repo.create(obj_in=message_in)
+        return await self.message_repo.create(obj_in=message_in)
 
-    def add_ai_message(self, *, content: str, session_id: int) -> Message:
+    async def add_ai_message(self, *, content: str, session_id: int) -> Message:
         message_in = MessageCreate(
             session_id=session_id,
             role=MessageRole.AI,
             content=content,
         )
-        return self.message_repo.create(obj_in=message_in)
+        return await self.message_repo.create(obj_in=message_in)
 
-    def get_session_by_id(self, session_id: int) -> ChatSession:
-        return self.history_service.get_session(session_id=session_id)
+    async def get_session_by_id(self, session_id: int) -> ChatSession:
+        return await self.history_service.get_session(session_id=session_id)
 
-    def get_messages_for_session(self, *, session_id: int) -> list[Message]:
-        return self.history_service.get_messages_by_session(session_id=session_id)
+    async def get_messages_for_session(self, *, session_id: int) -> list[Message]:
+        return await self.history_service.get_messages_by_session(session_id=session_id)

@@ -82,8 +82,8 @@ class WebSocketOrchestrator:
 
                 try:
                     # we get a new session everytime here because wss conn will stay opened
-                    with db_session_manager() as db:
-                        coder_service = get_coder_service_for_ws(db)
+                    async with db_session_manager() as db:  # noqa
+                        coder_service = await get_coder_service_for_ws(db)
 
                         stream = coder_service.handle_user_message(
                             user_message=message.message, session_id=self.session_id

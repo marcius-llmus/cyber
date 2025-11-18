@@ -1,0 +1,67 @@
+{% from "components/modals/base_modal.html" import modal_shell %}
+
+{% set attributes = 'id="prompt-modal-content" x-data="{ currentTab: \'global\' }" x-init="currentTab = currentPromptTab; $watch(\'currentTab\', value => currentPromptTab = value)"' %}
+{% call modal_shell(modal_id='prompt-modal', title='Prompt Configuration', attributes=attributes) %}
+    <div class="px-6 py-3 border-b border-dark-light flex items-center justify-between">
+        <div class="flex">
+            <button class="prompt-tab" :class="{ 'active text-gray-300': currentTab === 'global', 'text-gray-500': currentTab !== 'global' }" @click="currentTab = 'global'">
+                Global Prompts
+            </button>
+            <button class="prompt-tab" :class="{ 'active text-gray-300': currentTab === 'project', 'text-gray-500': currentTab !== 'project' }" @click="currentTab = 'project'">
+                Project Prompts
+            </button>
+            <button class="prompt-tab" :class="{ 'active text-gray-300': currentTab === 'from_blueprint', 'text-gray-500': currentTab !== 'from_blueprint' }" @click="currentTab = 'from_blueprint'">
+                From Blueprint
+            </button>
+        </div>
+    </div>
+
+    <div class="p-6 overflow-y-auto flex-1 modal-scroll-content" style="max-height: calc(75vh - 180px);">
+        <div id="global-prompts" x-show="currentTab === 'global'"
+             hx-get="/prompts/global/list"
+             hx-trigger="intersect"
+             hx-target="#global-prompt-list-container"
+             hx-swap="innerHTML">
+            <div class="space-y-2 min-h-[60px]" id="global-prompt-list-container">
+                 <div class="text-xs text-gray-500 text-center h-[60px] flex items-center justify-center">Loading...</div>
+            </div>
+        </div>
+
+        <div id="project-prompts" x-show="currentTab === 'project'" style="display: none;"
+             hx-get="/prompts/project/list"
+             hx-trigger="intersect"
+             hx-target="#project-prompt-list-container"
+             hx-swap="innerHTML">
+            <div class="space-y-2 min-h-[60px]" id="project-prompt-list-container">
+                 {% if active_project %}
+                    <div class="text-xs text-gray-500 text-center h-[60px] flex items-center justify-center">Loading...</div>
+                {% else %}
+                    <div id="no-active-project-message" class="text-xs text-gray-500 text-center h-[60px] flex items-center justify-center">Select a project to see project prompts</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div id="from-blueprint-prompts" x-show="currentTab === 'from_blueprint'" style="display: none;"
+             hx-get="/prompts/blueprint/list"
+             hx-trigger="intersect, {{ PromptEventType.BLUEPRINTS_CHANGED }} from:body"
+             hx-target="#blueprint-prompt-container"
+             hx-swap="innerHTML">
+            <div id="blueprint-prompt-container">
+                {% if active_project %}
+                    <div class="text-xs text-gray-500 text-center h-[60px] flex items-center justify-center">Loading...</div>
+                {% else %}
+                    <div class="text-xs text-gray-500 text-center py-6">Select a project to generate a blueprint prompt</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="px-6 py-4 border-t border-dark-light flex justify-end space-x-3">
+        <button type="button" data-modal-close class="px-4 py-2 bg-dark-lighter hover:bg-dark-light border border-dark-light rounded-lg text-sm">
+            Close
+        </button>
+        <button id="new-prompt-btn" class="px-4 py-2 bg-primary hover:bg-primary-dark rounded-lg text-sm font-medium text-white" style="display: none;">
+            <!-- Content populated via OOB swap -->
+        </button>
+    </div>
+{% endcall %}
