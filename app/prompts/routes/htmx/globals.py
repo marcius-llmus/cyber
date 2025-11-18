@@ -87,13 +87,13 @@ async def update_global_prompt(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
-@router.delete("/global/{prompt_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/global/{prompt_id}")
 async def delete_global_prompt(
     prompt_id: int,
     service: PromptService = Depends(get_prompt_service),
 ):
     try:
         await service.delete_prompt(prompt_id=prompt_id)
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
+        return Response(status_code=status.HTTP_200_OK)
     except PromptNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
