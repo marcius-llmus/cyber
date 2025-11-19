@@ -15,8 +15,8 @@ from app.coder.schemas import (
     WorkflowErrorEvent,
     WorkflowLogEvent,
 )
-from app.commons.dependencies import db_session_manager
 from app.commons.websockets import WebSocketConnectionManager
+from app.core.db import sessionmanager
 from app.core.templating import templates
 from datetime import datetime
 
@@ -82,7 +82,7 @@ class WebSocketOrchestrator:
 
                 try:
                     # we get a new session everytime here because wss conn will stay opened
-                    async with db_session_manager() as db:  # noqa
+                    async with sessionmanager.session() as db:  # noqa
                         coder_service = await get_coder_service_for_ws(db)
 
                         stream = coder_service.handle_user_message(
