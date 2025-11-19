@@ -1,5 +1,4 @@
 from app.llms.enums import LLMModel, LLMProvider
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.llms.factory import LLMFactory
 from app.settings.exceptions import LLMSettingsAlreadyExistsException

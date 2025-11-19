@@ -9,9 +9,6 @@ from app.history.models import ChatSession, Message
 class ChatSessionRepository(BaseRepository[ChatSession]):
     model = ChatSession
 
-    def __init__(self, db: AsyncSession):
-        super().__init__(db)
-
     async def list_by_project(self, project_id: int) -> list[ChatSession]:
         statement = (
             select(self.model)

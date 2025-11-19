@@ -9,9 +9,6 @@ from app.prompts.enums import PromptType
 class PromptRepository(BaseRepository[Prompt]):
     model = Prompt
 
-    def __init__(self, db: AsyncSession):
-        super().__init__(db)
-
     async def list_global(self) -> list[Prompt]:
         stmt = select(self.model).where(self.model.type == PromptType.GLOBAL).order_by(self.model.name)
         result = await self.db.execute(stmt)

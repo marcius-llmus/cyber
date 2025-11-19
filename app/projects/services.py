@@ -16,7 +16,8 @@ class ProjectService:
         await self._synchronize_projects()
         return await self.project_repo.list()
 
-    def _get_fs_project_paths_sync(self) -> set[str]:
+    @staticmethod
+    def _get_fs_project_paths_sync() -> set[str]:
         root_dir = settings.PROJECTS_ROOT_DIR
         if not os.path.isdir(root_dir):
             os.makedirs(root_dir, exist_ok=True)
