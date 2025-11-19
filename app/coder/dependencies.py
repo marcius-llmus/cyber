@@ -16,7 +16,7 @@ from app.settings.dependencies import (
 )
 from app.usage.dependencies import get_usage_page_service, get_usage_service
 from app.usage.services import UsagePageService
-from app.workflows.dependencies import get_workflow_factory
+from app.agents.dependencies import get_workflow_factory
 
 
 async def get_coder_page_service(

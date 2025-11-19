@@ -4,7 +4,7 @@ from typing import AsyncGenerator
 
 from llama_index.core.agent import AgentStream, ToolCall, ToolCallResult
 from llama_index.core.llms import ChatMessage
-from workflows import Context
+from llama_index.core.workflow import Context
 
 from app.chat.services import ChatService
 from app.coder.schemas import (
@@ -18,7 +18,7 @@ from app.coder.schemas import (
 from app.history.enums import HistoryEventType
 from app.usage.services import UsageService, UsagePageService
 from app.prompts.enums import PromptEventType
-from app.workflows.factory import WorkflowFactory
+from app.agents.factory import WorkflowFactory
 
 
 logger = logging.getLogger(__name__)
