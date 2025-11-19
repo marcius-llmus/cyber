@@ -5,11 +5,11 @@ class ContextService:
     def __init__(self, project_service: ProjectService):
         self.project_service = project_service
 
-    def get_project_file_tree(self) -> dict:
+    async def get_project_file_tree(self) -> dict:
         # This is a placeholder. In a real scenario, this service would
         # scan the active project's directory, respect .gitignore, and
         # build a tree structure.
-        active_project = self.project_service.project_repo.get_active()
+        active_project = await self.project_service.project_repo.get_active()
         if not active_project:
             return {}
 
@@ -36,6 +36,6 @@ class ContextPageService:
     def __init__(self, context_service: ContextService):
         self.context_service = context_service
 
-    def get_file_tree_page_data(self) -> dict:
-        file_tree = self.context_service.get_project_file_tree()
+    async def get_file_tree_page_data(self) -> dict:
+        file_tree = await self.context_service.get_project_file_tree()
         return {"file_tree": file_tree}

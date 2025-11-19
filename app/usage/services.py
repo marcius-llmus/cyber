@@ -13,7 +13,7 @@ class UsageService:
         self.cost_per_input_token = 0.00000035  # $0.35 / 1M tokens
         self.cost_per_output_token = 0.00000053  # $0.53 / 1M tokens
 
-    def add_llm_usage(self, input_tokens: int, output_tokens: int) -> SessionMetrics:
+    async def add_llm_usage(self, input_tokens: int, output_tokens: int) -> SessionMetrics:
         """Adds LLM token usage and recalculates the total cost."""
         cost = (input_tokens * self.cost_per_input_token) + (
             output_tokens * self.cost_per_output_token
@@ -21,9 +21,9 @@ class UsageService:
         self._total_cost += cost
         self._input_tokens += input_tokens
         self._output_tokens += output_tokens
-        return self.get_session_metrics()
+        return await self.get_session_metrics()
 
-    def get_session_metrics(self) -> SessionMetrics:
+    async def get_session_metrics(self) -> SessionMetrics:
         return SessionMetrics(
             session_cost=self._total_cost,
             input_tokens=self._input_tokens,
@@ -35,6 +35,6 @@ class UsagePageService:
     def __init__(self, usage_service: UsageService):
         self.usage_service = usage_service
 
-    def get_session_metrics_page_data(self) -> dict:
-        metrics = self.usage_service.get_session_metrics()
+    async def get_session_metrics_page_data(self) -> dict:
+        metrics = await self.usage_service.get_session_metrics()
         return {"metrics": metrics.model_dump()}

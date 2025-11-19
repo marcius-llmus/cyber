@@ -13,13 +13,13 @@ class WorkflowFactory:
 
     async def create_function_agent(self, tools: list[BaseTool]) -> FunctionAgent:
         """Creates a FunctionAgent with the currently configured LLM."""
-        settings = self.settings_service.get_settings()
+        settings = await self.settings_service.get_settings()
         llm_model = LLMModel(settings.coding_llm_settings.model_name)
-        llm_metadata = self.llm_factory.get_llm(llm_model)
-        api_key = self.settings_service.llm_settings_service.get_api_key_for_provider(
+        llm_metadata = await self.llm_factory.get_llm(llm_model)
+        api_key = await self.settings_service.llm_settings_service.get_api_key_for_provider(
             llm_metadata.provider
         )
-        llm = self.llm_factory.get_client(
+        llm = await self.llm_factory.get_client(
             model_name=llm_model,
             temperature=settings.coding_llm_temperature,
             api_key=api_key,

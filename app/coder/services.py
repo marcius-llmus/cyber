@@ -15,7 +15,9 @@ from app.coder.schemas import (
     WorkflowLogEvent,
     LogLevel,
 )
+from app.history.enums import HistoryEventType
 from app.usage.services import UsageService, UsagePageService
+from app.prompts.enums import PromptEventType
 from app.workflows.factory import WorkflowFactory
 
 
@@ -48,7 +50,7 @@ class CoderService:
         self, *, user_message: str, session_id: int
     ) -> AsyncGenerator[CoderEvent, None]:
         try:
-            self.chat_service.add_user_message(session_id=session_id, content=user_message)
+            await self.chat_service.add_user_message(session_id=session_id, content=user_message)
 
             handler = await self._get_workflow_handler(user_message, session_id)
 
@@ -58,7 +60,7 @@ class CoderService:
 
             # Await the handler to get the final result and ensure completion.
             llm_full_response = await handler
-            self.chat_service.add_ai_message(session_id=session_id, content=str(llm_full_response))
+            await self.chat_service.add_ai_message(session_id=session_id, content=str(llm_full_response))
 
             yield AIMessageCompletedEvent(
                 message=str(llm_full_response)
@@ -78,7 +80,7 @@ class CoderService:
         return None
 
     async def _build_chat_history(self, session_id: int) -> list[ChatMessage]:
-        db_messages = self.chat_service.get_messages_for_session(session_id=session_id)
+        db_messages = await self.chat_service.get_messages_for_session(session_id=session_id)
 
         chat_history = [
             ChatMessage(role=msg.role, content=msg.content) for msg in db_messages
@@ -127,12 +129,15 @@ class CoderPageService:
         self.usage_page_service = usage_page_service
         self.chat_service = chat_service
 
-    def get_main_page_data(self, session_id: int) -> dict:
+    async def get_main_page_data(self, session_id: int) -> dict:
         """Aggregates data from various services for the main page view."""
-        usage_data = self.usage_page_service.get_session_metrics_page_data()
-        session = self.chat_service.get_session_by_id(session_id=session_id)
+        usage_data = await self.usage_page_service.get_session_metrics_page_data()
+        session = await self.chat_service.get_session_by_id(session_id=session_id)
         return {
             **usage_data,
             "session": session,
             "messages": session.messages,
+            "PromptEventType": PromptEventType,
+            "HistoryEventType": HistoryEventType,
+            "active_project": session.project,
         }

@@ -1,0 +1,38 @@
+{% from "components/modals/base_modal.html" import modal_shell %}
+
+{% call modal_shell(modal_id='file-selection-modal', title='Add Context Files') %}
+    <div class="px-6 py-3 border-b border-dark-light flex items-center justify-between">
+        <div class="flex space-x-2">
+            <button onclick="expandAllFolders()" class="px-3 py-1 text-xs bg-dark-lighter hover:bg-dark-light rounded text-gray-300">
+                Expand All
+            </button>
+            <button onclick="collapseAllFolders()" class="px-3 py-1 text-xs bg-dark-lighter hover:bg-dark-light rounded text-gray-300">
+                Collapse All
+            </button>
+        </div>
+        <input type="text" id="file-search" placeholder="Search files..." class="bg-dark-lighter border border-dark-light rounded-lg px-3 py-1 text-sm w-64">
+    </div>
+
+    <div class="flex-1 overflow-y-auto p-6 modal-scroll-content" style="max-height: calc(75vh - 200px);">
+        <ul class="space-y-1" id="file-tree"
+            hx-get="/context/file-tree"
+            hx-trigger="intersect"
+            hx-swap="innerHTML"
+        >
+            <div class="text-xs text-gray-500 text-center py-6">Loading file tree...</div>
+        </ul>
+    </div>
+
+    <div class="px-6 py-4 border-t border-dark-light flex justify-end space-x-3">
+        <button type="button" data-modal-close class="px-4 py-2 bg-dark-lighter hover:bg-dark-light border border-dark-light rounded-lg text-sm">
+            Cancel
+        </button>
+        <button class="px-4 py-2 bg-primary hover:bg-primary-dark rounded-lg text-sm font-medium text-white"
+                hx-post="/context/files/list"
+                hx-include="[name='filepaths']"
+                hx-target="#context-files-container"
+                hx-swap="innerHTML">
+                Add to Context
+            </button>
+    </div>
+{% endcall %}

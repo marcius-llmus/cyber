@@ -1,15 +1,14 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
-from sqlalchemy.orm import Session
 from app.commons.fastapi_htmx import htmx_init
 
+from app.core.db import sessionmanager
 from app.coder.routes.htmx import router as coder_htmx_router
 from app.chat.routes.htmx import router as chat_htmx_router
-from app.core.db import engine
 from app.core.templating import templates
 from app.projects.routes.htmx import router as projects_htmx_router
 from app.context.routes.htmx import router as context_htmx_router
@@ -17,15 +16,25 @@ from app.history.routes.htmx import router as history_htmx_router
 from app.prompts.routes.htmx import router as prompts_htmx_router
 from app.settings.routes.htmx import router as settings_htmx_router
 from app.settings.utils import initialize_application_settings
+from app.core.config import settings
+
+
+logging.basicConfig(
+    level=settings.LOG_LEVEL,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI): # noqa
     """
     Ensures that the default application settings are created on startup.
     """
-    with Session(engine) as session:
-        initialize_application_settings(session)
+    async with sessionmanager.session() as session:
+        await initialize_application_settings(session)
     yield
+    await sessionmanager.cleanup()
+
 
 app = FastAPI(lifespan=lifespan)
 

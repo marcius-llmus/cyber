@@ -1,19 +1,33 @@
-<div id="prompt-form-container" class="p-4 bg-dark-lighter rounded-md border-l-2 border-primary">
+<div class="prompt-form-container p-4 bg-dark-lighter rounded-md border-l-2 border-primary">
     <form
         {% if prompt %}
             hx-put="/prompts/{{ prompt.type.value }}/{{ prompt.id }}"
+            hx-target="closest .prompt-form-container"
+            hx-swap="outerHTML"
         {% else %}
             hx-post="/prompts/{{ prompt_type }}"
+            hx-target="closest .space-y-2"
+            hx-swap="afterbegin"
+            hx-on::after-request="this.closest('.prompt-form-container').remove()"
         {% endif %}
         hx-ext="form-json"
-        hx-on::after-request="htmx.find('#prompt-form-container').remove()"
     >
         <div class="space-y-3">
             <input type="text" name="name" placeholder="Prompt Name" value="{{ prompt.name if prompt else '' }}" class="w-full bg-dark-card border border-dark-light rounded-lg px-3 py-2 text-sm" required>
             <textarea name="content" placeholder="Prompt Content..." rows="4" class="w-full bg-dark-card border border-dark-light rounded-lg px-3 py-2 text-sm" required>{{ prompt.content if prompt else '' }}</textarea>
 
             <div class="flex justify-end space-x-2">
-                <button type="button" onclick="htmx.find('#prompt-form-container').remove()" class="px-3 py-1 bg-dark-light hover:bg-dark-light border border-dark-light rounded-lg text-xs">Cancel</button>
+                <button type="button" class="px-3 py-1 bg-dark-light hover:bg-dark-light border border-dark-light rounded-lg text-xs"
+                    data-action="restore-prompt-state"
+                    {% if prompt %}
+                        hx-get="/prompts/{{ prompt.type.value }}/{{ prompt.id }}/view"
+                        hx-target="closest .prompt-form-container"
+                        hx-swap="outerHTML"
+                    {% else %}
+                        onclick="this.closest('.prompt-form-container').remove()"
+                    {% endif %}>
+                    Cancel
+                </button>
                 <button type="submit" class="px-3 py-1 bg-primary hover:bg-primary-dark rounded-lg text-xs font-medium text-white">{{ 'Save' if prompt else 'Create' }}</button>
             </div>
         </div>

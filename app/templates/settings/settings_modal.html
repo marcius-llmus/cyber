@@ -1,0 +1,30 @@
+{% from "components/modals/base_modal.html" import modal_shell %}
+
+{% call modal_shell(modal_id='settings-modal', title='Settings', attributes='id="settings-modal-content"') %}
+    <form
+        id="settings-form"
+        hx-post="/settings/"
+        hx-target="#settings-form-container"
+        hx-ext="form-json"
+        hx-swap="innerHTML"
+    >
+        <div id="settings-form-container"
+             class="min-h-[200px]"
+             hx-get="/settings/form"
+             hx-trigger="intersect, settingsSaved from:body"
+             hx-swap="innerHTML">
+            <div class="p-6 overflow-y-auto flex-1 modal-scroll-content" style="max-height: calc(75vh - 140px);">
+                 <div class="text-xs text-gray-500 text-center h-[60px] flex items-center justify-center">Loading...</div>
+            </div>
+        </div>
+
+        <div class="px-6 py-4 border-t border-dark-light flex justify-end space-x-3">
+            <button type="button" data-modal-close class="px-4 py-2 bg-dark-lighter hover:bg-dark-light border border-dark-light rounded-lg text-sm">
+                Cancel
+            </button>
+            {% set text = "Save Changes" %}
+            {% set button_class = "py-2 bg-primary hover:bg-primary-dark rounded-lg text-sm font-medium text-white w-[130px] h-9 flex items-center justify-center" %}
+            {% include "components/buttons/submit_with_spinner.html" %}
+        </div>
+    </form>
+{% endcall %}

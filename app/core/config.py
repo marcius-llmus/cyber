@@ -2,6 +2,7 @@ from pathlib import Path
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from app.core.enums import LogLevel
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -12,9 +13,10 @@ class Settings(BaseSettings):
         env_ignore_empty=True,
         extra="ignore",
     )
-    DATABASE_URL: str = "sqlite:///./database.db"
+    DATABASE_URL: str = "sqlite+aiosqlite:///./database.db"
     PROJECTS_ROOT_DIR: str = "projects"
     BLUEPRINTS_ROOT_DIR: str = "blueprints"
+    LOG_LEVEL: LogLevel = LogLevel.WARNING
 
     @field_validator("PROJECTS_ROOT_DIR", "BLUEPRINTS_ROOT_DIR")
     def make_absolute(cls, v: str) -> str: # noqa

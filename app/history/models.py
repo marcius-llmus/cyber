@@ -26,10 +26,16 @@ class ChatSession(Base):
     is_active = Column(Boolean, default=False, nullable=False, server_default="f")
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
 
-    project = relationship("Project", back_populates="chat_sessions")
-    messages = relationship("Message", back_populates="session", cascade="all, delete-orphan")
-    context_files = relationship("ContextFile", back_populates="session", cascade="all, delete-orphan")
-    prompt_attachments = relationship("SessionPromptAttachment", back_populates="session", cascade="all, delete-orphan")
+    project = relationship("Project", back_populates="chat_sessions", lazy="joined")
+    messages = relationship(
+        "Message", back_populates="session", cascade="all, delete-orphan", lazy="selectin"
+    )
+    context_files = relationship(
+        "ContextFile", back_populates="session", cascade="all, delete-orphan", lazy="selectin"
+    )
+    prompt_attachments = relationship(
+        "SessionPromptAttachment", back_populates="session", cascade="all, delete-orphan", lazy="selectin"
+    )
 
 
 class Message(Base):
@@ -44,7 +50,7 @@ class Message(Base):
     output_tokens = Column(Integer, nullable=True)
     cost = Column(Float, nullable=True)
 
-    session = relationship("ChatSession", back_populates="messages")
+    session = relationship("ChatSession", back_populates="messages", lazy="joined")
 
 
 class ContextFile(Base):
@@ -54,6 +60,6 @@ class ContextFile(Base):
     session_id = Column(Integer, ForeignKey("chat_sessions.id"), nullable=False)
     file_path = Column(String, nullable=False)
 
-    session = relationship("ChatSession", back_populates="context_files")
+    session = relationship("ChatSession", back_populates="context_files", lazy="joined")
 
     __table_args__ = (UniqueConstraint("session_id", "file_path", name="_session_file_uc"),)

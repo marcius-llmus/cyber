@@ -15,12 +15,18 @@ class Prompt(Base):
     source_path = Column(String, nullable=True)
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=True)
 
-    project = relationship("Project", back_populates="prompts")
+    project = relationship("Project", back_populates="prompts", lazy="joined")
     project_attachments = relationship(
-        "ProjectPromptAttachment", back_populates="prompt", cascade="all, delete-orphan"
+        "ProjectPromptAttachment",
+        back_populates="prompt",
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )
     session_attachments = relationship(
-        "SessionPromptAttachment", back_populates="prompt", cascade="all, delete-orphan"
+        "SessionPromptAttachment",
+        back_populates="prompt",
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )
 
     __table_args__ = (UniqueConstraint("name", "project_id", name="_name_project_uc"),)
@@ -32,8 +38,8 @@ class ProjectPromptAttachment(Base):
     project_id = Column(Integer, ForeignKey("projects.id"), primary_key=True)
     prompt_id = Column(Integer, ForeignKey("prompts.id"), primary_key=True)
 
-    project = relationship("Project", back_populates="prompt_attachments")
-    prompt = relationship("Prompt", back_populates="project_attachments")
+    project = relationship("Project", back_populates="prompt_attachments", lazy="joined")
+    prompt = relationship("Prompt", back_populates="project_attachments", lazy="joined")
 
 
 class SessionPromptAttachment(Base):
@@ -42,5 +48,5 @@ class SessionPromptAttachment(Base):
     session_id = Column(Integer, ForeignKey("chat_sessions.id"), primary_key=True)
     prompt_id = Column(Integer, ForeignKey("prompts.id"), primary_key=True)
 
-    session = relationship("ChatSession", back_populates="prompt_attachments")
-    prompt = relationship("Prompt", back_populates="session_attachments")
+    session = relationship("ChatSession", back_populates="prompt_attachments", lazy="joined")
+    prompt = relationship("Prompt", back_populates="session_attachments", lazy="joined")

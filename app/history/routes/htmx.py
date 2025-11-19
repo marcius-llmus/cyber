@@ -16,7 +16,7 @@ async def get_history_list(
     request: Request,
     service: HistoryPageService = Depends(get_history_page_service),
 ):
-    page_data = service.get_history_page_data()
+    page_data = await service.get_history_page_data()
     return {**page_data, "HistoryEventType": HistoryEventType}
 
 
@@ -27,7 +27,7 @@ async def delete_session(
     service: HistoryService = Depends(get_history_service),
 ):
     try:
-        was_active = service.delete_session(
+        was_active = await service.delete_session(
             session_id_to_delete=session_id
         )
 
