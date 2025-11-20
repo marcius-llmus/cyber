@@ -159,8 +159,8 @@
                     @change="$store.appearance.updateSetting('highlightTheme', $event.target.value)">
                     <template x-for="theme in $store.appearance.themes">
                         <option 
-                            :value="`https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/${theme}.min.css`"
-                            :selected="$store.appearance.highlightTheme.includes(theme)"
+                            :value="theme"
+                            :selected="$store.appearance.highlightTheme === theme"
                             x-text="theme">
                         </option>
                     </template>
