@@ -139,13 +139,25 @@ class ChatApp {
     static setupObservers() {
         const observer = new MutationObserver((mutations) => {
             for (const mutation of mutations) {
+                // Case 1: Streaming Text (AI) - Detect changes inside a .markdown-source container
                 if (mutation.type === 'characterData' || mutation.type === 'childList') {
-                    let target = mutation.target;
-                    if (target.nodeType === 3) target = target.parentElement;
-                    if (target && target.id && target.id.startsWith('raw-')) {
-                        this.renderMarkdown(target.id);
+                    const target = mutation.target.nodeType === 3 ? mutation.target.parentElement : mutation.target;
+                    if (target.classList.contains('markdown-source')) {
+                        this.renderMarkdown(target.id); // Re-render on every chunk
                         this.scrollToBottom();
                     }
+                }
+
+                // Case 2: New Message Insertion (User/History) - Detect new nodes containing .markdown-source
+                if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                    mutation.addedNodes.forEach(node => {
+                        if (node.nodeType === 1) { // Element node
+                            // Instant render for static content (User messages or History load)
+                            const sources = node.querySelectorAll('.markdown-source');
+                            sources.forEach(el => this.renderMarkdown(el.id));
+                        }
+                    });
+                    this.scrollToBottom();
                 }
             }
         });
@@ -167,7 +179,7 @@ class ChatApp {
     }
 
     static scanAndRenderMarkdown() {
-        document.querySelectorAll('[id^="raw-"]').forEach(el => {
+        document.querySelectorAll('.markdown-source').forEach(el => {
             this.renderMarkdown(el.id);
         });
     }

@@ -396,3 +396,12 @@ input:hover:not(:focus), textarea:hover:not(:focus), select:hover:not(:focus) {
     width: 1.25rem !important; /* 20px / h-5 */
     height: 1.25rem !important; /* 20px / w-5 */
 }
+
+/* Unified Font Sizing */
+input, textarea, select, button {
+    font-size: inherit !important;
+}
+
+.prose {
+    font-size: inherit !important;
+}

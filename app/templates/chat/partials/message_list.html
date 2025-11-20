@@ -1,11 +1,11 @@
-<div class="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth break-words" id="message-list">
+<div class="flex-1 overflow-y-auto p-4 pb-10 space-y-6 scroll-smooth break-words" id="message-list">
     <!-- System welcome message -->
     <div class="flex items-start gap-3" id="ai-message-system">
         <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
             {% include "components/icons/ai_avatar.html" %}
         </div>
         <div class="bg-dark-card rounded-lg p-4 flex-1 min-w-0">
-            <div id="raw-system" class="hidden">Hello! How can I assist you today?</div>
+            <div id="raw-system" class="hidden markdown-source">Hello! How can I assist you today?</div>
             <div id="rendered-system" class="prose prose-invert text-gray-300 w-full max-w-none break-words">
                 <!-- JS will render -->
             </div>
@@ -15,7 +15,9 @@
         {% if message.role.value == 'user' %}
         <div class="flex items-start gap-3" id="user-message-{{ message.id }}">
             <div class="bg-dark-card rounded-lg p-4 flex-1 min-w-0">
-                <div class="text-gray-200 text-sm whitespace-pre-wrap">{{ message.content }}</div>
+                <!-- User Markdown Rendering -->
+                <div id="raw-user-{{ message.id }}" class="hidden markdown-source">{{ message.content }}</div>
+                <div id="rendered-user-{{ message.id }}" class="prose prose-invert text-gray-200 max-w-none break-words"></div>
                 <div id="user-message-controls-{{ message.id }}"></div>
             </div>
             <div class="w-8 h-8 bg-dark-light rounded-lg flex items-center justify-center flex-shrink-0">
@@ -29,7 +31,7 @@
             </div>
             <div class="bg-dark-card rounded-lg p-4 flex-1 min-w-0">
                 <!-- Hidden Buffer -->
-                <div id="raw-{{ message.id }}" class="hidden">{{ message.content }}</div>
+                <div id="raw-{{ message.id }}" class="hidden markdown-source">{{ message.content }}</div>
                 
                 <!-- Visible Render Target -->
                 <div id="rendered-{{ message.id }}" class="prose prose-invert text-gray-300 max-w-none break-words">
