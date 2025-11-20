@@ -137,7 +137,7 @@ class WebSocketOrchestrator:
 
     async def _render_error(self, error_message: str):
         context = {"message": error_message}
-        template = templates.get_template("chat/partials/error_message.html").render(context)
+        template = templates.get_template("components/actions/trigger_toast.html").render(context)
         await self.ws_manager.send_html(template)
 
     async def _handle_workflow_log(self, event: WorkflowLogEvent):

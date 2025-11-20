@@ -1,9 +1,7 @@
 <div hx-swap-oob="beforeend:#message-list">
     <div class="flex items-start gap-3" id="ai-message-{{ turn_id }}">
         <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
+            {% include "components/icons/ai_avatar.html" %}
         </div>
         <div class="bg-dark-card rounded-lg p-4 flex-1 min-w-0">
             <!-- Hidden Buffer for Raw Text -->

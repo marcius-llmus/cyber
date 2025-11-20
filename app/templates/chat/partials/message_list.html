@@ -1,10 +1,8 @@
-<div class="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth break-words" id="message-list" :class="$store.appearance.editorFontSize">
+<div class="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth break-words" id="message-list">
     <!-- System welcome message -->
     <div class="flex items-start gap-3" id="ai-message-system">
         <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-            </svg>
+            {% include "components/icons/ai_avatar.html" %}
         </div>
         <div class="bg-dark-card rounded-lg p-4 flex-1 min-w-0">
             <div id="raw-system" class="hidden">Hello! How can I assist you today?</div>
@@ -17,22 +15,17 @@
         {% if message.role.value == 'user' %}
         <div class="flex items-start gap-3" id="user-message-{{ message.id }}">
             <div class="bg-dark-card rounded-lg p-4 flex-1 min-w-0">
-                <div class="text-gray-200 text-sm">
-                    {{ message.content }}
-                </div>
+                <div class="text-gray-200 text-sm whitespace-pre-wrap">{{ message.content }}</div>
+                <div id="user-message-controls-{{ message.id }}"></div>
             </div>
-            <div class="w-8 h-8 bg-gray-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
+            <div class="w-8 h-8 bg-dark-light rounded-lg flex items-center justify-center flex-shrink-0">
+                {% include "components/icons/user_avatar.html" %}
             </div>
         </div>
         {% elif message.role.value == 'assistant' %}
         <div class="flex items-start gap-3" id="ai-message-{{ message.id }}">
             <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
+                {% include "components/icons/ai_avatar.html" %}
             </div>
             <div class="bg-dark-card rounded-lg p-4 flex-1 min-w-0">
                 <!-- Hidden Buffer -->

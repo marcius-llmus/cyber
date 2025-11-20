@@ -57,6 +57,18 @@ class ChatApp {
                 updateSetting(key, val) {
                     this[key] = val;
                     localStorage.setItem(key, val);
+                    
+                    // Sync to CSS Variables for immediate effect
+                    const map = {
+                        'bgColor': '--color-dark', 'bgSecondaryColor': '--color-dark-lighter',
+                        'bgLightColor': '--color-dark-light', 'bgCardColor': '--color-dark-card',
+                        'bgDarkerColor': '--color-dark-darker', 'textColor': '--color-text',
+                        'primaryColor': '--color-primary', 'primaryDarkColor': '--color-primary-dark',
+                        'primaryLightColor': '--color-primary-light'
+                    };
+                    if (map[key]) document.documentElement.style.setProperty(map[key], val);
+                    if (key === 'uiFontSize') document.documentElement.style.setProperty('--fs-ui', val + 'px');
+                    if (key === 'editorFontSize') document.documentElement.style.setProperty('--fs-editor', val + 'px');
                 },
 
                 reset() {

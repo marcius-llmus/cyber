@@ -42,28 +42,46 @@
             breaks: true,
             typographer: true
         });
+        // Open links in new tab securely
+        const defaultRender = md.renderer.rules.link_open || function(tokens, idx, options, env, self) {
+            return self.renderToken(tokens, idx, options);
+        };
+        md.renderer.rules.link_open = function (tokens, idx, options, env, self) {
+            tokens[idx].attrSet('target', '_blank');
+            tokens[idx].attrSet('rel', 'noopener noreferrer');
+            return defaultRender(tokens, idx, options, env, self);
+        };
     </script>
-    <style x-data x-text="`
-        :root {
-            --color-dark: ${$store.appearance.bgColor};
-            --color-dark-lighter: ${$store.appearance.bgSecondaryColor};
-            --color-dark-light: ${$store.appearance.bgLightColor};
-            --color-dark-card: ${$store.appearance.bgCardColor};
-            --color-dark-darker: ${$store.appearance.bgDarkerColor};
-            --color-text: ${$store.appearance.textColor};
-            --color-primary: ${$store.appearance.primaryColor};
-            --color-primary-dark: ${$store.appearance.primaryDarkColor};
-            --color-primary-light: ${$store.appearance.primaryLightColor};
-            --fs-ui: ${$store.appearance.uiFontSize}px;
-            --fs-editor: ${$store.appearance.editorFontSize}px;
-        }
+    <script>
+        // Anti-FOUC: Apply theme immediately
+        (function() {
+            const map = {
+                'bgColor': '--color-dark', 'bgSecondaryColor': '--color-dark-lighter',
+                'bgLightColor': '--color-dark-light', 'bgCardColor': '--color-dark-card',
+                'bgDarkerColor': '--color-dark-darker', 'textColor': '--color-text',
+                'primaryColor': '--color-primary', 'primaryDarkColor': '--color-primary-dark',
+                'primaryLightColor': '--color-primary-light'
+            };
+            const root = document.documentElement;
+            Object.entries(map).forEach(([key, varName]) => {
+                const val = localStorage.getItem(key);
+                if (val) root.style.setProperty(varName, val);
+            });
+            // Font Sizes
+            const uiSz = localStorage.getItem('uiFontSize');
+            if (uiSz) root.style.setProperty('--fs-ui', uiSz + 'px');
+            const edSz = localStorage.getItem('editorFontSize');
+            if (edSz) root.style.setProperty('--fs-editor', edSz + 'px');
+        })();
+    </script>
+    <style>
         body { font-size: var(--fs-ui) !important; background-color: var(--color-dark) !important; color: var(--color-text) !important; }
         .text-gray-200, .text-gray-300, .text-gray-400 { color: var(--color-text) !important; }
         #message-list { font-size: var(--fs-editor) !important; }
         
         /* Adjust opacity for secondary text to keep hierarchy */
         .text-xs, .text-sm { opacity: 0.9; }
-    `"></style>
+    </style>
 </head>
 <body class="bg-dark text-gray-200 h-screen flex" 
       hx-ext="ws" 
