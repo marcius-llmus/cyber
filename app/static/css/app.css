@@ -1,4 +1,3 @@
-/* Base Scrollbar Hiding (from theme) */
 * {
     -ms-overflow-style: none; /* IE and Edge */
     scrollbar-width: none; /* Firefox */
@@ -9,7 +8,11 @@
     display: none;
 }
 
-/* Show scrollbars specifically for code blocks */
+/* -------------------------------------------------------------------------- */
+/*                                 SCROLLBARS                                 */
+/* -------------------------------------------------------------------------- */
+
+/* Code blocks need scrollbars */
 #message-list pre {
     -ms-overflow-style: auto !important;
     scrollbar-width: thin !important;
@@ -34,12 +37,35 @@
     opacity: 0.7;
 }
 
-#message-list > div {
-    max-width: 100%;
+.modal-scroll-content {
+    -ms-overflow-style: auto !important;
+    scrollbar-width: auto !important;
+    scrollbar-color: var(--color-primary-dark) var(--color-dark-lighter);
 }
+
+.modal-scroll-content::-webkit-scrollbar {
+    display: block !important;
+    width: 1px;
+}
+
+.modal-scroll-content::-webkit-scrollbar-track {
+    background: var(--color-dark-lighter);
+}
+
+.modal-scroll-content::-webkit-scrollbar-thumb {
+    background: var(--color-primary-dark);
+}
+
+/* -------------------------------------------------------------------------- */
+/*                                   LAYOUT                                   */
+/* -------------------------------------------------------------------------- */
 
 .w-full {
     width: 100% !important;
+}
+
+#message-list > div {
+    max-width: 100%;
 }
 
 #message-list .prose {
@@ -51,8 +77,26 @@
     overflow-y: auto;
     overflow-x: hidden; /* Prevent horizontal scrollbar on the list itself */
     min-width: 0;       /* Critical for flex containers to shrink correctly */
-    flex: 1 1 0%;       /* Enforce flex basis 0 to prevent overflow */
+    flex: 1 1 0;       /* Enforce flex basis 0 to prevent overflow */
 }
+
+.file-tree-container {
+    max-height: 70vh;
+    overflow-y: auto;
+    scrollbar-width: none;
+}
+
+.implicit-scroll-container {
+    overflow-y: auto;
+    height: 100%;
+    padding: 10px 0;
+}
+
+/* -------------------------------------------------------------------------- */
+/*                                 COMPONENTS                                 */
+/* -------------------------------------------------------------------------- */
+
+/* --- Forms & Inputs --- */
 
 textarea {
     min-height: 44px;
@@ -77,6 +121,8 @@ input:hover:not(:focus), textarea:hover:not(:focus), select:hover:not(:focus) {
     transition: box-shadow 0.5s ease-in-out;
 }
 
+/* --- Utilities --- */
+
 .border-l-2 {
     border-left-width: 3px !important;
 }
@@ -84,6 +130,8 @@ input:hover:not(:focus), textarea:hover:not(:focus), select:hover:not(:focus) {
 .rounded-md {
     border-radius: 0.1rem !important;
 }
+
+/* --- File Tree --- */
 
 .tree-item-children {
     max-height: 0;
@@ -99,13 +147,8 @@ input:hover:not(:focus), textarea:hover:not(:focus), select:hover:not(:focus) {
     transform: rotate(90deg);
 }
 
-.file-tree-container {
-    max-height: 70vh;
-    overflow-y: auto;
-    scrollbar-width: none;
-}
+/* --- Logs --- */
 
-/* Gradient Logs */
 .gradient-container-wrapper {
     position: relative;
     overflow: hidden;
@@ -139,6 +182,8 @@ input:hover:not(:focus), textarea:hover:not(:focus), select:hover:not(:focus) {
     background: linear-gradient(to top, var(--color-dark) 0%, transparent 100%);
 }
 
+/* --- Modals --- */
+
 .modal-overlay {
     display: none;
     background: rgba(0, 0, 0, 0.5);
@@ -147,6 +192,8 @@ input:hover:not(:focus), textarea:hover:not(:focus), select:hover:not(:focus) {
 .modal-overlay.active {
     display: flex;
 }
+
+/* --- Metrics --- */
 
 .cost-badge {
     font-size: 10px;
@@ -168,6 +215,8 @@ input:hover:not(:focus), textarea:hover:not(:focus), select:hover:not(:focus) {
     height: 100%;
     background: var(--color-primary);
 }
+
+/* --- Code Blocks & Markdown --- */
 
 .code-block-wrapper {
     position: relative;
@@ -202,24 +251,7 @@ input:hover:not(:focus), textarea:hover:not(:focus), select:hover:not(:focus) {
     color: var(--color-primary);
 }
 
-.modal-scroll-content {
-    -ms-overflow-style: auto !important;
-    scrollbar-width: auto !important;
-    scrollbar-color: var(--color-primary-dark) var(--color-dark-lighter);
-}
-
-.modal-scroll-content::-webkit-scrollbar {
-    display: block !important;
-    width: 1px;
-}
-
-.modal-scroll-content::-webkit-scrollbar-track {
-    background: var(--color-dark-lighter);
-}
-
-.modal-scroll-content::-webkit-scrollbar-thumb {
-    background: var(--color-primary-dark);
-}
+/* --- HTMX Indicators --- */
 
 .htmx-indicator {
     display: none;
@@ -338,7 +370,7 @@ input:hover:not(:focus), textarea:hover:not(:focus), select:hover:not(:focus) {
     color: var(--color-text);
 }
 
-/* Enforce Icon Sizes in Message List */
+/* --- Message List Specifics --- */
 #message-list .w-8.h-8 {
     width: 2rem !important;
     height: 2rem !important;

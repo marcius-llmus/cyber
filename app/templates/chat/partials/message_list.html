@@ -15,12 +15,10 @@
     </div>
     {% for message in messages %}
         {% if message.role.value == 'user' %}
-        <div class="flex items-start gap-3 justify-end" id="user-message-{{ message.id }}">
-            <div class="flex justify-end">
-                <div class="bg-dark-card rounded-lg p-4 max-w-full">
-                    <div class="text-gray-200 text-sm">
-                        {{ message.content }}
-                    </div>
+        <div class="flex items-start gap-3" id="user-message-{{ message.id }}">
+            <div class="bg-dark-card rounded-lg p-4 flex-1 min-w-0">
+                <div class="text-gray-200 text-sm">
+                    {{ message.content }}
                 </div>
             </div>
             <div class="w-8 h-8 bg-gray-600 rounded-md flex items-center justify-center flex-shrink-0">
