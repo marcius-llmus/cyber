@@ -121,6 +121,18 @@ class ChatApp {
                     return defaults.themes.includes(t) ? t : defaults.highlightTheme;
                 })(),
                 themes: defaults.themes,
+                cssVarMap: {
+                    'bgColor': '--color-dark',
+                    'bgSecondaryColor': '--color-dark-lighter',
+                    'borderColor': '--color-border',
+                    'scrollColor': '--color-scroll-thumb',
+                    'bgCardColor': '--color-dark-card',
+                    'bgDarkerColor': '--color-dark-darker',
+                    'textColor': '--color-text',
+                    'primaryColor': '--color-primary',
+                    'primaryDarkColor': '--color-primary-dark',
+                    'primaryLightColor': '--color-primary-light'
+                },
 
                 init() {
                     // Initialize all settings to ensure consistency between Store, LocalStorage, and CSS Variables
@@ -133,38 +145,41 @@ class ChatApp {
                     this[key] = val;
                     localStorage.setItem(key, val);
                     
-                    // Sync to CSS Variables for immediate effect
-                    const map = {
-                        'bgColor': '--color-dark', 'bgSecondaryColor': '--color-dark-lighter',
-                        'borderColor': '--color-border', 'scrollColor': '--color-scroll-thumb',
-                        'bgCardColor': '--color-dark-card',
-                        'bgDarkerColor': '--color-dark-darker', 'textColor': '--color-text',
-                        'primaryColor': '--color-primary', 'primaryDarkColor': '--color-primary-dark',
-                        'primaryLightColor': '--color-primary-light'
-                    };
-                    if (map[key]) document.documentElement.style.setProperty(map[key], val);
-                    if (key === 'uiFontSize') document.documentElement.style.setProperty('--fs-ui', val + 'px');
-                    if (key === 'editorFontSize') document.documentElement.style.setProperty('--fs-editor', val + 'px');
-                    
-                    if (key === 'editorFontFamily') {
-                        const stack = fontFamilies[val] || fontFamilies['system_default'];
-                        document.documentElement.style.setProperty('--font-editor', stack);
-                    }
+                    // Dispatch to specific handlers
+                    if (this.cssVarMap[key]) return this.updateCssVar(this.cssVarMap[key], val);
+                    if (key === 'uiFontSize') return this.updateFontSize('--fs-ui', val);
+                    if (key === 'editorFontSize') return this.updateFontSize('--fs-editor', val);
+                    if (key === 'editorFontFamily') return this.updateFontFamily(val);
+                    if (key === 'codeBgColor') return this.updateCodeBg(val);
+                    if (key === 'highlightTheme') return this.updateTheme(val);
+                },
 
-                    if (key === 'codeBgColor') {
-                        if (val && val.trim() !== '') {
-                            document.documentElement.style.setProperty('--code-bg-override', val);
-                            document.body.classList.add('custom-code-bg');
-                        } else {
-                            document.body.classList.remove('custom-code-bg');
-                            document.documentElement.style.removeProperty('--code-bg-override');
-                        }
-                    }
+                updateCssVar(varName, val) {
+                    document.documentElement.style.setProperty(varName, val);
+                },
 
-                    if (key === 'highlightTheme') {
-                        const themeLink = document.getElementById('highlight-theme-link');
-                        if (themeLink) themeLink.href = this.getThemeUrl(val);
+                updateFontSize(varName, val) {
+                    document.documentElement.style.setProperty(varName, val + 'px');
+                },
+
+                updateFontFamily(val) {
+                    const stack = fontFamilies[val] || fontFamilies['system_default'];
+                    document.documentElement.style.setProperty('--font-editor', stack);
+                },
+
+                updateCodeBg(val) {
+                    if (val && val.trim() !== '') {
+                        document.documentElement.style.setProperty('--code-bg-override', val);
+                        document.body.classList.add('custom-code-bg');
+                    } else {
+                        document.body.classList.remove('custom-code-bg');
+                        document.documentElement.style.removeProperty('--code-bg-override');
                     }
+                },
+
+                updateTheme(val) {
+                    const themeLink = document.getElementById('highlight-theme-link');
+                    if (themeLink) themeLink.href = this.getThemeUrl(val);
                 },
 
                 getThemeUrl(name) {
