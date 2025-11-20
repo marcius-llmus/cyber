@@ -1,4 +1,4 @@
-<div class="flex items-center justify-end pt-2 mt-2" id="controls-{{ turn_id }}" hx-swap-oob="true">
+<div class="flex items-center justify-end {% if message and message.cost %}pt-2 mt-2{% endif %}" id="controls-{{ turn_id }}" hx-swap-oob="true">
     <div class="flex space-x-2 text-xs text-gray-500">
         {% if message and message.cost %}
         <span class="cost-badge text-primary" title="Output tokens: {{ message.output_tokens }}">

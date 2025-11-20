@@ -1,7 +1,6 @@
 /**
  * Llama Coding - Main Application Logic
- * Refactored for modularity and cleanliness.
- */
+**/
 class ChatApp {
     static init() {
         this.filesCount = 0;
@@ -21,18 +20,34 @@ class ChatApp {
         window.currentPromptTab = localStorage.getItem('currentPromptTab') || 'global';
 
         document.addEventListener('alpine:init', () => {
+            const defaults = {
+                bgColor: '#121212',
+                bgSecondaryColor: '#1E1E1E',
+                bgLightColor: '#2D2D2D',
+                bgCardColor: '#252525',
+                bgDarkerColor: '#000000',
+                textColor: '#e0e0e0',
+                primaryColor: '#FF8A3D',
+                primaryDarkColor: '#B45A2D',
+                primaryLightColor: '#FF8A3D',
+                uiFontSize: '14',
+                editorFontSize: '14',
+                highlightTheme: 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css'
+            };
+
             Alpine.store('appearance', {
-                bgColor: localStorage.getItem('bgColor') || '#121212',
-                bgSecondaryColor: localStorage.getItem('bgSecondaryColor') || '#1E1E1E',
-                bgLightColor: localStorage.getItem('bgLightColor') || '#2D2D2D',
-                bgCardColor: localStorage.getItem('bgCardColor') || '#252525',
-                textColor: localStorage.getItem('textColor') || '#e0e0e0',
-                primaryColor: localStorage.getItem('primaryColor') || '#FF8A3D',
-                primaryDarkColor: localStorage.getItem('primaryDarkColor') || 'rgba(180, 90, 45, 0.7)',
-                primaryLightColor: localStorage.getItem('primaryLightColor') || '#FF8A3D',
-                uiFontSize: localStorage.getItem('uiFontSize') || '14',
-                editorFontSize: localStorage.getItem('editorFontSize') || '14',
-                highlightTheme: localStorage.getItem('highlightTheme') || 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css',
+                bgColor: localStorage.getItem('bgColor') || defaults.bgColor,
+                bgSecondaryColor: localStorage.getItem('bgSecondaryColor') || defaults.bgSecondaryColor,
+                bgLightColor: localStorage.getItem('bgLightColor') || defaults.bgLightColor,
+                bgCardColor: localStorage.getItem('bgCardColor') || defaults.bgCardColor,
+                bgDarkerColor: localStorage.getItem('bgDarkerColor') || defaults.bgDarkerColor,
+                textColor: localStorage.getItem('textColor') || defaults.textColor,
+                primaryColor: localStorage.getItem('primaryColor') || defaults.primaryColor,
+                primaryDarkColor: localStorage.getItem('primaryDarkColor') || defaults.primaryDarkColor,
+                primaryLightColor: localStorage.getItem('primaryLightColor') || defaults.primaryLightColor,
+                uiFontSize: localStorage.getItem('uiFontSize') || defaults.uiFontSize,
+                editorFontSize: localStorage.getItem('editorFontSize') || defaults.editorFontSize,
+                highlightTheme: localStorage.getItem('highlightTheme') || defaults.highlightTheme,
 
                 init() {
                     const themeLink = document.getElementById('highlight-theme-link');
@@ -44,11 +59,17 @@ class ChatApp {
                     localStorage.setItem(key, val);
                 },
 
-                setHighlightTheme(val) {
-                    this.highlightTheme = val;
-                    localStorage.setItem('highlightTheme', val);
+                reset() {
+                    Object.keys(defaults).forEach(key => {
+                        this.updateSetting(key, defaults[key]);
+                    });
+                    
+                    // Manually trigger theme link update as updateSetting handles localStorage but init handles link
                     const themeLink = document.getElementById('highlight-theme-link');
-                    if (themeLink) themeLink.href = val;
+                    if (themeLink) themeLink.href = defaults.highlightTheme;
+                    
+                    ChatApp.addLog('Appearance settings reset to defaults', 'blue');
+                    window.dispatchEvent(new CustomEvent('settingsSaved'));
                 }
             });
         });
