@@ -144,11 +144,6 @@ class ChatApp {
         if (targetEl && rawEl) {
             const processedText = MarkdownProcessor.preProcess(rawEl.textContent);
             targetEl.innerHTML = md.render(processedText);
-            
-            // Highlight code blocks
-            targetEl.querySelectorAll('pre code').forEach((block) => {
-                hljs.highlightElement(block);
-            });
 
             // Inject UI components (Copy buttons)
             this.injectCodeControls(targetEl);
