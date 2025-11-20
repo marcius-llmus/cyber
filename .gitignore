@@ -326,10 +326,6 @@ tags
 # Redis dump file
 dump.rdb
 
-### Project template
-*.min.js
-*.min.css
-
 .pytest_cache/
 ctx.md
 config.json

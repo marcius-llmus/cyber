@@ -25,6 +25,9 @@ class LLMFactory:
         LLMModel.GEMINI_2_5_PRO: LLM(
             model_name=LLMModel.GEMINI_2_5_PRO, provider=LLMProvider.GOOGLE, default_context_window=1000000
         ),
+        LLMModel.GEMINI_3_PRO: LLM(
+            model_name=LLMModel.GEMINI_3_PRO, provider=LLMProvider.GOOGLE, default_context_window=1000000
+        ),
         LLMModel.GEMINI_2_5_FLASH: LLM(
             model_name=LLMModel.GEMINI_2_5_FLASH, provider=LLMProvider.GOOGLE, default_context_window=1000000
         ),

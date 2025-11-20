@@ -13,7 +13,7 @@
     <script src="/static/js/htmx-ext-form-json.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.15.1/dist/cdn.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="/static/js/highlight.min.js"></script>
     <!-- Highlight Theme Link (ID required for dynamic switching) -->
     <link id="highlight-theme-link" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <script>
@@ -37,10 +37,18 @@
     <script>
         // Initialize Markdown Parser
         const md = window.markdownit({
-            html: true,
+            html: false,
             linkify: true,
             breaks: true,
-            typographer: true
+            typographer: true,
+            highlight: function (str, lang) {
+                if (lang && window.hljs.getLanguage(lang)) {
+                    try {
+                        return hljs.highlight(str, { language: lang }).value;
+                    } catch (__) {}
+                }
+                return '';
+            }
         });
         // Open links in new tab securely
         const defaultRender = md.renderer.rules.link_open || function(tokens, idx, options, env, self) {
