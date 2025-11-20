@@ -12,13 +12,13 @@
             placeholder="Ask me anything about your code..."
             onkeydown="handleKeydown(event)"
             autofocus
-            oninput="this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px'"
+            oninput="this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px'; this.style.overflowY = this.scrollHeight > 200 ? 'auto' : 'hidden'"
             x-data
             x-init="$el.style.height = ($el.scrollHeight) + 'px'"
             id="message-input"
         ></textarea>
-        <button type="submit" class="absolute right-2 bottom-2 p-2 rounded-lg bg-primary hover:bg-primary-dark transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <button type="submit" class="absolute right-3 bottom-2 p-1.5 rounded-lg bg-primary hover:bg-primary-dark transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white transform rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
             </svg>
         </button>

@@ -1,12 +1,12 @@
 * {
-    scrollbar-width: thin; /* Firefox */
-    scrollbar-color: var(--color-dark-light) var(--color-dark-lighter);
+    scrollbar-width: auto; /* Fix: Make scrollbar visible and graspable */
+    scrollbar-color: var(--color-scroll-thumb) var(--color-dark-lighter);
 }
 
 /* Webkit Scrollbar Styling */
 *::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 12px;
+    height: 12px;
 }
 
 /* Root Variables Default (Prevents FOUC) */
@@ -17,6 +17,8 @@
     --color-dark-card: #252525;
     --color-dark-darker: #000000;
     --color-text: #e0e0e0;
+    --color-border: #2D2D2D;       /* Decoupled Border */
+    --color-scroll-thumb: #2D2D2D; /* Decoupled Scrollbar */
     --color-primary: #FF8A3D;
     --color-primary-dark: #B45A2D;
     --color-primary-light: #FF8A3D;
@@ -31,7 +33,7 @@
 /* Code blocks need scrollbars */
 #message-list pre {
     -ms-overflow-style: auto !important;
-    scrollbar-width: thin !important;
+    scrollbar-width: auto !important;
 }
 
 #message-list pre::-webkit-scrollbar {
@@ -45,7 +47,7 @@
 }
 
 ::-webkit-scrollbar-thumb {
-    background: var(--color-dark-light);
+    background: var(--color-scroll-thumb);
     border-radius: 0.25rem;
 }
 
@@ -56,12 +58,12 @@
 .modal-scroll-content {
     -ms-overflow-style: auto !important;
     scrollbar-width: auto !important;
-    scrollbar-color: var(--color-primary-dark) var(--color-dark-lighter);
+    scrollbar-color: var(--color-scroll-thumb) var(--color-dark-lighter);
 }
 
 .modal-scroll-content::-webkit-scrollbar {
     display: block !important;
-    width: 1px;
+    width: 8px;
 }
 
 .modal-scroll-content::-webkit-scrollbar-track {
@@ -69,7 +71,7 @@
 }
 
 .modal-scroll-content::-webkit-scrollbar-thumb {
-    background: var(--color-primary-dark);
+    background: var(--color-scroll-thumb);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -117,9 +119,9 @@
 textarea {
     min-height: 44px;
     max-height: 200px;
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--color-dark-light) var(--color-dark-lighter);
+    overflow-y: hidden; /* Hide by default, JS toggles to 'auto' when max-height is hit */
+    scrollbar-width: auto; /* Fix: Make scrollbar visible and graspable */
+    scrollbar-color: var(--color-scroll-thumb) var(--color-dark-lighter);
 }
 
 /* Consistent hover/focus styles */
@@ -282,35 +284,60 @@ input:hover:not(:focus), textarea:hover:not(:focus), select:hover:not(:focus) {
 
 /* Markdown & Code Styles from Theme */
 #message-list pre {
-    max-width: 100%;
-    overflow-x: auto;
-    white-space: pre;
-    border-radius: 0.375rem;
-    background-color: var(--color-dark-lighter) !important;
-    padding: 1rem !important;
+    /* Reset pre to be a simple wrapper */
+    background: transparent !important;
+    padding: 0 !important;
     margin: 1rem 0;
-    min-width: 0;
-    font-size: 0.875rem;
-    line-height: 1.25rem;
+    border-radius: 0.375rem;
+    overflow: hidden; /* Let code handle the scroll */
 }
 
-.prose code {
-    color: var(--color-primary-light);
-    font-family: monospace;
-    font-weight: 500;
+/* 
+   Target the inner code block for the theme application.
+   This ensures .hljs class from the theme takes effect for background/color.
+*/
+#message-list pre code {
+    display: block;
+    width: 100%;
+    overflow-x: auto; /* Scroll happens here */
+    padding: 1rem;    /* Padding happens here */
+    font-size: var(--fs-editor);
+    line-height: calc(var(--fs-editor) * 1.7 - 2px);
+    border-radius: 0.375rem;
+    /* Background and Color are set by the loaded Highlight.js theme CSS */
 }
 
 /* Inline code styling (when not in pre) */
 .prose :not(pre) > code {
+    color: var(--color-primary-light);
+    font-family: monospace;
+    font-weight: 500;
     background-color: rgba(255, 255, 255, 0.1);
     padding: 0.1em 0.3em;
     border-radius: 0.25em;
+    margin: 0 0.2em; /* Fix: Add breathing room around inline code */
 }
 
-/* Specific override to ensure highlight.js doesn't double-pad or conflict */
-#message-list pre code.hljs {
-    padding: 0;
-    background: transparent;
+/* -------------------------------------------------------------------------- */
+/*                             TYPOGRAPHY                                     */
+/* -------------------------------------------------------------------------- */
+
+/* 
+   Dynamic Font Scaling 
+   Instead of 'inherit', we override the utility classes to scale relative to the setting.
+   This preserves hierarchy (xs < sm < base) while respecting the user's preference.
+*/
+
+.text-xs {
+    font-size: calc(var(--fs-ui) * 0.85) !important;
+}
+
+.text-sm {
+    font-size: var(--fs-ui) !important;
+}
+
+.text-base {
+    font-size: calc(var(--fs-ui) * 1.15) !important;
 }
 
 /* Paragraph Spacing Override */
@@ -395,13 +422,4 @@ input:hover:not(:focus), textarea:hover:not(:focus), select:hover:not(:focus) {
 #message-list .w-8.h-8 svg {
     width: 1.25rem !important; /* 20px / h-5 */
     height: 1.25rem !important; /* 20px / w-5 */
-}
-
-/* Unified Font Sizing */
-input, textarea, select, button {
-    font-size: inherit !important;
-}
-
-.prose {
-    font-size: inherit !important;
 }
