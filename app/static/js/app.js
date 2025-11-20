@@ -16,7 +16,6 @@ class ChatApp {
     }
 
     static setupAlpine() {
-        // Fix for Alpine "currentPromptTab is not defined" error
         window.currentPromptTab = localStorage.getItem('currentPromptTab') || 'global';
 
         document.addEventListener('alpine:init', () => {
@@ -31,6 +30,8 @@ class ChatApp {
                 primaryColor: '#FF8A3D',
                 primaryDarkColor: '#B45A2D',
                 primaryLightColor: '#FF8A3D',
+                uiFontSize: '14',
+                editorFontSize: '14',
                 editorFontFamily: 'system_default',
                 codeBgColor: '',
                 highlightTheme: 'atom-one-dark',
@@ -122,12 +123,10 @@ class ChatApp {
                 themes: defaults.themes,
 
                 init() {
-                    const themeLink = document.getElementById('highlight-theme-link');
-                    if (themeLink) themeLink.href = this.getThemeUrl(this.highlightTheme);
-                    
-                    // Initialize complex settings
-                    this.updateSetting('editorFontFamily', this.editorFontFamily);
-                    this.updateSetting('codeBgColor', this.codeBgColor);
+                    // Initialize all settings to ensure consistency between Store, LocalStorage, and CSS Variables
+                    Object.keys(defaults).filter(key => key !== 'themes').forEach(key => {
+                        this.updateSetting(key, this[key]);
+                    });
                 },
 
                 updateSetting(key, val) {
