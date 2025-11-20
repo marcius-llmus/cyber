@@ -24,6 +24,8 @@
     --color-primary-light: #FF8A3D;
     --fs-ui: 14px;
     --fs-editor: 14px;
+    --font-ui: ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;
+    --font-editor: ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -307,6 +309,12 @@ input:hover:not(:focus), textarea:hover:not(:focus), select:hover:not(:focus) {
     /* Background and Color are set by the loaded Highlight.js theme CSS */
 }
 
+/* Override mechanism: Only applies if the body has the class 'custom-code-bg' */
+body.custom-code-bg #message-list pre code.hljs {
+    background-color: var(--code-bg-override) !important;
+    /* We don't override color (syntax highlighting) just the block background */
+}
+
 /* Inline code styling (when not in pre) */
 .prose :not(pre) > code {
     color: var(--color-primary-light);
@@ -397,11 +405,11 @@ input:hover:not(:focus), textarea:hover:not(:focus), select:hover:not(:focus) {
 
 /* HR Styling */
 .prose hr {
-    border-color: var(--color-dark-light);
+    border-color: var(--color-text);
     border-top-width: 1px;
-    width: 50%;
-    margin: 3em auto;
-    opacity: 0.5;
+    width: 100%;
+    margin: 1rem 0;
+    opacity: 0.1;
 }
 
 /* Heading Spacing */
@@ -422,4 +430,9 @@ input:hover:not(:focus), textarea:hover:not(:focus), select:hover:not(:focus) {
 #message-list .w-8.h-8 svg {
     width: 1.25rem !important; /* 20px / h-5 */
     height: 1.25rem !important; /* 20px / w-5 */
+}
+
+/* Font Override */
+#message-list, #message-list pre code, textarea.font-mono {
+    font-family: var(--font-editor) !important;
 }

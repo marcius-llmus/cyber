@@ -31,6 +31,8 @@ class ChatApp {
                 primaryColor: '#FF8A3D',
                 primaryDarkColor: '#B45A2D',
                 primaryLightColor: '#FF8A3D',
+                editorFontFamily: 'system_default',
+                codeBgColor: '',
                 highlightTheme: 'atom-one-dark',
                 themes: [
                     // Root Themes
@@ -86,6 +88,15 @@ class ChatApp {
                 ]
             };
 
+            // Font mappings: Key -> CSS Font Stack
+            const fontFamilies = {
+                'system_default': 'ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji',
+                'fira_code': '"Fira Code", monospace',
+                'jetbrains_mono': '"JetBrains Mono", monospace',
+                'consolas': '"Consolas", monospace',
+                'courier_new': '"Courier New", monospace'
+            };
+
             Alpine.store('appearance', {
                 bgColor: localStorage.getItem('bgColor') || defaults.bgColor,
                 bgSecondaryColor: localStorage.getItem('bgSecondaryColor') || defaults.bgSecondaryColor,
@@ -99,6 +110,11 @@ class ChatApp {
                 primaryLightColor: localStorage.getItem('primaryLightColor') || defaults.primaryLightColor,
                 uiFontSize: localStorage.getItem('uiFontSize') || defaults.uiFontSize,
                 editorFontSize: localStorage.getItem('editorFontSize') || defaults.editorFontSize,
+                editorFontFamily: (() => {
+                    const f = localStorage.getItem('editorFontFamily');
+                    return fontFamilies[f] ? f : defaults.editorFontFamily;
+                })(),
+                codeBgColor: localStorage.getItem('codeBgColor') || defaults.codeBgColor,
                 highlightTheme: (() => {
                     const t = localStorage.getItem('highlightTheme');
                     return defaults.themes.includes(t) ? t : defaults.highlightTheme;
@@ -108,6 +124,10 @@ class ChatApp {
                 init() {
                     const themeLink = document.getElementById('highlight-theme-link');
                     if (themeLink) themeLink.href = this.getThemeUrl(this.highlightTheme);
+                    
+                    // Initialize complex settings
+                    this.updateSetting('editorFontFamily', this.editorFontFamily);
+                    this.updateSetting('codeBgColor', this.codeBgColor);
                 },
 
                 updateSetting(key, val) {
@@ -126,6 +146,22 @@ class ChatApp {
                     if (map[key]) document.documentElement.style.setProperty(map[key], val);
                     if (key === 'uiFontSize') document.documentElement.style.setProperty('--fs-ui', val + 'px');
                     if (key === 'editorFontSize') document.documentElement.style.setProperty('--fs-editor', val + 'px');
+                    
+                    if (key === 'editorFontFamily') {
+                        const stack = fontFamilies[val] || fontFamilies['system_default'];
+                        document.documentElement.style.setProperty('--font-editor', stack);
+                    }
+
+                    if (key === 'codeBgColor') {
+                        if (val && val.trim() !== '') {
+                            document.documentElement.style.setProperty('--code-bg-override', val);
+                            document.body.classList.add('custom-code-bg');
+                        } else {
+                            document.body.classList.remove('custom-code-bg');
+                            document.documentElement.style.removeProperty('--code-bg-override');
+                        }
+                    }
+
                     if (key === 'highlightTheme') {
                         const themeLink = document.getElementById('highlight-theme-link');
                         if (themeLink) themeLink.href = this.getThemeUrl(val);
