@@ -1,3 +1,1 @@
-<div hx-swap-oob="beforeend:body">
-    <script>window.dispatchEvent(new CustomEvent('show-error-toast', { detail: { message: '{{ message | replace("'", "\\'") }}' } }))</script>
-</div>
+<div x-data x-init="$dispatch('show-error-toast', { message: '{{ message | replace("'", "\\'") }}' }); $el.remove()" hx-swap-oob="beforeend:#toast-signals"></div>

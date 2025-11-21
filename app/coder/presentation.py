@@ -14,6 +14,7 @@ from app.coder.schemas import (
     WebSocketMessage,
     WorkflowErrorEvent,
     WorkflowLogEvent,
+    LogLevel,
 )
 from app.commons.websockets import WebSocketConnectionManager
 from app.core.db import sessionmanager
@@ -150,6 +151,9 @@ class WebSocketOrchestrator:
         await self.ws_manager.send_html(template)
 
     async def _render_workflow_error(self, event: WorkflowErrorEvent, turn_id: str):
+        # Log the error to the logs panel
+        await self._handle_workflow_log(WorkflowLogEvent(message=event.message, level=LogLevel.ERROR))
+
         # Remove AI message placeholder
         remove_template = templates.get_template("chat/partials/remove_ai_message.html").render(
             {"turn_id": turn_id}
