@@ -1,6 +1,6 @@
 <div
-    x-data="{ show: false, message: '', type: 'error' }"
-    @show-error-toast.window="message = $event.detail.message; type = 'error'; show = true; setTimeout(() => show = false, 5000)"
+    x-data="{ show: false, message: '', type: 'error', timeout: null }"
+    @show-error-toast.window="message = $event.detail.message; type = 'error'; show = true; clearTimeout(timeout); timeout = setTimeout(() => show = false, 5000)"
     x-show="show"
     x-transition:enter="transform ease-out duration-300 transition"
     x-transition:enter-start="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"

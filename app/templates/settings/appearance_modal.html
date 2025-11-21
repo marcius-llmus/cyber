@@ -1,0 +1,217 @@
+{% from "components/modals/base_modal.html" import modal_shell %}
+
+{% call modal_shell(modal_id='appearance-modal', title='Appearance') %}
+    <div class="p-6 overflow-y-auto flex-1 modal-scroll-content">
+        <div class="space-y-8" x-data>
+            <!-- Colors -->
+            <div class="space-y-4">
+                <h4 class="text-sm font-medium text-gray-400 uppercase tracking-wider">Colors</h4>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Sidebar Background</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="color" :value="$store.appearance.bgDarkerColor"
+                                   @input="$store.appearance.updateSetting('bgDarkerColor', $event.target.value)"
+                                   class="h-8 w-12 bg-transparent border-0 p-0 cursor-pointer">
+                            <input type="text" :value="$store.appearance.bgDarkerColor"
+                                   @input="$store.appearance.updateSetting('bgDarkerColor', $event.target.value)"
+                                   class="flex-1 bg-dark-lighter border border-dark-light rounded px-2 py-1 text-xs">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Main Background</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="color" :value="$store.appearance.bgColor"
+                                   @input="$store.appearance.updateSetting('bgColor', $event.target.value)"
+                                   class="h-8 w-12 bg-transparent border-0 p-0 cursor-pointer">
+                            <input type="text" :value="$store.appearance.bgColor"
+                                   @input="$store.appearance.updateSetting('bgColor', $event.target.value)"
+                                   class="flex-1 bg-dark-lighter border border-dark-light rounded px-2 py-1 text-xs">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Panel Background</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="color" :value="$store.appearance.bgSecondaryColor"
+                                   @input="$store.appearance.updateSetting('bgSecondaryColor', $event.target.value)"
+                                   class="h-8 w-12 bg-transparent border-0 p-0 cursor-pointer">
+                            <input type="text" :value="$store.appearance.bgSecondaryColor"
+                                   @input="$store.appearance.updateSetting('bgSecondaryColor', $event.target.value)"
+                                   class="flex-1 bg-dark-lighter border border-dark-light rounded px-2 py-1 text-xs">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Text Color</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="color" :value="$store.appearance.textColor"
+                                   @input="$store.appearance.updateSetting('textColor', $event.target.value)"
+                                   class="h-8 w-12 bg-transparent border-0 p-0 cursor-pointer">
+                            <input type="text" :value="$store.appearance.textColor"
+                                   @input="$store.appearance.updateSetting('textColor', $event.target.value)"
+                                   class="flex-1 bg-dark-lighter border border-dark-light rounded px-2 py-1 text-xs">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Primary Color</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="color" :value="$store.appearance.primaryColor"
+                                   @input="$store.appearance.updateSetting('primaryColor', $event.target.value)"
+                                   class="h-8 w-12 bg-transparent border-0 p-0 cursor-pointer">
+                            <input type="text" :value="$store.appearance.primaryColor"
+                                   @input="$store.appearance.updateSetting('primaryColor', $event.target.value)"
+                                   class="flex-1 bg-dark-lighter border border-dark-light rounded px-2 py-1 text-xs">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Card Background</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="color" :value="$store.appearance.bgCardColor"
+                                   @input="$store.appearance.updateSetting('bgCardColor', $event.target.value)"
+                                   class="h-8 w-12 bg-transparent border-0 p-0 cursor-pointer">
+                            <input type="text" :value="$store.appearance.bgCardColor"
+                                   @input="$store.appearance.updateSetting('bgCardColor', $event.target.value)"
+                                   class="flex-1 bg-dark-lighter border border-dark-light rounded px-2 py-1 text-xs">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Light Background</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="color" :value="$store.appearance.bgLightColor"
+                                   @input="$store.appearance.updateSetting('bgLightColor', $event.target.value)"
+                                   class="h-8 w-12 bg-transparent border-0 p-0 cursor-pointer">
+                            <input type="text" :value="$store.appearance.bgLightColor"
+                                   @input="$store.appearance.updateSetting('bgLightColor', $event.target.value)"
+                                   class="flex-1 bg-dark-lighter border border-dark-light rounded px-2 py-1 text-xs">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Primary Dark</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="color" :value="$store.appearance.primaryDarkColor"
+                                   @input="$store.appearance.updateSetting('primaryDarkColor', $event.target.value)"
+                                   class="h-8 w-12 bg-transparent border-0 p-0 cursor-pointer">
+                            <input type="text" :value="$store.appearance.primaryDarkColor"
+                                   @input="$store.appearance.updateSetting('primaryDarkColor', $event.target.value)"
+                                   class="flex-1 bg-dark-lighter border border-dark-light rounded px-2 py-1 text-xs">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Primary Light</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="color" :value="$store.appearance.primaryLightColor"
+                                   @input="$store.appearance.updateSetting('primaryLightColor', $event.target.value)"
+                                   class="h-8 w-12 bg-transparent border-0 p-0 cursor-pointer">
+                            <input type="text" :value="$store.appearance.primaryLightColor"
+                                   @input="$store.appearance.updateSetting('primaryLightColor', $event.target.value)"
+                                   class="flex-1 bg-dark-lighter border border-dark-light rounded px-2 py-1 text-xs">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Border Color</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="color" :value="$store.appearance.borderColor"
+                                   @input="$store.appearance.updateSetting('borderColor', $event.target.value)"
+                                   class="h-8 w-12 bg-transparent border-0 p-0 cursor-pointer">
+                            <input type="text" :value="$store.appearance.borderColor"
+                                   @input="$store.appearance.updateSetting('borderColor', $event.target.value)"
+                                   class="flex-1 bg-dark-lighter border border-dark-light rounded px-2 py-1 text-xs">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Scrollbar Color</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="color" :value="$store.appearance.scrollColor"
+                                   @input="$store.appearance.updateSetting('scrollColor', $event.target.value)"
+                                   class="h-8 w-12 bg-transparent border-0 p-0 cursor-pointer">
+                            <input type="text" :value="$store.appearance.scrollColor"
+                                   @input="$store.appearance.updateSetting('scrollColor', $event.target.value)"
+                                   class="flex-1 bg-dark-lighter border border-dark-light rounded px-2 py-1 text-xs">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Code Block Bg <span class="text-gray-600 text-[10px]">(Overrides Theme)</span></label>
+                        <div class="flex items-center space-x-2">
+                            <input type="color" :value="$store.appearance.codeBgColor || '#000000'"
+                                   @input="$store.appearance.updateSetting('codeBgColor', $event.target.value)"
+                                   class="h-8 w-12 bg-transparent border-0 p-0 cursor-pointer">
+                            <div class="relative flex-1">
+                                <input type="text" :value="$store.appearance.codeBgColor"
+                                       @input="$store.appearance.updateSetting('codeBgColor', $event.target.value)"
+                                       placeholder="Theme Default"
+                                       class="w-full bg-dark-lighter border border-dark-light rounded px-2 py-1 text-xs pr-6">
+                                <button type="button" 
+                                        x-show="$store.appearance.codeBgColor"
+                                        @click="$store.appearance.updateSetting('codeBgColor', '')"
+                                        class="absolute right-1.5 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-red-400">
+                                    <i class="fas fa-times text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Font Sizes -->
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 uppercase tracking-wider mb-2">UI Font Size
+                        (px)</label>
+                    <input type="number" min="12" max="18" :value="$store.appearance.uiFontSize"
+                           @input="$store.appearance.updateSetting('uiFontSize', $event.target.value)"
+                           onkeydown="return false"
+                           class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 uppercase tracking-wider mb-2">Editor Font
+                        Size (px)</label>
+                    <input type="number" min="10" max="23" :value="$store.appearance.editorFontSize"
+                           @input="$store.appearance.updateSetting('editorFontSize', $event.target.value)"
+                           onkeydown="return false"
+                           class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm">
+                </div>
+            </div>
+
+            <!-- Editor Font -->
+            <div class="space-y-4">
+                <h4 class="text-sm font-medium text-gray-400 uppercase tracking-wider">Editor Font</h4>
+                <select 
+                    class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm"
+                    @change="$store.appearance.updateSetting('editorFontFamily', $event.target.value)">
+                    <option value="system_default" :selected="$store.appearance.editorFontFamily === 'system_default'">System Default</option>
+                    <option value="fira_code" :selected="$store.appearance.editorFontFamily === 'fira_code'">Fira Code</option>
+                    <option value="jetbrains_mono" :selected="$store.appearance.editorFontFamily === 'jetbrains_mono'">JetBrains Mono</option>
+                    <option value="consolas" :selected="$store.appearance.editorFontFamily === 'consolas'">Consolas</option>
+                    <option value="courier_new" :selected="$store.appearance.editorFontFamily === 'courier_new'">Courier New</option>
+                </select>
+            </div>
+
+            <!-- Highlight Theme -->
+            <div class="space-y-4">
+                <h4 class="text-sm font-medium text-gray-400 uppercase tracking-wider">Syntax Highlighting</h4>
+                <select 
+                    class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm"
+                    @change="$store.appearance.updateSetting('highlightTheme', $event.target.value)">
+                    <template x-for="theme in $store.appearance.themes">
+                        <option 
+                            :value="theme"
+                            :selected="$store.appearance.highlightTheme === theme"
+                            x-text="theme">
+                        </option>
+                    </template>
+                </select>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="px-6 py-4 border-t border-dark-light flex justify-between space-x-3">
+        <button type="button" @click="$store.appearance.reset()"
+                class="px-4 py-2 text-red-400 hover:text-red-300 hover:bg-dark-lighter rounded-lg text-sm transition-colors">
+            Reset to Defaults
+        </button>
+        <button type="button" data-modal-close
+                class="px-4 py-2 bg-dark-lighter hover:bg-dark-light border border-dark-light rounded-lg text-sm">
+            Close
+        </button>
+    </div>
+{% endcall %}

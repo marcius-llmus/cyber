@@ -1,6 +1,6 @@
 <button type="submit" class="{{ button_class }}">
     <span>{{ text }}</span>
-    <span class="htmx-indicator">
-        <i class="fas fa-spinner fa-spin"></i>
+    <span>
+        {% include "components/icons/spinner.html" %}
     </span>
 </button>

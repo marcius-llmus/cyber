@@ -1,19 +1,15 @@
 <div hx-swap-oob="beforeend:#message-list">
-    <div class="flex items-start gap-4 justify-end" id="user-message-{{ turn_id }}">
-        <div class="flex-1">
-            <div class="bg-dark-card rounded-lg p-4 border border-dark-light">
-                <div class="text-gray-200 text-sm">
-                    {{ content }}
-                </div>
-                <div id="user-message-controls-{{ turn_id }}" class="flex justify-end">
-                    <!-- Retry button will be injected here -->
-                </div>
+    <div class="flex items-start gap-3" id="user-message-{{ turn_id }}">
+        <div class="bg-dark-card rounded-lg p-4 flex-1 min-w-0">
+            <!-- User Markdown Rendering -->
+            <div id="raw-user-{{ turn_id }}" class="hidden markdown-source">{{ content }}</div>
+            <div id="rendered-user-{{ turn_id }}" class="prose prose-invert text-gray-200 max-w-none break-words"></div>
+            <div id="user-message-controls-{{ turn_id }}" class="flex justify-end items-center mt-2">
+                <!-- Controls might go here -->
             </div>
         </div>
-        <div class="w-9 h-9 bg-gray-600 rounded-lg flex items-center justify-center flex-shrink-0">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
+        <div class="w-8 h-8 bg-dark-light rounded-lg flex items-center justify-center flex-shrink-0">
+            {% include "components/icons/user_avatar.html" %}
         </div>
     </div>
 </div>

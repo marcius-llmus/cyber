@@ -1,0 +1,438 @@
+* {
+    scrollbar-width: auto; /* Fix: Make scrollbar visible and graspable */
+    scrollbar-color: var(--color-scroll-thumb) var(--color-dark-lighter);
+}
+
+/* Webkit Scrollbar Styling */
+*::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+/* Root Variables Default (Prevents FOUC) */
+:root {
+    --color-dark: #121212;
+    --color-dark-lighter: #1E1E1E;
+    --color-dark-light: #2D2D2D;
+    --color-dark-card: #252525;
+    --color-dark-darker: #000000;
+    --color-text: #e0e0e0;
+    --color-border: #2D2D2D;       /* Decoupled Border */
+    --color-scroll-thumb: #2D2D2D; /* Decoupled Scrollbar */
+    --color-primary: #FF8A3D;
+    --color-primary-dark: #B45A2D;
+    --color-primary-light: #FF8A3D;
+    --fs-ui: 14px;
+    --fs-editor: 14px;
+    --font-ui: ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;
+    --font-editor: ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;
+}
+
+/* -------------------------------------------------------------------------- */
+/*                                 SCROLLBARS                                 */
+/* -------------------------------------------------------------------------- */
+
+/* Code blocks need scrollbars */
+#message-list pre {
+    -ms-overflow-style: auto !important;
+    scrollbar-width: auto !important;
+}
+
+#message-list pre::-webkit-scrollbar {
+    display: block !important;
+}
+
+/* Scrollbar styling for supported elements */
+::-webkit-scrollbar-track {
+    background: var(--color-dark-lighter);
+    border-radius: 0.25rem;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--color-scroll-thumb);
+    border-radius: 0.25rem;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    opacity: 0.7;
+}
+
+.modal-scroll-content {
+    -ms-overflow-style: auto !important;
+    scrollbar-width: auto !important;
+    scrollbar-color: var(--color-scroll-thumb) var(--color-dark-lighter);
+}
+
+.modal-scroll-content::-webkit-scrollbar {
+    display: block !important;
+    width: 8px;
+}
+
+.modal-scroll-content::-webkit-scrollbar-track {
+    background: var(--color-dark-lighter);
+}
+
+.modal-scroll-content::-webkit-scrollbar-thumb {
+    background: var(--color-scroll-thumb);
+}
+
+/* -------------------------------------------------------------------------- */
+/*                                   LAYOUT                                   */
+/* -------------------------------------------------------------------------- */
+
+.w-full {
+    width: 100% !important;
+}
+
+#message-list > div {
+    max-width: 100%;
+}
+
+#message-list .prose {
+    max-width: 100%;
+}
+
+#message-list {
+    scroll-behavior: smooth;
+    overflow-y: auto;
+    overflow-x: hidden; /* Prevent horizontal scrollbar on the list itself */
+    min-width: 0;       /* Critical for flex containers to shrink correctly */
+    flex: 1 1 0;       /* Enforce flex basis 0 to prevent overflow */
+}
+
+.file-tree-container {
+    max-height: 70vh;
+    overflow-y: auto;
+    scrollbar-width: none;
+}
+
+.implicit-scroll-container {
+    overflow-y: auto;
+    height: 100%;
+    padding: 10px 0;
+}
+
+/* -------------------------------------------------------------------------- */
+/*                                 COMPONENTS                                 */
+/* -------------------------------------------------------------------------- */
+
+/* --- Forms & Inputs --- */
+
+textarea {
+    min-height: 44px;
+    max-height: 200px;
+    overflow-y: hidden; /* Hide by default, JS toggles to 'auto' when max-height is hit */
+    scrollbar-width: auto; /* Fix: Make scrollbar visible and graspable */
+    scrollbar-color: var(--color-scroll-thumb) var(--color-dark-lighter);
+}
+
+/* Consistent hover/focus styles */
+input:focus, textarea:focus, select:focus {
+    box-shadow: 0 0 0 color-mix(in srgb, var(--color-primary), transparent 50%) !important;
+    border-color: color-mix(in srgb, var(--color-primary), transparent 50%) !important;
+    outline: none;
+    transition: box-shadow 0.5s ease-in-out;
+}
+
+input:hover:not(:focus), textarea:hover:not(:focus), select:hover:not(:focus) {
+    box-shadow: 0 0 0 color-mix(in srgb, var(--color-primary), transparent 70%) !important;
+    border-color: color-mix(in srgb, var(--color-primary), transparent 70%) !important;
+    transition: box-shadow 0.5s ease-in-out;
+}
+
+/* --- Utilities --- */
+
+.border-l-2 {
+    border-left-width: 3px !important;
+}
+
+.rounded-md {
+    border-radius: 0.1rem !important;
+}
+
+/* --- File Tree --- */
+
+.tree-item-children {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.5s ease;
+}
+
+.tree-item.open > .tree-item-children {
+    max-height: 100%;
+}
+
+.tree-toggle.rotate-90 {
+    transform: rotate(90deg);
+}
+
+/* --- Logs --- */
+
+.gradient-container-wrapper {
+    position: relative;
+    overflow: hidden;
+    max-height: 100%;
+}
+
+.implicit-scroll-container {
+    overflow-y: auto;
+    height: 100%;
+    padding: 10px 0;
+}
+
+.gradient-container-wrapper::before,
+.gradient-container-wrapper::after {
+    content: "";
+    position: absolute;
+    z-index: 10;
+    left: 0;
+    right: 0;
+    height: 28px;
+    pointer-events: none;
+}
+
+.gradient-container-wrapper::before {
+    top: 0;
+    background: linear-gradient(to bottom, var(--color-dark) 0%, transparent 100%);
+}
+
+.gradient-container-wrapper::after {
+    bottom: 0;
+    background: linear-gradient(to top, var(--color-dark) 0%, transparent 100%);
+}
+
+/* --- Modals --- */
+
+.modal-overlay {
+    display: none;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+/* --- Metrics --- */
+
+.cost-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    background: color-mix(in srgb, var(--color-primary), transparent 90%);
+    border: 1px solid color-mix(in srgb, var(--color-primary), transparent 70%);
+    border-radius: 4px;
+    cursor: help;
+}
+
+.usage-bar {
+    height: 6px;
+    background: var(--color-dark-lighter);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.usage-bar-fill {
+    height: 100%;
+    background: var(--color-primary);
+}
+
+/* --- Code Blocks & Markdown --- */
+
+.code-block-wrapper {
+    position: relative;
+    margin: 1rem 0;
+}
+
+.copy-code-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    padding: 4px 8px;
+    background: var(--color-dark-light);
+    border: 1px solid var(--color-dark-lighter);
+    border-radius: 4px;
+    font-size: 11px;
+    color: var(--color-primary-light);
+    cursor: pointer;
+}
+
+.copy-code-btn:hover {
+    background: var(--color-dark-lighter);
+}
+
+.prompt-tab {
+    padding: 8px 16px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+}
+
+.prompt-tab.active {
+    border-bottom-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+/* --- HTMX Indicators --- */
+
+.htmx-indicator {
+    display: none;
+}
+
+.htmx-request .htmx-indicator {
+    display: inline-block;
+}
+
+.htmx-request .btn-text {
+    display: none;
+}
+
+/* Markdown & Code Styles from Theme */
+#message-list pre {
+    /* Reset pre to be a simple wrapper */
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 1rem 0;
+    border-radius: 0.375rem;
+    overflow: hidden; /* Let code handle the scroll */
+}
+
+/* 
+   Target the inner code block for the theme application.
+   This ensures .hljs class from the theme takes effect for background/color.
+*/
+#message-list pre code {
+    display: block;
+    width: 100%;
+    overflow-x: auto; /* Scroll happens here */
+    padding: 1rem;    /* Padding happens here */
+    font-size: var(--fs-editor);
+    line-height: calc(var(--fs-editor) * 1.7 - 2px);
+    border-radius: 0.375rem;
+    /* Background and Color are set by the loaded Highlight.js theme CSS */
+}
+
+/* Override mechanism: Only applies if the body has the class 'custom-code-bg' */
+body.custom-code-bg #message-list pre code.hljs {
+    background-color: var(--code-bg-override) !important;
+    /* We don't override color (syntax highlighting) just the block background */
+}
+
+/* Inline code styling (when not in pre) */
+.prose :not(pre) > code {
+    color: var(--color-primary-light);
+    font-family: monospace;
+    font-weight: 500;
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 0.1em 0.3em;
+    border-radius: 0.25em;
+    margin: 0 0.2em; /* Fix: Add breathing room around inline code */
+}
+
+/* -------------------------------------------------------------------------- */
+/*                             TYPOGRAPHY                                     */
+/* -------------------------------------------------------------------------- */
+
+/* 
+   Dynamic Font Scaling 
+   Instead of 'inherit', we override the utility classes to scale relative to the setting.
+   This preserves hierarchy (xs < sm < base) while respecting the user's preference.
+*/
+
+.text-xs {
+    font-size: calc(var(--fs-ui) * 0.85) !important;
+}
+
+.text-sm {
+    font-size: var(--fs-ui) !important;
+}
+
+.text-base {
+    font-size: calc(var(--fs-ui) * 1.15) !important;
+}
+
+/* Paragraph Spacing Override */
+.prose p {
+    margin-bottom: 1em;
+    margin-top: 1em;
+}
+
+/* List Styling */
+.prose ul {
+    list-style-type: disc;
+    padding-left: 1.5em;
+    margin-top: 1em;
+    margin-bottom: 1em;
+}
+
+.prose ol {
+    list-style-type: decimal;
+    padding-left: 1.5em;
+    margin-top: 1em;
+    margin-bottom: 1em;
+}
+
+.prose li {
+    margin-top: 0.25em;
+    margin-bottom: 0.25em;
+}
+
+/* Table Styling */
+.prose table {
+    width: 100%;
+    text-align: left;
+    border-collapse: collapse;
+    margin-top: 1em;
+    margin-bottom: 1em;
+}
+
+.prose th, .prose td {
+    border: 1px solid var(--color-dark-light);
+    padding: 0.5em;
+}
+
+.prose th {
+    background-color: var(--color-dark-lighter);
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+/* Remove margins from first and last elements to avoid double spacing with container padding */
+.prose > :first-child {
+    margin-top: 0;
+}
+
+.prose > :last-child {
+    margin-bottom: 0;
+}
+
+/* HR Styling */
+.prose hr {
+    border-color: var(--color-text);
+    border-top-width: 1px;
+    width: 100%;
+    margin: 1rem 0;
+    opacity: 0.1;
+}
+
+/* Heading Spacing */
+.prose h1, .prose h2, .prose h3, .prose h4 {
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+/* --- Message List Specifics --- */
+#message-list .w-8.h-8 {
+    width: 2rem !important;
+    height: 2rem !important;
+    min-width: 2rem !important; /* Prevent squishing */
+}
+
+#message-list .w-8.h-8 svg {
+    width: 1.25rem !important; /* 20px / h-5 */
+    height: 1.25rem !important; /* 20px / w-5 */
+}
+
+/* Font Override */
+#message-list, #message-list pre code, textarea.font-mono {
+    font-family: var(--font-editor) !important;
+}

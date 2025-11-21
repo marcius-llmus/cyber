@@ -4,7 +4,7 @@ from typing import AsyncGenerator
 
 from llama_index.core.agent import AgentStream, ToolCall, ToolCallResult
 from llama_index.core.llms import ChatMessage
-from workflows import Context
+from llama_index.core.workflow import Context
 
 from app.chat.services import ChatService
 from app.coder.schemas import (
@@ -18,7 +18,7 @@ from app.coder.schemas import (
 from app.history.enums import HistoryEventType
 from app.usage.services import UsageService, UsagePageService
 from app.prompts.enums import PromptEventType
-from app.workflows.factory import WorkflowFactory
+from app.agents.factory import WorkflowFactory
 
 
 logger = logging.getLogger(__name__)
@@ -42,7 +42,7 @@ class CoderService:
         ctx = Context(workflow)
 
         handler = workflow.run(
-            input=user_message, chat_history=chat_history, ctx=ctx
+            user_msg=user_message, chat_history=chat_history, ctx=ctx
         )
         return handler
 
@@ -50,8 +50,6 @@ class CoderService:
         self, *, user_message: str, session_id: int
     ) -> AsyncGenerator[CoderEvent, None]:
         try:
-            await self.chat_service.add_user_message(session_id=session_id, content=user_message)
-
             handler = await self._get_workflow_handler(user_message, session_id)
 
             async for event in handler.stream_events():
@@ -60,6 +58,9 @@ class CoderService:
 
             # Await the handler to get the final result and ensure completion.
             llm_full_response = await handler
+            # we save user message after workflow because it could fail.
+            # we store it on frontend in case of error, for retrying
+            await self.chat_service.add_user_message(session_id=session_id, content=user_message)
             await self.chat_service.add_ai_message(session_id=session_id, content=str(llm_full_response))
 
             yield AIMessageCompletedEvent(

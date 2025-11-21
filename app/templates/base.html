@@ -6,179 +6,96 @@
     <title>Llama Coding - AI Development Assistant</title>
     <link rel="icon" href="data:,">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="/static/css/app.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js" integrity="sha384-/TgkGk7p307TH7EXJDuUlgG3Ce1UVolAOFopFekQkkXihi5u/6OCvVKyz1W+idaz" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/htmx-ext-ws@2.0.4" integrity="sha384-1RwI/nvUSrMRuNj7hX1+27J8XDdCoSLf0EjEyF69nacuWyiJYoQ/j39RT1mSnd2G" crossorigin="anonymous"></script>
     <script src="/static/js/htmx-ext-form-json.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.15.1/dist/cdn.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"></script>
+    <script src="/static/js/highlight.min.js"></script>
+    <!-- Highlight Theme Link (ID required for dynamic switching) -->
+    <link id="highlight-theme-link" rel="stylesheet" href="/static/css/highlight/atom-one-dark.min.css">
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        'primary': '#8B5CF6',
-                        'primary-dark': '#7C3AED',
-                        'primary-light': '#A78BFA',
-                        'dark': '#0F0F0F',
-                        'dark-lighter': '#1A1A1A',
-                        'dark-light': '#262626',
-                        'dark-card': '#1F1F1F',
-                        'dark-darker': '#0A0A0A'
+                        'primary': 'var(--color-primary)',
+                        'primary-dark': 'var(--color-primary-dark)',
+                        'primary-light': 'var(--color-primary-light)',
+                        'dark': 'var(--color-dark)',
+                        'dark-lighter': 'var(--color-dark-lighter)',
+                        'dark-light': 'var(--color-border)',
+                        'dark-card': 'var(--color-dark-card)',
+                        'dark-darker': 'var(--color-dark-darker)'
                     }
                 }
             }
         }
     </script>
+    <script>
+        // Initialize Markdown Parser
+        const md = window.markdownit({
+            html: false,
+            linkify: true,
+            breaks: true,
+            typographer: true,
+            highlight: function (str, lang) {
+                if (lang && window.hljs.getLanguage(lang)) {
+                    try {
+                        return hljs.highlight(str, { language: lang }).value;
+                    } catch (__) {}
+                }
+                return '';
+            }
+        });
+        // Open links in new tab securely
+        const defaultRender = md.renderer.rules.link_open || function(tokens, idx, options, env, self) {
+            return self.renderToken(tokens, idx, options);
+        };
+        md.renderer.rules.link_open = function (tokens, idx, options, env, self) {
+            tokens[idx].attrSet('target', '_blank');
+            tokens[idx].attrSet('rel', 'noopener noreferrer');
+            return defaultRender(tokens, idx, options, env, self);
+        };
+    </script>
+    <script>
+        // Anti-FOUC: Apply theme immediately
+        (function() {
+            const map = {
+                'bgColor': '--color-dark', 'bgSecondaryColor': '--color-dark-lighter',
+                'borderColor': '--color-border', 'scrollColor': '--color-scroll-thumb',
+                'bgCardColor': '--color-dark-card', 'bgDarkerColor': '--color-dark-darker', 
+                'textColor': '--color-text',
+                'primaryColor': '--color-primary', 'primaryDarkColor': '--color-primary-dark',
+                'primaryLightColor': '--color-primary-light'
+            };
+            const root = document.documentElement;
+            Object.entries(map).forEach(([key, varName]) => {
+                const val = localStorage.getItem(key);
+                if (val) root.style.setProperty(varName, val);
+            });
+            // Font Sizes
+            const uiSz = localStorage.getItem('uiFontSize');
+            if (uiSz) root.style.setProperty('--fs-ui', uiSz + 'px');
+            const edSz = localStorage.getItem('editorFontSize');
+            if (edSz) root.style.setProperty('--fs-editor', edSz + 'px');
+        })();
+    </script>
     <style>
-        * {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-        *::-webkit-scrollbar {
-            display: none;
-        }
-        #message-list {
-            -ms-overflow-style: auto;
-            scrollbar-width: auto;
-            scrollbar-color: #79269f #712495;
-        }
-        #message-list::-webkit-scrollbar {
-            width: 4px;
-        }
-        #message-list pre {
-            -ms-overflow-style: auto !important;
-            scrollbar-width: auto !important;
-        }
-        #message-list pre::-webkit-scrollbar {
-            display: block !important;
-            width: 1px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #1A1A1A;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #262626;
-            border-radius: 4px;
-        }
-        textarea {
-            min-height: 44px;
-            max-height: 120px; /* Approx 5 rows */
-            overflow-y: auto;
-        }
-        input:focus, textarea:focus, select:focus {
-            border-color: #8B5CF6;
-            outline: none;
-        }
-        .border-l-2 {
-            border-left-width: 3px !important;
-        }
-        .rounded-md {
-            border-radius: 0.1rem !important;
-        }
-        .tree-item-children {
-            max-height: 0;
-            overflow: hidden;
-        }
-        .tree-item.open > .tree-item-children {
-            max-height: 100%;
-        }
-        .tree-toggle.rotate-90 {
-            transform: rotate(90deg);
-        }
-        .file-tree-container {
-            max-height: 60vh;
-            overflow-y: auto;
-        }
-        .gradient-container-wrapper {
-            position: relative;
-            overflow: hidden;
-        }
-        .implicit-scroll-container {
-            overflow-y: auto;
-            height: 100%;
-            padding: 10px 0;
-        }
-        .modal-overlay {
-            display: none;
-            background: rgba(0, 0, 0, 0.5);
-        }
-        .modal-overlay.active {
-            display: flex;
-        }
-        .cost-badge {
-            font-size: 10px;
-            padding: 2px 6px;
-            background: rgba(139, 92, 246, 0.1);
-            border: 1px solid rgba(139, 92, 246, 0.3);
-            border-radius: 4px;
-            cursor: help;
-        }
-        .usage-bar {
-            height: 6px;
-            background: #1A1A1A;
-            border-radius: 3px;
-            overflow: hidden;
-        }
-        .usage-bar-fill {
-            height: 100%;
-            background: #8B5CF6;
-        }
-        .code-block-wrapper {
-            position: relative;
-        }
-        .copy-code-btn {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            padding: 4px 8px;
-            background: #262626;
-            border: 1px solid #1A1A1A;
-            border-radius: 4px;
-            font-size: 11px;
-            color: #A78BFA;
-            cursor: pointer;
-        }
-        .copy-code-btn:hover {
-            background: #1A1A1A;
-        }
-        .prompt-tab {
-            padding: 8px 16px;
-            cursor: pointer;
-            border-bottom: 2px solid transparent;
-        }
-        .prompt-tab.active {
-            border-bottom-color: #8B5CF6;
-            color: #8B5CF6;
-        }
-        .modal-scroll-content {
-            -ms-overflow-style: auto !important;
-            scrollbar-width: auto !important;
-            scrollbar-color: #594D73 #1A1A1A;
-        }
-        .modal-scroll-content::-webkit-scrollbar {
-            display: block !important;
-            width: 1px;
-        }
-        .modal-scroll-content::-webkit-scrollbar-track {
-            background: #1A1A1A;
-        }
-        .modal-scroll-content::-webkit-scrollbar-thumb {
-            background: #594D73;
-        }
-        .htmx-indicator {
-            display: none;
-        }
-        .htmx-request .htmx-indicator {
-            display: inline-block;
-        }
-        .htmx-request .btn-text {
-            display: none;
-        }
+        body { font-family: var(--font-ui) !important; font-size: var(--fs-ui) !important; background-color: var(--color-dark) !important; color: var(--color-text) !important; }
+        .text-gray-200, .text-gray-300, .text-gray-400 { color: var(--color-text) !important; }
+        #message-list { font-size: var(--fs-editor) !important; }
+        
+        /* Adjust opacity for secondary text to keep hierarchy */
+        .text-xs, .text-sm { opacity: 0.9; }
     </style>
 </head>
-<body class="bg-dark text-gray-200 h-screen flex" hx-ext="ws" ws-connect="/coder/ws/session/{{ session.id }}">
+<body class="bg-dark text-gray-200 h-screen flex" 
+      hx-ext="ws" 
+      ws-connect="/coder/ws/session/{{ session.id }}"
+      x-data>
     
     <!-- Tailwind CSS Safelist -->
     <div class="hidden border-red-500 border-green-500 border-blue-500 border-yellow-500"></div>
@@ -187,170 +104,17 @@
 
     <main class="flex-1 flex overflow-hidden bg-dark">
         {% block content %}{% endblock %}
-        
+
         {% include "layout/right_sidebar.html" %}
     </main>
 
     {% include "settings/settings_modal.html" %}
+    {% include "settings/appearance_modal.html" %}
     {% include "projects/projects_modal.html" %}
     {% include "prompts/prompts_modal.html" %}
     {% include "history/history_modal.html" %}
     {% include "context/context_file_selection_modal.html" %}
-
     {% include "components/alerts/toast.html" %}
-
-    <script>
-        let filesCount = 0;
-        let currentPromptTab = 'global';
-
-        function copyCode(button) {
-            const codeBlock = button.parentElement.querySelector('code');
-            const text = codeBlock.textContent;
-            navigator.clipboard.writeText(text).then(() => {
-                button.innerHTML = '<i class="fas fa-check mr-1"></i> Copied!';
-                setTimeout(() => {
-                    button.innerHTML = '<i class="fas fa-copy mr-1"></i> Copy';
-                }, 2000);
-            });
-        }
-
-        function clearHistory() {
-            addLog('History cleared', 'blue');
-            document.getElementById('history-modal').classList.remove('active');
-        }
-
-        function saveSettings() {
-            addLog('Settings saved successfully', 'green');
-        }
-
-        function initializeFileTree() {
-            document.querySelectorAll('.tree-toggle').forEach(toggle => {
-                toggle.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    const item = this.closest('.tree-item');
-                    item.classList.toggle('open');
-                    this.classList.toggle('rotate-90');
-                });
-            });
-
-            document.querySelectorAll('.folder-checkbox').forEach(checkbox => {
-                checkbox.addEventListener('change', function(e) {
-                    e.stopPropagation();
-                    const item = this.closest('.tree-item');
-                    const childCheckboxes = item.querySelectorAll('input[type="checkbox"]');
-                    childCheckboxes.forEach(child => {
-                        child.checked = this.checked;
-                    });
-                });
-            });
-        }
-
-        function expandAllFolders() {
-            document.querySelectorAll('.tree-item').forEach(item => item.classList.add('open'));
-            document.querySelectorAll('.tree-toggle').forEach(toggle => toggle.classList.add('rotate-90'));
-        }
-
-        function collapseAllFolders() {
-            document.querySelectorAll('.tree-item').forEach(item => item.classList.remove('open'));
-            document.querySelectorAll('.tree-toggle').forEach(toggle => toggle.classList.remove('rotate-90'));
-        }
-
-        function removeContextFile(button) {
-            button.closest('div').remove();
-            filesCount--;
-            document.getElementById('files-count').textContent = filesCount;
-            const contextContainer = document.getElementById('context-files-container');
-            if (contextContainer.children.length === 0) {
-                contextContainer.innerHTML = '<div class="text-xs text-gray-500 text-center py-6">No files loaded</div>';
-            }
-        }
-
-        function clearContextFiles() {
-            document.getElementById('context-files-container').innerHTML = '<div class="text-xs text-gray-500 text-center py-6">No files loaded</div>';
-            filesCount = 0;
-            document.getElementById('files-count').textContent = filesCount;
-            addLog('Context files cleared', 'blue');
-        }
-
-        function handleKeydown(event) {
-            if (event.key === 'Enter' && event.ctrlKey) {
-                event.preventDefault();
-                const form = event.target.form;
-                if (form) {
-                    const submitButton = form.querySelector('button[type="submit"]');
-                    if (submitButton) submitButton.click();
-                }
-            }
-        }
-
-        function addLog(message, color) {
-            const logsContainer = document.getElementById('logs-container');
-            if (logsContainer.querySelector('.text-center')) {
-                logsContainer.innerHTML = '';
-            }
-
-            const logEntry = document.createElement('div');
-            logEntry.className = `p-2 rounded-md bg-dark-card hover:bg-dark-light border-l-2 border-${color}-500 my-1 text-xs`;
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'text-gray-300';
-            messageDiv.textContent = message;
-            const timestampDiv = document.createElement('div');
-            timestampDiv.className = 'text-gray-500 text-[10px] mt-0.5';
-            timestampDiv.textContent = new Date().toLocaleTimeString();
-            logEntry.append(messageDiv, timestampDiv);
-            logsContainer.insertBefore(logEntry, logsContainer.firstChild);
-
-            if (logsContainer.children.length > 30) {
-                logsContainer.removeChild(logsContainer.lastChild);
-            }
-        }
-
-        function clearLogs() {
-            document.getElementById('logs-container').innerHTML = '<div class="text-xs text-gray-500 text-center py-6">No logs yet</div>';
-        }
-
-        document.body.addEventListener('settingsSaved', saveSettings);
-
-        document.body.addEventListener('htmx:responseError', function(event) {
-            let message = 'An unexpected error occurred.';
-            try {
-                // FastAPI exceptions often have a 'detail' key.
-                const errorData = JSON.parse(event.detail.xhr.responseText);
-                message = errorData.detail || event.detail.xhr.statusText;
-            } catch (e) {
-                // Fallback for non-JSON or malformed responses.
-                message = event.detail.xhr.statusText || 'Server error.';
-            }
-
-            window.dispatchEvent(new CustomEvent('show-error-toast', {
-                detail: {
-                    message: message
-                }
-            }));
-        });
-
-        document.body.addEventListener('click', function(event) {
-            const openButton = event.target.closest('[data-modal-open]');
-            const closeButton = event.target.closest('[data-modal-close]');
-
-            if (openButton) {
-                const modalId = openButton.getAttribute('data-modal-open');
-                const modal = document.getElementById(modalId);
-                if (modal) {
-                    modal.classList.add('active');
-                    if (modalId === 'file-selection-modal') {
-                        initializeFileTree();
-                    }
-                }
-            } else if (closeButton) {
-                const modal = closeButton.closest('.modal-overlay');
-                if (modal) {
-                    modal.classList.remove('active');
-                }
-            }
-        });
-
-
-    </script>
+    <script src="/static/js/app.js"></script>
 </body>
 </html>
