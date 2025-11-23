@@ -1,3 +1,4 @@
+import logging
 from app.projects.services import ProjectService
 
 
@@ -30,6 +31,20 @@ class ContextService:
                 {"type": "file", "name": "README.md", "path": f"{active_project.path}/README.md"},
             ],
         }
+
+    async def add_to_active_context(self, file_path: str) -> None:
+        """
+        Adds a file to the active context (Tier 2).
+        """
+        # TODO: Implement logic to persist this to the DB or Redis state
+        logging.info(f"Adding {file_path} to active context")
+
+    async def remove_from_active_context(self, file_path: str) -> None:
+        """
+        Removes a file from the active context.
+        """
+        # TODO: Implement logic to remove from DB or Redis state
+        logging.info(f"Removing {file_path} from active context")
 
 
 class ContextPageService:

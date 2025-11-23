@@ -1,11 +1,14 @@
 import logging
 from asyncio import Event
-from typing import AsyncGenerator
+from typing import Any, AsyncGenerator, Callable, Coroutine
 
+from sqlalchemy.ext.asyncio import AsyncSession
 from llama_index.core.agent import AgentStream, ToolCall, ToolCallResult
 from llama_index.core.llms import ChatMessage
 from llama_index.core.workflow import Context
 
+from app.settings.services import SettingsService
+from app.core.db import DatabaseSessionManager
 from app.chat.services import ChatService
 from app.coder.schemas import (
     AIMessageChunkEvent,
@@ -16,9 +19,9 @@ from app.coder.schemas import (
     LogLevel,
 )
 from app.history.enums import HistoryEventType
-from app.usage.services import UsageService, UsagePageService
+from app.usage.services import UsagePageService
 from app.prompts.enums import PromptEventType
-from app.agents.factory import WorkflowFactory
+from app.llms.factory import LLMFactory
 
 
 logger = logging.getLogger(__name__)
@@ -27,30 +30,38 @@ logger = logging.getLogger(__name__)
 class CoderService:
     def __init__(
         self,
-        chat_service: ChatService,
-        usage_service: UsageService,
-        workflow_factory: WorkflowFactory,
+        db: DatabaseSessionManager,
+        llm_factory: LLMFactory,
+        chat_service_factory: Callable[[AsyncSession], Coroutine[Any, Any, ChatService]],
+        settings_service_factory: Callable[
+            [AsyncSession, LLMFactory], Coroutine[Any, Any, SettingsService]
+        ],
+        agent_factory: Callable[..., Coroutine[Any, Any, Any]],
     ):
-        self.chat_service = chat_service
-        self.usage_service = usage_service
-        self.workflow_factory = workflow_factory
-
-    async def _get_workflow_handler(self, user_message: str, session_id: int):
-        # TODO: Tools should be dynamic, that's why we use factory: a new workflow for every message
-        workflow = await self.workflow_factory.create_function_agent(tools=[])
-        chat_history = await self._build_chat_history(session_id=session_id)
-        ctx = Context(workflow)
-
-        handler = workflow.run(
-            user_msg=user_message, chat_history=chat_history, ctx=ctx
-        )
-        return handler
+        self.db = db
+        self.llm_factory = llm_factory
+        self.chat_service_factory = chat_service_factory
+        self.settings_service_factory = settings_service_factory
+        self.agent_factory = agent_factory
 
     async def handle_user_message(
         self, *, user_message: str, session_id: int
     ) -> AsyncGenerator[CoderEvent, None]:
         try:
-            handler = await self._get_workflow_handler(user_message, session_id)
+            async with self.db.session() as session:
+                settings_service = await self.settings_service_factory(session, self.llm_factory)
+                workflow = await self.agent_factory(self.llm_factory, settings_service)
+
+                chat_service = await self.chat_service_factory(session)
+                db_messages = await chat_service.get_messages_for_session(session_id=session_id)
+                chat_history = [
+                    ChatMessage(role=msg.role, content=msg.content) for msg in db_messages
+                ]
+
+            ctx = Context(workflow)
+            handler = workflow.run(
+                user_msg=user_message, chat_history=chat_history, ctx=ctx
+            )
 
             async for event in handler.stream_events():
                 if coder_event := await self._process_workflow_event(event):
@@ -58,10 +69,11 @@ class CoderService:
 
             # Await the handler to get the final result and ensure completion.
             llm_full_response = await handler
-            # we save user message after workflow because it could fail.
-            # we store it on frontend in case of error, for retrying
-            await self.chat_service.add_user_message(session_id=session_id, content=user_message)
-            await self.chat_service.add_ai_message(session_id=session_id, content=str(llm_full_response))
+
+            async with self.db.session() as session:
+                chat_service = await self.chat_service_factory(session)
+                await chat_service.add_user_message(session_id=session_id, content=user_message)
+                await chat_service.add_ai_message(session_id=session_id, content=str(llm_full_response))
 
             yield AIMessageCompletedEvent(
                 message=str(llm_full_response)
@@ -79,14 +91,6 @@ class CoderService:
 
         logger.warning(f"Unknown event type from workflow: {type(event)}")
         return None
-
-    async def _build_chat_history(self, session_id: int) -> list[ChatMessage]:
-        db_messages = await self.chat_service.get_messages_for_session(session_id=session_id)
-
-        chat_history = [
-            ChatMessage(role=msg.role, content=msg.content) for msg in db_messages
-        ]
-        return chat_history
 
     @staticmethod
     async def _handle_workflow_exception(e: Exception, original_message: str) -> WorkflowErrorEvent:
