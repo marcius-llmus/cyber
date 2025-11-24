@@ -5,7 +5,7 @@ from typing import Any, Callable, Coroutine
 from fastapi import WebSocketDisconnect
 from pydantic import ValidationError
 
-from app.coder.dependencies import get_coder_service_for_ws
+from app.coder.factories import coder_service_factory
 from app.coder.schemas import (
     AIMessageChunkEvent,
     AIMessageCompletedEvent,
@@ -17,7 +17,6 @@ from app.coder.schemas import (
     LogLevel,
 )
 from app.commons.websockets import WebSocketConnectionManager
-from app.core.db import sessionmanager
 from app.core.templating import templates
 from datetime import datetime
 
@@ -82,16 +81,14 @@ class WebSocketOrchestrator:
                     turn_id = await self._prepare_ui_for_new_turn(message.message)
 
                 try:
-                    # we get a new session everytime here because wss conn will stay opened
-                    async with sessionmanager.session() as db:  # noqa
-                        coder_service = await get_coder_service_for_ws(db)
+                    coder_service = await coder_service_factory()
 
-                        stream = coder_service.handle_user_message(
-                            user_message=message.message, session_id=self.session_id
-                        )
+                    stream = coder_service.handle_user_message(
+                        user_message=message.message, session_id=self.session_id
+                    )
 
-                        async for event in stream:
-                            await self._process_event(event, turn_id)
+                    async for event in stream:
+                        await self._process_event(event, turn_id)
 
                 except Exception as e:
                     logger.error(f"An error occurred in WebSocket turn {turn_id}: {e}", exc_info=True)
