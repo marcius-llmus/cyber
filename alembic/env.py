@@ -11,6 +11,9 @@ from app.history.models import *  # noqa
 from app.projects.models import *  # noqa
 from app.prompts.models import *  # noqa
 from app.settings.models import *  # noqa
+from app.context.models import * # noqa
+from app.agents.models import * # noqa
+
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
