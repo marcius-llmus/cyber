@@ -1,13 +1,10 @@
-from async_lru import alru_cache
-from app.llms.factory import LLMFactory
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.llms.factories import get_llm_factory_instance
+from app.llms.services import LLMService
+from app.settings.dependencies import build_settings_service
 
 
-@alru_cache
-async def get_llm_factory_instance() -> LLMFactory:
-    """This function creates and caches a single instance of LLMFactory."""
-    return LLMFactory()
-
-
-async def get_llm_factory() -> LLMFactory:
-    """FastAPI dependency provider that returns the singleton LLMFactory instance."""
-    return await get_llm_factory_instance()
+async def build_llm_service(db: AsyncSession) -> LLMService:
+    settings_service = await build_settings_service(db)
+    llm_factory = await get_llm_factory_instance()
+    return LLMService(settings_service=settings_service, llm_factory=llm_factory)

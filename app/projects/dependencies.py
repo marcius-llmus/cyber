@@ -10,10 +10,15 @@ async def get_project_repository(db: AsyncSession = Depends(get_db)) -> ProjectR
     return ProjectRepository(db=db)
 
 
-async def get_project_service(
-    repo: ProjectRepository = Depends(get_project_repository),
-) -> ProjectService:
+async def build_project_service(db: AsyncSession) -> ProjectService:
+    repo = ProjectRepository(db)
     return ProjectService(project_repo=repo)
+
+
+async def get_project_service(
+    db: AsyncSession = Depends(get_db),
+) -> ProjectService:
+    return await build_project_service(db)
 
 
 async def get_project_page_service(

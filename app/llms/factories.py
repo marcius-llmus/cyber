@@ -10,8 +10,6 @@ from app.llms.domain import LLM
 from app.llms.enums import LLMModel, LLMProvider
 
 
-
-
 class LLMFactory:
     _MODEL_REGISTRY: dict[LLMModel, LLM] = {
         # Anthropic
@@ -89,3 +87,9 @@ class LLMFactory:
             return GoogleGenAI(model=model_name, temperature=temperature, api_key=api_key)
         else:
             raise ValueError(f"Unsupported LLM provider: {provider}")
+
+
+@alru_cache
+async def get_llm_factory_instance() -> LLMFactory:
+    """This function creates and caches a single instance of LLMFactory."""
+    return LLMFactory()

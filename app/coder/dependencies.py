@@ -1,11 +1,15 @@
 from fastapi import Depends
 
 from app.chat.dependencies import get_chat_service
+from app.chat.dependencies import build_chat_service
 from app.chat.services import ChatService
 from app.coder.services import CoderPageService
+from app.coder.services import CoderService
 from app.usage.dependencies import get_usage_page_service
 from app.usage.services import UsagePageService
-
+from app.core.db import sessionmanager
+from app.agents.factories import build_agent
+from app.agents.dependencies import build_workflow_service
 
 async def get_coder_page_service(
     usage_page_service: UsagePageService = Depends(get_usage_page_service),
@@ -13,4 +17,12 @@ async def get_coder_page_service(
 ) -> CoderPageService:
     return CoderPageService(
         usage_page_service=usage_page_service, chat_service=chat_service
+    )
+
+async def get_coder_service() -> CoderService:
+    return CoderService(
+        db=sessionmanager,
+        chat_service_factory=build_chat_service,
+        workflow_service_factory=build_workflow_service,
+        agent_factory=build_agent
     )
