@@ -11,9 +11,15 @@ class BaseToolSet(ABC):
     Abstract Base Class for a set of Agent Tools.
     Enforces standardized initialization with DB and Settings.
     """
-    def __init__(self, db: DatabaseSessionManager, settings: Settings):
+    def __init__(
+        self,
+        db: DatabaseSessionManager,
+        settings: Settings,
+        session_id: int | None = None,
+    ):
         self.db = db
         self.settings = settings
+        self.session_id = session_id
 
     @property
     @abstractmethod
