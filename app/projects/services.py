@@ -1,3 +1,4 @@
+from app.projects.models import Project
 import os
 import asyncio
 
@@ -70,6 +71,9 @@ class ProjectService:
             await self.project_repo.activate(project_to_activate)
 
         return await self.project_repo.list()
+
+    async def get_active_project(self) -> Project | None:
+        return await self.project_repo.get_active()
 
 
 class ProjectPageService:
