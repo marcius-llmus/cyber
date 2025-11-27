@@ -2,7 +2,7 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.commons.dependencies import get_db
-from app.llms.factories import LLMFactory, get_llm_factory_instance
+from app.llms.factories import get_llm_factory_instance
 from app.settings.repositories import LLMSettingsRepository, SettingsRepository
 from app.settings.services import (
     LLMSettingsService,
@@ -46,6 +46,6 @@ async def get_settings_service(
 
 async def get_settings_page_service(
     settings_service: SettingsService = Depends(get_settings_service),
-    llm_factory: LLMFactory = Depends(get_llm_factory_instance),
 ) -> SettingsPageService:
+    llm_factory = await get_llm_factory_instance()
     return SettingsPageService(settings_service=settings_service, llm_factory=llm_factory)

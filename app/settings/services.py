@@ -1,6 +1,6 @@
 from app.llms.enums import LLMModel, LLMProvider
 from sqlalchemy import select
-from app.llms.factory import LLMFactory
+from app.llms.factories import LLMFactory
 from app.settings.exceptions import LLMSettingsAlreadyExistsException
 from app.settings.models import LLMSettings, Settings
 from app.settings.repositories import LLMSettingsRepository, SettingsRepository
