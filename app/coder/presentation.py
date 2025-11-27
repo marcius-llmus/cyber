@@ -5,7 +5,7 @@ from typing import Any, Callable, Coroutine
 from fastapi import WebSocketDisconnect
 from pydantic import ValidationError
 
-from app.coder.factories import coder_service_factory
+from app.coder.services import CoderService
 from app.coder.schemas import (
     AIMessageChunkEvent,
     AIMessageCompletedEvent,
@@ -30,9 +30,11 @@ class WebSocketOrchestrator:
         self,
         ws_manager: WebSocketConnectionManager,
         session_id: int,
+        coder_service: CoderService,
     ):
         self.ws_manager = ws_manager
         self.session_id = session_id
+        self.coder_service = coder_service
         self.event_handlers: dict[type, Handler] = {
             AIMessageChunkEvent: self._render_ai_message_chunk,
             AIMessageCompletedEvent: self._render_ai_message_controls,
@@ -81,9 +83,7 @@ class WebSocketOrchestrator:
                     turn_id = await self._prepare_ui_for_new_turn(message.message)
 
                 try:
-                    coder_service = await coder_service_factory()
-
-                    stream = coder_service.handle_user_message(
+                    stream = self.coder_service.handle_user_message(
                         user_message=message.message, session_id=self.session_id
                     )
 
@@ -124,7 +124,7 @@ class WebSocketOrchestrator:
         template = templates.get_template("chat/partials/ai_message_controls.html").render(context)
         await self.ws_manager.send_html(template)
 
-    async def _render_usage_metrics(self, event: UsageMetricsUpdatedEvent):
+    async def _render_usage_metrics(self, event: UsageMetricsUpdatedEvent, turn_id: str):
         context = {
             "total_cost": event.total_cost,
             "input_tokens": event.input_tokens,
@@ -138,7 +138,7 @@ class WebSocketOrchestrator:
         template = templates.get_template("components/actions/trigger_toast.html").render(context)
         await self.ws_manager.send_html(template)
 
-    async def _handle_workflow_log(self, event: WorkflowLogEvent):
+    async def _handle_workflow_log(self, event: WorkflowLogEvent, **kwargs):
         color_map = {"info": "gray", "error": "red"}
         color = color_map.get(event.level, "gray")
 
