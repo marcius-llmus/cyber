@@ -4,12 +4,14 @@ from app.history.exceptions import ChatSessionNotFoundException
 from app.history.models import ChatSession, Message
 from app.history.repositories import ChatSessionRepository
 from app.history.schemas import ChatSessionCreate
+from app.agents.services import WorkflowService
 
 
 class HistoryService:
-    def __init__(self, session_repo: ChatSessionRepository, project_service: ProjectService):
+    def __init__(self, session_repo: ChatSessionRepository, project_service: ProjectService, workflow_service: WorkflowService):
         self.session_repo = session_repo
         self.project_service = project_service
+        self.workflow_service = workflow_service
 
     async def get_sessions_by_project(self, project_id: int) -> list[ChatSession]:
         return await self.session_repo.list_by_project(project_id=project_id)
@@ -42,6 +44,8 @@ class HistoryService:
         session_to_delete = await self.session_repo.get(pk=session_id_to_delete)
         if not session_to_delete:
             raise ChatSessionNotFoundException(f"Session with id {session_id_to_delete} not found.")
+
+        await self.workflow_service.delete_workflow_state(session_id=session_id_to_delete)
 
         was_active = session_to_delete.is_active
         await self.session_repo.delete(pk=session_id_to_delete)
