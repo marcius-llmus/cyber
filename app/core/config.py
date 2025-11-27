@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     BLUEPRINTS_ROOT_DIR: str = "blueprints"
     LOG_LEVEL: LogLevel = LogLevel.WARNING
 
+    @property
+    def queries_dir(self) -> str:
+        return str(BASE_DIR / "app/context/repomap/queries")
+
     @field_validator("PROJECTS_ROOT_DIR", "BLUEPRINTS_ROOT_DIR")
     def make_absolute(cls, v: str) -> str: # noqa
         if not Path(v).is_absolute():
