@@ -2,6 +2,7 @@ import os
 import pathspec
 import asyncio
 from pathlib import Path
+from pathspec.patterns import GitWildMatchPattern
 from app.settings.services import SettingsService
 
 from app.context.models import ContextFile
@@ -19,15 +20,41 @@ class CodebaseService:
     """
 
     DEFAULT_IGNORE_PATTERNS = [
+        ".aider*",
         ".git",
-        ".venv",
-        "__pycache__",
-        ".idea",
-        ".vscode",
-        "node_modules",
-        "target",
-        "dist",
-        "build",
+        # Common editor backup/temp files
+        "*~",  # Emacs/vim backup
+        "*.bak",  # Generic backup
+        "*.swp",  # Vim swap
+        "*.swo",  # Vim swap
+        "\\#*\\#",  # Emacs auto-save
+        ".#*",  # Emacs lock files
+        "*.tmp",  # Generic temp files
+        "*.temp",  # Generic temp files
+        "*.orig",  # Merge conflict originals
+        "*.pyc",  # Python bytecode
+        "__pycache__/",  # Python cache dir
+        ".DS_Store",  # macOS metadata
+        "Thumbs.db",  # Windows thumbnail cache
+        "*.svg",
+        "*.pdf",
+        # IDE files
+        ".idea/",  # JetBrains IDEs
+        ".vscode/",  # VS Code
+        "*.sublime-*",  # Sublime Text
+        ".project",  # Eclipse
+        ".settings/",  # Eclipse
+        "*.code-workspace",  # VS Code workspace
+        # Environment files
+        ".env",  # Environment variables
+        ".venv/",  # Python virtual environments
+        "node_modules/",  # Node.js dependencies
+        "vendor/",  # Various dependencies
+        # Logs and caches
+        "*.log",  # Log files
+        ".cache/",  # Cache directories
+        ".pytest_cache/",  # Python test cache
+        "coverage/",  # Code coverage reports
     ]
 
     async def scan_files(self, project_root: str, paths: list[str] | None = None) -> list[str]:
@@ -48,7 +75,7 @@ class CodebaseService:
             with open(gitignore_path, "r") as f:
                 ignore_lines.extend(f.readlines())
         
-        spec = pathspec.PathSpec.from_lines("gitwildmatch", ignore_lines)
+        spec = pathspec.PathSpec.from_lines(GitWildMatchPattern, ignore_lines)
         
         # Determine search roots: join project root with provided relative paths, or use project root
         if paths:

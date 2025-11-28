@@ -72,7 +72,7 @@ class CoderService:
                 else:
                     logger.debug(f"Skipped processing for event type: {type(event)}")
 
-            logger.info(f"Workflow stream finished for session {session_id}. Awaiting final result.")
+            logger.info(f"Workflow stream finished for session {session_id}.")
 
             # Await the handler to get the final result and ensure completion.
             llm_full_response = await handler
