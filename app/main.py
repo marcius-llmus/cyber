@@ -17,6 +17,7 @@ from app.prompts.routes.htmx import router as prompts_htmx_router
 from app.settings.routes.htmx import router as settings_htmx_router
 from app.settings.utils import initialize_application_settings
 from app.core.config import settings
+from app.core.observability import init_observability
 
 
 logging.basicConfig(
@@ -30,6 +31,10 @@ async def lifespan(app: FastAPI): # noqa
     """
     Ensures that the default application settings are created on startup.
     """
+    # Initialize Observability (Arize Phoenix) if enabled
+    if settings.OBSERVABILITY_ENABLED:
+        init_observability()
+
     async with sessionmanager.session() as session:
         await initialize_application_settings(session)
     yield
