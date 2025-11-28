@@ -20,7 +20,6 @@ class CodebaseService:
     """
 
     DEFAULT_IGNORE_PATTERNS = [
-        ".aider*",
         ".git",
         # Common editor backup/temp files
         "*~",  # Emacs/vim backup
