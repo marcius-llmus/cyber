@@ -33,7 +33,10 @@ class LLMSettingsService:
                 select(LLMSettings).filter(LLMSettings.provider == provider, LLMSettings.api_key.isnot(None)).limit(1)
             )
         )
-        return llm_setting_with_key.scalars().first().api_key if llm_setting_with_key else None
+        if settings := llm_setting_with_key.scalars().first():
+            return settings.api_key
+
+        return None
 
     async def update(self, db_obj: LLMSettings, obj_in: LLMSettingsUpdate) -> LLMSettings:
         return await self.llm_settings_repo.update(db_obj=db_obj, obj_in=obj_in)

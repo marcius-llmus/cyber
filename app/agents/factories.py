@@ -7,6 +7,7 @@ from app.llms.dependencies import build_llm_service
 from llama_index.core.agent.workflow import FunctionAgent
 from llama_index.core.tools import BaseTool
 from app.context.tools import SearchTools, ContextTools
+from app.coder.tools import PatcherTools
 
 
 async def build_agent(db: AsyncSession, session_id: int) -> FunctionAgent:
@@ -28,6 +29,11 @@ async def build_agent(db: AsyncSession, session_id: int) -> FunctionAgent:
         db=sessionmanager, settings=settings, session_id=session_id, codebase_service=codebase_service
     )
     tools.extend(search_tools.to_tool_list())
+
+    patcher_tools = PatcherTools(
+        db=sessionmanager, settings=settings, session_id=session_id
+    )
+    tools.extend(patcher_tools.to_tool_list())
 
     repo_map = await repo_map_service.generate_repo_map(session_id)
 
