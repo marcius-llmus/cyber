@@ -16,7 +16,12 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite+aiosqlite:///./database.db"
     PROJECTS_ROOT_DIR: str = "projects"
     BLUEPRINTS_ROOT_DIR: str = "blueprints"
-    LOG_LEVEL: LogLevel = LogLevel.WARNING
+    LOG_LEVEL: LogLevel = LogLevel.INFO
+    OBSERVABILITY_ENABLED: bool = False
+
+    @property
+    def queries_dir(self) -> str:
+        return str(BASE_DIR / "app/context/repomap/queries")
 
     @field_validator("PROJECTS_ROOT_DIR", "BLUEPRINTS_ROOT_DIR")
     def make_absolute(cls, v: str) -> str: # noqa

@@ -5,8 +5,10 @@ from app.chat.services import ChatService
 from app.chat.dependencies import get_chat_service
 from app.coder.dependencies import (
     get_coder_page_service,
+    get_coder_service,
     CoderPageService,
 )
+from app.coder.services import CoderService
 from app.coder.presentation import WebSocketOrchestrator
 from app.commons.websockets import WebSocketConnectionManager
 from app.core.templating import templates
@@ -46,8 +48,9 @@ async def read_session(
 async def conversation_websocket(
     websocket: WebSocket,
     session_id: int,
+    coder_service: CoderService = Depends(get_coder_service),
 ):
     ws_manager = WebSocketConnectionManager(websocket)
     await ws_manager.connect()
-    orchestrator = WebSocketOrchestrator(ws_manager=ws_manager, session_id=session_id)
+    orchestrator = WebSocketOrchestrator(ws_manager=ws_manager, session_id=session_id, coder_service=coder_service)
     await orchestrator.handle_connection()

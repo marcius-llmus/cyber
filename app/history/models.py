@@ -8,7 +8,6 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
-    UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -51,15 +50,3 @@ class Message(Base):
     cost = Column(Float, nullable=True)
 
     session = relationship("ChatSession", back_populates="messages", lazy="joined")
-
-
-class ContextFile(Base):
-    __tablename__ = "context_files"
-
-    id = Column(Integer, primary_key=True)
-    session_id = Column(Integer, ForeignKey("chat_sessions.id"), nullable=False)
-    file_path = Column(String, nullable=False)
-
-    session = relationship("ChatSession", back_populates="context_files", lazy="joined")
-
-    __table_args__ = (UniqueConstraint("session_id", "file_path", name="_session_file_uc"),)

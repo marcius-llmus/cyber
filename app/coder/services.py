@@ -1,13 +1,18 @@
 import logging
 from asyncio import Event
-from typing import Any, AsyncGenerator, Callable, Coroutine
+from typing import Any, AsyncGenerator, Callable, Coroutine, Awaitable
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from llama_index.core.agent import AgentStream, ToolCall, ToolCallResult
+from llama_index.core.agent.workflow.workflow_events import (
+    AgentInput,
+    AgentOutput,
+    AgentStream,
+    ToolCall,
+    ToolCallResult,
+)
 from llama_index.core.llms import ChatMessage
-from llama_index.core.workflow import Context
+from llama_index.core.workflow import StopEvent
 
-from app.settings.services import SettingsService
 from app.core.db import DatabaseSessionManager
 from app.chat.services import ChatService
 from app.coder.schemas import (
@@ -18,10 +23,10 @@ from app.coder.schemas import (
     WorkflowLogEvent,
     LogLevel,
 )
+from app.agents.services import WorkflowService
 from app.history.enums import HistoryEventType
 from app.usage.services import UsagePageService
 from app.prompts.enums import PromptEventType
-from app.llms.factory import LLMFactory
 
 
 logger = logging.getLogger(__name__)
@@ -30,27 +35,26 @@ logger = logging.getLogger(__name__)
 class CoderService:
     def __init__(
         self,
-        db: DatabaseSessionManager,
-        llm_factory: LLMFactory,
-        chat_service_factory: Callable[[AsyncSession], Coroutine[Any, Any, ChatService]],
-        settings_service_factory: Callable[
-            [AsyncSession, LLMFactory], Coroutine[Any, Any, SettingsService]
-        ],
-        agent_factory: Callable[..., Coroutine[Any, Any, Any]],
+        db: DatabaseSessionManager, # this is not a session, but the manager
+        chat_service_factory: Callable[[AsyncSession], Awaitable[ChatService]],
+        workflow_service_factory: Callable[[AsyncSession], Awaitable[WorkflowService]],
+        agent_factory: Callable[[AsyncSession, int], Coroutine[Any, Any, Any]],
     ):
         self.db = db
-        self.llm_factory = llm_factory
         self.chat_service_factory = chat_service_factory
-        self.settings_service_factory = settings_service_factory
         self.agent_factory = agent_factory
+        self.workflow_service_factory = workflow_service_factory
 
     async def handle_user_message(
         self, *, user_message: str, session_id: int
     ) -> AsyncGenerator[CoderEvent, None]:
         try:
             async with self.db.session() as session:
-                settings_service = await self.settings_service_factory(session, self.llm_factory)
-                workflow = await self.agent_factory(self.llm_factory, settings_service)
+                workflow = await self.agent_factory(session, session_id)
+
+                workflow_service = await self.workflow_service_factory(session)
+                
+                ctx = await workflow_service.get_context(session_id, workflow)
 
                 chat_service = await self.chat_service_factory(session)
                 db_messages = await chat_service.get_messages_for_session(session_id=session_id)
@@ -58,7 +62,6 @@ class CoderService:
                     ChatMessage(role=msg.role, content=msg.content) for msg in db_messages
                 ]
 
-            ctx = Context(workflow)
             handler = workflow.run(
                 user_msg=user_message, chat_history=chat_history, ctx=ctx
             )
@@ -66,28 +69,45 @@ class CoderService:
             async for event in handler.stream_events():
                 if coder_event := await self._process_workflow_event(event):
                     yield coder_event
+                else:
+                    logger.debug(f"Skipped processing for event type: {type(event)}")
+
+            logger.info(f"Workflow stream finished for session {session_id}.")
 
             # Await the handler to get the final result and ensure completion.
             llm_full_response = await handler
+            final_content = str(llm_full_response)
 
             async with self.db.session() as session:
                 chat_service = await self.chat_service_factory(session)
                 await chat_service.add_user_message(session_id=session_id, content=user_message)
-                await chat_service.add_ai_message(session_id=session_id, content=str(llm_full_response))
+                await chat_service.add_ai_message(session_id=session_id, content=final_content)
+
+                # Persist Context State
+                workflow_service = await self.workflow_service_factory(session)
+                await workflow_service.save_context(session_id, ctx)
 
             yield AIMessageCompletedEvent(
-                message=str(llm_full_response)
+                message=final_content
             )
         except Exception as e:
             yield await self._handle_workflow_exception(e, original_message=user_message)
 
     async def _process_workflow_event(self, event: Event) -> CoderEvent | None:
+        logger.debug(f"Processing workflow event: {type(event)}")
+        
         if isinstance(event, AgentStream):
             return await self._handle_agent_stream(event)
         elif isinstance(event, ToolCall):
             return await self._handle_tool_call(event)
         elif isinstance(event, ToolCallResult):
             return await self._handle_tool_call_result(event)
+        elif isinstance(event, AgentInput):
+            return await self._handle_agent_input(event)
+        elif isinstance(event, AgentOutput):
+            return await self._handle_agent_output(event)
+        elif isinstance(event, StopEvent):
+            return None
 
         logger.warning(f"Unknown event type from workflow: {type(event)}")
         return None
@@ -104,9 +124,23 @@ class CoderService:
 
     @staticmethod
     async def _handle_agent_stream(event: AgentStream) -> AIMessageChunkEvent | None:
+        logger.debug(f"Handling AgentStream. Delta: '{event.delta}'")
         if event.delta:
             return AIMessageChunkEvent(delta=event.delta)
+        else:
+            logger.debug("AgentStream event received but delta was empty.")
         return None
+
+    @staticmethod
+    async def _handle_agent_input(event: AgentInput) -> WorkflowLogEvent:
+        return WorkflowLogEvent(message="Agent is planning next steps...", level=LogLevel.INFO)
+
+    @staticmethod
+    async def _handle_agent_output(event: AgentOutput) -> WorkflowLogEvent:
+        content = ""
+        if event.response and event.response.content:
+            content = f" Output: {event.response.content[:50]}..."
+        return WorkflowLogEvent(message=f"Agent step completed.{content}", level=LogLevel.INFO)
 
     @staticmethod
     async def _handle_tool_call(event: ToolCall) -> WorkflowLogEvent:
