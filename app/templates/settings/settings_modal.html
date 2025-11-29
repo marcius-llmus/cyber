@@ -7,6 +7,7 @@
         hx-target="#settings-form-container"
         hx-ext="form-json"
         hx-swap="innerHTML"
+        data-close-modal
     >
         <div id="settings-form-container"
              class="min-h-[200px]"
@@ -22,9 +23,10 @@
             <button type="button" data-modal-close class="px-4 py-2 bg-dark-lighter hover:bg-dark-light border border-dark-light rounded-lg text-sm">
                 Cancel
             </button>
-            {% set text = "Save Changes" %}
-            {% set button_class = "py-2 bg-primary hover:bg-primary-dark rounded-lg text-sm font-medium text-white w-[130px] h-9 flex items-center justify-center" %}
-            {% include "components/buttons/submit_with_spinner.html" %}
+            <button type="submit" class="py-2 bg-primary hover:bg-primary-dark rounded-lg text-sm font-medium text-white w-[130px] h-9 flex items-center justify-center">
+                <span>Save Changes</span>
+                <span>{% include "components/icons/spinner.html" %}</span>
+            </button>
         </div>
     </form>
 {% endcall %}

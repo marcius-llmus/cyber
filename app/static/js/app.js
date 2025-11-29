@@ -1,6 +1,14 @@
 /**
  * Llama Coding - Main Application Logic
 **/
+const Action = {
+    CLEAR_LOGS: 'clear-logs',
+    CLEAR_HISTORY: 'clear-history',
+    EXPAND_FOLDERS: 'expand-all-folders',
+    COLLAPSE_FOLDERS: 'collapse-all-folders',
+    TOGGLE_FOLDER: 'toggle-folder'
+};
+
 class ChatApp {
     static init() {
         this.filesCount = 0;
@@ -8,6 +16,7 @@ class ChatApp {
         this.setupMarkdownRenderer();
         this.setupObservers();
         this.setupEventListeners();
+        this.setupTreeStatePreservation();
         
         // Initial scan for existing markdown content
         document.addEventListener('DOMContentLoaded', () => {
@@ -288,6 +297,34 @@ class ChatApp {
         });
     }
 
+    static setupTreeStatePreservation() {
+        let expandedIds = new Set();
+
+        document.body.addEventListener('htmx:beforeSwap', (evt) => {
+            if (evt.target.id === 'file-tree') {
+                expandedIds.clear();
+                evt.target.querySelectorAll('.tree-toggle.rotate-90').forEach(toggle => {
+                    const item = toggle.closest('.tree-item');
+                    if (item && item.id) expandedIds.add(item.id);
+                });
+            }
+        });
+
+        document.body.addEventListener('htmx:afterSettle', (evt) => {
+            if (evt.target.id === 'file-tree') {
+                expandedIds.forEach(id => {
+                    const item = document.getElementById(id);
+                    if (item) {
+                        const toggle = item.querySelector('.tree-toggle');
+                        const children = item.querySelector('.tree-children');
+                        if (toggle) toggle.classList.add('rotate-90');
+                        if (children) children.classList.remove('hidden');
+                    }
+                });
+            }
+        });
+    }
+
     static scanAndRenderMarkdown() {
         document.querySelectorAll('.markdown-source').forEach(el => {
             this.renderMarkdown(el.id);
@@ -315,10 +352,47 @@ class ChatApp {
                 const modal = document.getElementById(openButton.getAttribute('data-modal-open'));
                 if (modal) {
                     modal.classList.add('active');
-                    if (modal.id === 'file-selection-modal') this.initializeFileTree();
                 }
             } else if (closeButton) {
                 const modal = closeButton.closest('.modal-overlay');
+                if (modal) modal.classList.remove('active');
+            }
+
+            // Action Dispatcher
+            const actionBtn = event.target.closest('[data-action]');
+            if (actionBtn && this.actionHandlers[actionBtn.dataset.action]) {
+                event.preventDefault();
+                event.stopPropagation();
+                this.actionHandlers[actionBtn.dataset.action](actionBtn);
+            }
+
+            // File Search Logic
+            if (event.target.id === 'file-search') {
+                this.handleFileSearch(event.target.value);
+            }
+        });
+
+        // Search Input Listener (Delegated)
+        document.body.addEventListener('input', (event) => {
+            if (event.target.id === 'file-search') {
+                this.handleFileSearch(event.target.value);
+            }
+        });
+
+        // Global Keydown Listener
+        document.addEventListener('keydown', (e) => {
+            // Handle Message Input Submit (Ctrl+Enter)
+            if (e.target.id === 'message-input' && e.key === 'Enter' && e.ctrlKey) {
+                e.preventDefault();
+                const btn = e.target.form?.querySelector('button[type="submit"]');
+                if (btn) btn.click();
+            }
+        });
+
+        // Auto-close modals on successful HTMX requests if attribute is present
+        document.body.addEventListener('htmx:afterRequest', (event) => {
+            if (event.detail.successful && event.target.hasAttribute('data-close-modal')) {
+                const modal = event.target.closest('.modal-overlay');
                 if (modal) modal.classList.remove('active');
             }
         });
@@ -328,7 +402,11 @@ class ChatApp {
             let message = 'An unexpected error occurred.';
             try {
                 const errorData = JSON.parse(event.detail.xhr.responseText);
-                message = errorData.detail || event.detail.xhr.statusText;
+                if (Array.isArray(errorData.detail)) {
+                    message = errorData.detail.map(err => err.msg).join(', ');
+                } else {
+                    message = errorData.detail || event.detail.xhr.statusText;
+                }
             } catch (e) {
                 message = event.detail.xhr.statusText || 'Server error.';
             }
@@ -336,28 +414,85 @@ class ChatApp {
         });
     }
 
-    static addLog(message, color) {
-        const logsContainer = document.getElementById('logs-container');
-        if (!logsContainer) return;
-        if (logsContainer.querySelector('.text-center')) logsContainer.innerHTML = '';
-
-        const logEntry = document.createElement('div');
-        logEntry.className = `p-2 rounded-md bg-dark-card hover:bg-dark-light border-l-2 border-${color}-500 my-1 text-xs`;
-        logEntry.innerHTML = `<div class="text-gray-300">${message}</div><div class="text-gray-500 text-[10px] mt-0.5">${new Date().toLocaleTimeString()}</div>`;
-        
-        logsContainer.insertBefore(logEntry, logsContainer.firstChild);
-        if (logsContainer.children.length > 30) logsContainer.removeChild(logsContainer.lastChild);
+    static get actionHandlers() {
+        return {
+            [Action.CLEAR_LOGS]: () => {
+                document.getElementById('logs-container').innerHTML = '<div class="text-xs text-gray-500 text-center py-6">No logs yet</div>';
+            },
+            [Action.CLEAR_HISTORY]: () => {
+                ChatApp.addLog('History cleared', 'blue');
+                document.getElementById('history-modal').classList.remove('active');
+            },
+            [Action.EXPAND_FOLDERS]: () => {
+                document.querySelectorAll('.tree-children').forEach(el => el.classList.remove('hidden'));
+                document.querySelectorAll('.tree-toggle').forEach(toggle => toggle.classList.add('rotate-90'));
+            },
+            [Action.COLLAPSE_FOLDERS]: () => {
+                document.querySelectorAll('.tree-children').forEach(el => el.classList.add('hidden'));
+                document.querySelectorAll('.tree-toggle').forEach(toggle => toggle.classList.remove('rotate-90'));
+            },
+            [Action.TOGGLE_FOLDER]: (btn) => {
+                const container = btn.parentElement.nextElementSibling;
+                if (container) {
+                    container.classList.toggle('hidden');
+                    btn.classList.toggle('rotate-90');
+                }
+            }
+        };
     }
 
-    static initializeFileTree() {
-        document.querySelectorAll('.tree-toggle').forEach(toggle => {
-            toggle.onclick = (e) => {
-                e.stopPropagation();
-                const item = toggle.closest('.tree-item');
-                item.classList.toggle('open');
-                toggle.classList.toggle('rotate-90');
-            };
+    static handleFileSearch(query) {
+        const term = query.toLowerCase();
+        const tree = document.getElementById('file-tree');
+        if (!tree) return;
+
+        const items = tree.querySelectorAll('li.tree-item');
+        
+        if (!term) {
+            items.forEach(item => item.classList.remove('hidden'));
+            return;
+        }
+
+        items.forEach(item => {
+            // Simple text match on the span inside the item
+            const text = item.querySelector('span.select-none, span.text-gray-400')?.textContent?.toLowerCase() || '';
+            const isMatch = text.includes(term);
+            // If match, show it. If not, hide it (CSS will handle children visibility if parent is hidden)
+            item.classList.toggle('hidden', !isMatch);
         });
+
+        // Post-process: If a child is visible, ensure all its parents are visible
+        tree.querySelectorAll('li.tree-item:not(.hidden)').forEach(visibleItem => {
+            let parent = visibleItem.parentElement.closest('li.tree-item');
+            while (parent) {
+                parent.classList.remove('hidden');
+                // Also expand the folder
+                const ul = parent.querySelector('ul.tree-children');
+                const toggle = parent.querySelector('.tree-toggle');
+                if (ul) ul.classList.remove('hidden');
+                if (toggle) toggle.classList.add('rotate-90');
+                
+                parent = parent.parentElement.closest('li.tree-item');
+            }
+        });
+    }
+
+    static addLog(message, color = 'gray') {
+        const container = document.getElementById('logs-container');
+        if (!container) return;
+
+        // Remove placeholder if it exists
+        const placeholder = document.getElementById('no-logs-placeholder');
+        if (placeholder) placeholder.remove();
+
+        const timestamp = new Date().toLocaleTimeString();
+        const logHtml = `
+            <div class="p-2 rounded-md bg-dark-card hover:bg-dark-light border-l-2 border-${color}-500 my-1 text-xs">
+                <div class="text-gray-300 whitespace-pre-wrap">${message}</div>
+                <div class="text-gray-500 text-[10px] mt-0.5">${timestamp}</div>
+            </div>
+        `;
+        container.insertAdjacentHTML('afterbegin', logHtml);
     }
 }
 
@@ -423,39 +558,6 @@ class MarkdownProcessor {
         return newLines.join('\n');
     }
 }
-
-// Legacy global helpers for HTML event attributes (onclick, etc.)
-window.handleKeydown = (e) => {
-    if (e.key === 'Enter' && e.ctrlKey) {
-        e.preventDefault();
-        const btn = e.target.form?.querySelector('button[type="submit"]');
-        if (btn) btn.click();
-    }
-};
-window.clearLogs = () => document.getElementById('logs-container').innerHTML = '<div class="text-xs text-gray-500 text-center py-6">No logs yet</div>';
-window.clearHistory = () => { ChatApp.addLog('History cleared', 'blue'); document.getElementById('history-modal').classList.remove('active'); };
-window.removeContextFile = (btn) => {
-    btn.closest('div').remove();
-    ChatApp.filesCount = Math.max(0, ChatApp.filesCount - 1);
-    document.getElementById('files-count').textContent = ChatApp.filesCount;
-    if (document.getElementById('context-files-container').children.length === 0) {
-        document.getElementById('context-files-container').innerHTML = '<div class="text-xs text-gray-500 text-center py-6">No files loaded</div>';
-    }
-};
-window.clearContextFiles = () => {
-    document.getElementById('context-files-container').innerHTML = '<div class="text-xs text-gray-500 text-center py-6">No files loaded</div>';
-    ChatApp.filesCount = 0;
-    document.getElementById('files-count').textContent = 0;
-    ChatApp.addLog('Context files cleared', 'blue');
-};
-window.expandAllFolders = () => {
-    document.querySelectorAll('.tree-item').forEach(item => item.classList.add('open'));
-    document.querySelectorAll('.tree-toggle').forEach(toggle => toggle.classList.add('rotate-90'));
-};
-window.collapseAllFolders = () => {
-    document.querySelectorAll('.tree-item').forEach(item => item.classList.remove('open'));
-    document.querySelectorAll('.tree-toggle').forEach(toggle => toggle.classList.remove('rotate-90'));
-};
 
 // Ignite
 ChatApp.init();

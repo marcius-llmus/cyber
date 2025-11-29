@@ -10,13 +10,16 @@ from app.usage.services import UsagePageService
 from app.core.db import sessionmanager
 from app.agents.factories import build_agent
 from app.agents.dependencies import build_workflow_service
+from app.context.dependencies import get_context_service
+from app.context.services import ContextService
 
 async def get_coder_page_service(
     usage_page_service: UsagePageService = Depends(get_usage_page_service),
     chat_service: ChatService = Depends(get_chat_service),
+    context_service: ContextService = Depends(get_context_service),
 ) -> CoderPageService:
     return CoderPageService(
-        usage_page_service=usage_page_service, chat_service=chat_service
+        usage_page_service=usage_page_service, chat_service=chat_service, context_service=context_service
     )
 
 async def get_coder_service() -> CoderService:

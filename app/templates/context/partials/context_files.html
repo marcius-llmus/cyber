@@ -7,7 +7,11 @@
             <h3 class="text-gray-200 font-medium text-sm">Context Files</h3>
         </div>
         <div class="flex items-center space-x-1">
-            <button onclick="clearContextFiles()" class="text-gray-400 hover:text-red-400 px-2 py-1 rounded hover:bg-dark-light flex items-center transition-colors" title="Clear">
+            <button hx-delete="/context/session/{{ session.id }}/files"
+                    hx-target="#context-files-container"
+                    hx-swap="outerHTML"
+                    class="text-gray-400 hover:text-red-400 px-2 py-1 rounded hover:bg-dark-light flex items-center transition-colors" 
+                    title="Clear">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
@@ -25,9 +29,6 @@
         </div>
     </div>
     <div class="flex-1 overflow-y-auto modal-scroll-content">
-        <div class="implicit-scroll-container px-3" id="context-files-container">
-            {% set filepaths = ['app/coder/services.py', 'app/coder/workflow.py'] %}
-            {% include "context/partials/context_file_list_items.html" %}
-        </div>
+        {% include "context/partials/context_file_list_items.html" %}
     </div>
 </div>

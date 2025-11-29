@@ -23,6 +23,7 @@ from app.coder.schemas import (
     WorkflowLogEvent,
     LogLevel,
 )
+from app.context.services import ContextService
 from app.agents.services import WorkflowService
 from app.history.enums import HistoryEventType
 from app.usage.services import UsagePageService
@@ -164,18 +165,26 @@ class CoderPageService:
     needed for rendering the initial HTML page.
     """
 
-    def __init__(self, usage_page_service: UsagePageService, chat_service: ChatService):
+    def __init__(
+        self,
+        usage_page_service: UsagePageService,
+        chat_service: ChatService,
+        context_service: ContextService,
+    ):
         self.usage_page_service = usage_page_service
         self.chat_service = chat_service
+        self.context_service = context_service
 
     async def get_main_page_data(self, session_id: int) -> dict:
         """Aggregates data from various services for the main page view."""
         usage_data = await self.usage_page_service.get_session_metrics_page_data()
         session = await self.chat_service.get_session_by_id(session_id=session_id)
+        context_files = await self.context_service.get_active_context(session_id)
         return {
             **usage_data,
             "session": session,
             "messages": session.messages,
+            "files": context_files,
             "PromptEventType": PromptEventType,
             "HistoryEventType": HistoryEventType,
             "active_project": session.project,
