@@ -298,29 +298,28 @@ class ChatApp {
     }
 
     static setupTreeStatePreservation() {
-        let expandedIds = new Set();
-
         document.body.addEventListener('htmx:beforeSwap', (evt) => {
             if (evt.target.id === 'file-tree') {
-                expandedIds.clear();
+                // 1. Capture State from current DOM
+                const expandedIds = new Set();
                 evt.target.querySelectorAll('.tree-toggle.rotate-90').forEach(toggle => {
                     const item = toggle.closest('.tree-item');
                     if (item && item.id) expandedIds.add(item.id);
                 });
-            }
-        });
-
-        document.body.addEventListener('htmx:afterSettle', (evt) => {
-            if (evt.target.id === 'file-tree') {
-                expandedIds.forEach(id => {
-                    const item = document.getElementById(id);
-                    if (item) {
+                // 2. Apply State to new HTML (Pre-render) to prevent flicker
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = evt.detail.serverResponse;
+                
+                tempDiv.querySelectorAll('.tree-item').forEach(item => {
+                    if (expandedIds.has(item.id)) {
                         const toggle = item.querySelector('.tree-toggle');
                         const children = item.querySelector('.tree-children');
                         if (toggle) toggle.classList.add('rotate-90');
                         if (children) children.classList.remove('hidden');
                     }
                 });
+
+                evt.detail.serverResponse = tempDiv.innerHTML;
             }
         });
     }
