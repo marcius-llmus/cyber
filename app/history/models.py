@@ -35,6 +35,13 @@ class ChatSession(Base):
     prompt_attachments = relationship(
         "SessionPromptAttachment", back_populates="session", cascade="all, delete-orphan", lazy="selectin"
     )
+    workflow_state = relationship(
+        "WorkflowState",
+        back_populates="session",
+        cascade="all, delete-orphan",
+        uselist=False,
+        lazy="selectin",
+    )
 
 
 class Message(Base):
