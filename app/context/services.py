@@ -16,13 +16,9 @@ from app.projects.exceptions import ActiveProjectRequiredException
 logger = logging.getLogger(__name__)
 
 
-class CodebaseService:
-    """
-    Service for interacting with the physical codebase (file system).
-    Handles file discovery, gitignore rules, and reading content.
-    """
-
-    DEFAULT_IGNORE_PATTERNS = [
+class IgnoreMatcher:
+    """Handles gitignore pattern matching."""
+    DEFAULT_PATTERNS = [
         ".git",
         # Common editor backup/temp files
         "*~",  # Emacs/vim backup
@@ -59,34 +55,75 @@ class CodebaseService:
         "coverage/",  # Code coverage reports
     ]
 
-    def _get_gitignore_spec(self, project_root: str) -> pathspec.PathSpec:
+    def get_spec(self, project_root: str) -> pathspec.PathSpec:
         """Reads .gitignore and combines with default ignore patterns."""
-        gitignore_path = os.path.join(project_root, ".gitignore")
-        lines = self.DEFAULT_IGNORE_PATTERNS[:]
-        if os.path.exists(gitignore_path):
+        root = Path(project_root)
+        gitignore_path = root / ".gitignore"
+        lines = self.DEFAULT_PATTERNS[:]
+
+        if gitignore_path.exists():
             with open(gitignore_path, "r") as f:
                 lines.extend(f.read().splitlines())
+
         return pathspec.PathSpec.from_lines(GitWildMatchPattern, lines)
 
-    async def scan_files(self, project_root: str, paths: list[str] | None = None) -> list[str]:
-        """
-        Scans the project for files, respecting .gitignore.
-        If paths is provided (relative to project root), scans those specific directories/files.
-        Always returns relative paths from project root.
-        Runs in a thread to avoid blocking the event loop.
-        """
-        return await asyncio.to_thread(self._scan_files_sync, project_root, paths)
 
-    async def build_file_tree(self, project_root: str, active_files: set[str]) -> list[dict]:
-        """
-        Asynchronously builds the file tree.
-        active_files: A set of relative file paths that are currently in the context.
-        """
-        return await asyncio.to_thread(self._build_tree_sync, project_root, active_files)
+class FileScanner:
+    """Handles scanning the file system for files."""
 
-    def _build_tree_sync(self, project_root: str, active_files: set[str]) -> list[dict]:
-        spec = self._get_gitignore_spec(project_root)
-        
+    def __init__(self, matcher: IgnoreMatcher):
+        self.matcher = matcher
+
+    def scan(self, project_root: str, paths: list[str] | None) -> list[str]:
+        root = Path(project_root).resolve()
+        spec = self.matcher.get_spec(project_root)
+
+        # Determine search roots: join project root with provided relative paths, or use project root
+        if paths:
+            search_roots = [root / p for p in paths]
+        else:
+            search_roots = [root]
+
+        target_files = set()
+
+        for item in search_roots:
+            # Ensure item exists and is within root
+            if not item.exists():
+                continue
+
+            # Calculate relative path for matching
+            try:
+                rel_item = item.relative_to(root)
+            except ValueError:
+                # Path is not inside project root
+                continue
+
+            if item.is_file():
+                if not spec.match_file(str(rel_item)):
+                    target_files.add(str(rel_item))
+            elif item.is_dir():
+                for dirpath, _, filenames in os.walk(item):
+                    for filename in filenames:
+                        file_path = Path(dirpath) / filename
+                        try:
+                            rel_path = file_path.relative_to(root)
+                            if not spec.match_file(str(rel_path)):
+                                target_files.add(str(rel_path))
+                        except ValueError:
+                            continue
+
+        return sorted(list(target_files))
+
+
+class FileTreeBuilder:
+    """Handles building the file tree structure."""
+
+    def __init__(self, matcher: IgnoreMatcher):
+        self.matcher = matcher
+
+    def build(self, project_root: str, active_files: set[str]) -> list[dict]:
+        spec = self.matcher.get_spec(project_root)
+
         def _recurse(current_path: str) -> list[dict]:
             try:
                 entries = sorted(os.listdir(current_path))
@@ -119,58 +156,39 @@ class CodebaseService:
                         "path": rel_path_str,
                         "selected": rel_path_str in active_files
                     })
-            
+
             # Sort folders first, then files
             return sorted(nodes, key=lambda x: (x["type"] == "file", x["name"].lower()))
 
         return _recurse(project_root)
 
-    def _scan_files_sync(self, project_root: str, paths: list[str] | None) -> list[str]:
-        root = Path(project_root).resolve()
-        gitignore_path = root / ".gitignore"
-        
-        ignore_lines = self.DEFAULT_IGNORE_PATTERNS[:]
-        if gitignore_path.exists():
-            with open(gitignore_path, "r") as f:
-                ignore_lines.extend(f.readlines())
-        
-        spec = pathspec.PathSpec.from_lines(GitWildMatchPattern, ignore_lines)
-        
-        # Determine search roots: join project root with provided relative paths, or use project root
-        if paths:
-            search_roots = [root / p for p in paths]
-        else:
-            search_roots = [root]
-            
-        target_files = set()
 
-        for item in search_roots:
-            # Ensure item exists and is within root
-            if not item.exists():
-                continue
-                
-            # Calculate relative path for matching
-            try:
-                rel_item = item.relative_to(root)
-            except ValueError:
-                # Path is not inside project root
-                continue
+class CodebaseService:
+    """
+    Service for interacting with the physical codebase (file system).
+    Acts as a facade for file scanning and tree building operations.
+    """
 
-            if item.is_file():
-                if not spec.match_file(str(rel_item)):
-                    target_files.add(str(rel_item))
-            elif item.is_dir():
-                for dirpath, _, filenames in os.walk(item):
-                    for filename in filenames:
-                        file_path = Path(dirpath) / filename
-                        try:
-                            rel_path = file_path.relative_to(root)
-                            if not spec.match_file(str(rel_path)):
-                                target_files.add(str(rel_path))
-                        except ValueError:
-                            continue
+    def __init__(self):
+        self.matcher = IgnoreMatcher()
+        self.scanner = FileScanner(self.matcher)
+        self.tree_builder = FileTreeBuilder(self.matcher)
 
-        return sorted(list(target_files))
+    async def scan_files(self, project_root: str, paths: list[str] | None = None) -> list[str]:
+        """
+        Scans the project for files, respecting .gitignore.
+        If paths is provided (relative to project root), scans those specific directories/files.
+        Always returns relative paths from project root.
+        Runs in a thread to avoid blocking the event loop.
+        """
+        return await asyncio.to_thread(self.scanner.scan, project_root, paths)
+
+    async def build_file_tree(self, project_root: str, active_files: set[str]) -> list[dict]:
+        """
+        Asynchronously builds the file tree.
+        active_files: A set of relative file paths that are currently in the context.
+        """
+        return await asyncio.to_thread(self.tree_builder.build, project_root, active_files)
 
 
 class ContextService:

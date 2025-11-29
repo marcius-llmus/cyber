@@ -522,7 +522,7 @@ class MarkdownProcessor {
 
         for (let i = 0; i < lines.length; i++) {
             const openFence = getFence(lines[i]);
-            if (!openFence || !openFence.info || openFence.hasDiffMarker) continue;
+            if (!openFence || openFence.hasDiffMarker) continue;
 
             const isDiffBlock = openFence.info.toLowerCase() === 'diff';
             const isContainerBlock = isContainer(openFence.info);
