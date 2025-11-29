@@ -38,3 +38,11 @@ class ContextRepository(BaseRepository[ContextFile]):
         )
         await self.db.execute(query)
         await self.db.flush()
+
+    async def delete_by_session_and_id(self, session_id: int, context_file_id: int) -> None:
+        query = delete(self.model).where(
+            self.model.session_id == session_id,
+            self.model.id == context_file_id
+        )
+        await self.db.execute(query)
+        await self.db.flush()

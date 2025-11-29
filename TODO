@@ -6,3 +6,4 @@ taking too long for first message
 fix presentation structure
 check missing async functions (convert to coroutine)
 context: networkx with semtools. agent: can I access the whole project? (in case user question is for whole project) case not, llm refuses to act
+loading in button needs spacing from text

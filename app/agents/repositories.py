@@ -1,4 +1,4 @@
-from sqlalchemy import delete, select
+from sqlalchemy import select
 from sqlalchemy.dialects.sqlite import insert
 
 from app.commons.repositories import BaseRepository
@@ -24,9 +24,3 @@ class WorkflowStateRepository(BaseRepository[WorkflowState]):
         result = await self.db.execute(stmt)
         await self.db.flush()
         return result.scalar_one()
-
-    async def delete_by_session_id(self, session_id: int) -> None:
-        """Explicitly deletes the workflow state for a given session."""
-        query = delete(self.model).where(self.model.session_id == session_id)
-        await self.db.execute(query)
-        await self.db.flush()

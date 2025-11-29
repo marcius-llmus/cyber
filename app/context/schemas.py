@@ -16,3 +16,7 @@ class Tag(BaseModel):
     name: str
     kind: str
     line: int
+
+
+class ContextFileBatchUpdate(BaseModel):
+    filepaths: list[str] = []

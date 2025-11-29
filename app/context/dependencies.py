@@ -15,7 +15,12 @@ async def get_context_repository(db: AsyncSession = Depends(get_db)) -> ContextR
 async def build_context_service(db: AsyncSession) -> ContextService:
     project_service = await build_project_service(db)
     context_repo = ContextRepository(db)
-    return ContextService(project_service=project_service, context_repo=context_repo)
+    codebase_service = await build_codebase_service()
+    return ContextService(
+        project_service=project_service,
+        context_repo=context_repo,
+        codebase_service=codebase_service,
+    )
 
 
 async def get_context_service(

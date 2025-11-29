@@ -59,7 +59,7 @@ class ContextTools(BaseToolSet):
 
             async with self.db.session() as session:
                 service = await build_context_service(session)
-                await service.remove_context_files(self.session_id, files)
+                await service.remove_context_files_by_path(self.session_id, files)
 
             return f"Removed {len(files)} files from context."
         except Exception as e:

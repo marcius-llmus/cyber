@@ -17,7 +17,3 @@ class WorkflowService:
     async def save_context(self, session_id: int, context: Context) -> None:
         """Persists the current Context state to the DB."""
         await self.workflow_repo.save_state(session_id, context.to_dict())
-
-    async def delete_workflow_state(self, session_id: int) -> None:
-        """Deletes the persisted workflow state for a session."""
-        await self.workflow_repo.delete_by_session_id(session_id)
