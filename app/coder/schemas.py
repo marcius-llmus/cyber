@@ -32,9 +32,11 @@ class WorkflowLogEvent(BaseModel):
 
 
 class UsageMetricsUpdatedEvent(BaseModel):
-    total_cost: float
+    session_cost: float
+    monthly_cost: float
     input_tokens: int
     output_tokens: int
+    cached_tokens: int
 
 
 CoderEvent = Union[

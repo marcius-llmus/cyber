@@ -124,13 +124,15 @@ class WebSocketOrchestrator:
         template = templates.get_template("chat/partials/ai_message_controls.html").render(context)
         await self.ws_manager.send_html(template)
 
-    async def _render_usage_metrics(self, event: UsageMetricsUpdatedEvent, turn_id: str):
+    async def _render_usage_metrics(self, event: UsageMetricsUpdatedEvent, turn_id: str): # noqa
         context = {
-            "total_cost": event.total_cost,
+            "session_cost": event.session_cost,
+            "monthly_cost": event.monthly_cost,
             "input_tokens": event.input_tokens,
             "output_tokens": event.output_tokens,
+            "cached_tokens": event.cached_tokens,
         }
-        template = templates.get_template("usage/partials/session_metrics.html").render(context)
+        template = templates.get_template("usage/partials/session_metrics.html").render({"metrics": context})
         await self.ws_manager.send_html(template)
 
     async def _render_error(self, error_message: str):
@@ -138,7 +140,7 @@ class WebSocketOrchestrator:
         template = templates.get_template("components/actions/trigger_toast.html").render(context)
         await self.ws_manager.send_html(template)
 
-    async def _handle_workflow_log(self, event: WorkflowLogEvent, **kwargs):
+    async def _handle_workflow_log(self, event: WorkflowLogEvent, **kwargs): # noqa
         color_map = {"info": "gray", "error": "red"}
         color = color_map.get(event.level, "gray")
 
