@@ -5,7 +5,7 @@ from app.settings.enums import CodingMode, ContextStrategy, OperationalMode
 from app.settings.repositories import LLMSettingsRepository, SettingsRepository
 from app.settings.schemas import LLMSettingsCreate, SettingsCreate
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.llms.factories import get_llm_factory_instance
+from app.llms.factories import build_llm_factory_instance
 
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ async def initialize_application_settings(db: AsyncSession) -> None:
 
     # Use repository directly for seeding to avoid service-layer exceptions on not-found.
     llm_settings_repo = LLMSettingsRepository(db)
-    llm_factory = await get_llm_factory_instance()
+    llm_factory = await build_llm_factory_instance()
     all_llms = await llm_factory.get_all_llms()
     for llm in all_llms:
         existing_llm_setting = await llm_settings_repo.get_by_model_name(llm.model_name)

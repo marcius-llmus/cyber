@@ -1,17 +1,19 @@
 from fastapi import Depends
 
 from app.chat.dependencies import get_chat_service
-from app.chat.dependencies import build_chat_service
+from app.chat.factories import build_chat_service
 from app.chat.services import ChatService
 from app.coder.services import CoderPageService
 from app.coder.services import CoderService
-from app.usage.dependencies import get_usage_page_service, build_usage_service
+from app.usage.dependencies import get_usage_page_service
 from app.usage.services import UsagePageService
 from app.core.db import sessionmanager
 from app.agents.factories import build_agent
-from app.agents.dependencies import build_workflow_service
+from app.agents.factories import build_workflow_service
 from app.context.dependencies import get_context_service
 from app.context.services import ContextService
+from usage.factories import build_usage_service
+
 
 async def get_coder_page_service(
     usage_page_service: UsagePageService = Depends(get_usage_page_service),

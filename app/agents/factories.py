@@ -1,13 +1,20 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import sessionmanager
-from app.context.dependencies import build_repo_map_service, build_codebase_service
-from app.settings.dependencies import build_settings_service
-from app.llms.dependencies import build_llm_service
+from app.context.factories import build_codebase_service, build_repo_map_service
+from app.settings.factories import build_settings_service
+from app.llms.factories import build_llm_service
 from llama_index.core.agent.workflow import FunctionAgent
 from llama_index.core.tools import BaseTool
 from app.context.tools import SearchTools, ContextTools
 from app.coder.tools import PatcherTools
+from app.agents.repositories import WorkflowStateRepository
+from app.agents.services import WorkflowService
+
+
+async def build_workflow_service(db: AsyncSession) -> WorkflowService:
+    repo = WorkflowStateRepository(db=db)
+    return WorkflowService(workflow_repo=repo)
 
 
 async def build_agent(db: AsyncSession, session_id: int) -> FunctionAgent:

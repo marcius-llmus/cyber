@@ -8,6 +8,10 @@ from llama_index.llms.openai import OpenAI
 
 from app.llms.domain import LLM
 from app.llms.enums import LLMModel, LLMProvider
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.llms.services import LLMService
+from app.settings.factories import build_settings_service
+
 
 
 class LLMFactory:
@@ -90,6 +94,12 @@ class LLMFactory:
 
 
 @alru_cache
-async def get_llm_factory_instance() -> LLMFactory:
+async def build_llm_factory_instance() -> LLMFactory:
     """This function creates and caches a single instance of LLMFactory."""
     return LLMFactory()
+
+
+async def build_llm_service(db: AsyncSession) -> LLMService:
+    settings_service = await build_settings_service(db)
+    llm_factory = await build_llm_factory_instance()
+    return LLMService(settings_service=settings_service, llm_factory=llm_factory)

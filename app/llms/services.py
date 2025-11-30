@@ -1,4 +1,3 @@
-from app.llms.domain import LLM
 from app.llms.enums import LLMModel
 from app.llms.factories import LLMFactory
 from app.settings.services import SettingsService

@@ -18,7 +18,7 @@ from app.settings.routes.htmx import router as settings_htmx_router
 from app.settings.utils import initialize_application_settings
 from app.core.config import settings
 from app.core.observability import init_observability
-from app.usage.factories import get_price_updater
+from app.usage.factories import build_price_updater
 
 
 logging.basicConfig(
@@ -32,7 +32,7 @@ async def lifespan(app: FastAPI): # noqa
     """
     Ensures that the default application settings are created on startup.
     """
-    price_updater = get_price_updater()
+    price_updater = build_price_updater()
     # Start the background price updater (wait=False to avoid blocking startup)
     price_updater.start(wait=False)
 
