@@ -26,9 +26,10 @@ async def build_agent(db: AsyncSession, session_id: int) -> FunctionAgent:
     repo_map_service = await build_repo_map_service(db)
 
     settings = await settings_service.get_settings()
+    coder_settings = await llm_service.get_coding_llm()
     
     llm = await llm_service.get_client(
-        model_name=LLMModel(settings.coding_llm_settings.model_name),
+        model_name=LLMModel(coder_settings.model_name),
         temperature=settings.coding_llm_temperature
     )
 

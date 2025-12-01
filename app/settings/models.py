@@ -17,5 +17,5 @@ class Settings(Base):
     coding_mode = Column(Enum(CodingMode), nullable=False)
     context_strategy = Column(Enum(ContextStrategy), nullable=False)
     max_history_length = Column(Integer, nullable=False)
-    coding_llm_temperature = Column(Float, nullable=False)
+    coding_llm_temperature = Column(Float, nullable=False) # todo: shall be in llm models later
     ast_token_limit = Column(Integer, nullable=False)

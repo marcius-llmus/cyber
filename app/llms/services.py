@@ -1,3 +1,4 @@
+import logging
 from typing import Union
 from async_lru import alru_cache
 from llama_index.llms.anthropic import Anthropic
@@ -12,6 +13,8 @@ from app.llms.models import LLMSettings
 from app.settings.schemas import LLMSettingsUpdate
 from app.settings.exceptions import ContextWindowExceededException, LLMSettingsNotFoundException
 
+
+logger = logging.getLogger(__name__)
 
 class LLMService:
     def __init__(self, llm_settings_repo: LLMSettingsRepository, llm_factory: LLMFactory):
@@ -36,8 +39,16 @@ class LLMService:
     async def get_coding_llm(self) -> LLMSettings:
         """Returns the LLM currently assigned the CODER role."""
         db_obj = await self.llm_settings_repo.get_by_role(LLMRole.CODER)
+
         if not db_obj:
-            raise LLMSettingsNotFoundException("No LLM is currently assigned as the Coder.")
+            logger.warning("No LLM assigned as CODER. Attempting to set default (GPT-4.1-mini).")
+            db_obj = await self.llm_settings_repo.get_by_model_name(LLMModel.GPT_4_1_MINI)
+            
+            if not db_obj:
+                raise LLMSettingsNotFoundException("No LLM is currently assigned as the Coder and no models available.")
+
+            return await self.update_coding_llm(db_obj.id, LLMSettingsUpdate())
+
         return db_obj
 
     async def update_settings(self, llm_id: int, settings_in: LLMSettingsUpdate) -> LLMSettings:
