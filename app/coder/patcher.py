@@ -9,7 +9,7 @@ from app.coder.enums import PatchStrategy
 from app.llms.enums import LLMModel
 from app.llms.services import LLMService
 from app.projects.services import ProjectService
-from chat.enums import MessageRole
+from app.chat.enums import MessageRole
 
 logger = logging.getLogger(__name__)
 
@@ -52,19 +52,8 @@ class PatcherService:
         return f"Successfully patched {file_path}"
 
     async def _apply_via_llm(self, original_content: str, diff_content: str) -> str:
-        llm_meta = await self.llm_service.llm_factory.get_llm(LLMModel.GPT_4_1_MINI)
-        api_key = await self.llm_service.settings_service.llm_settings_service.get_api_key_for_provider(
-            llm_meta.provider
-        )
-
-        if not api_key:
-            error_msg = (f"Missing API Key for provider '{llm_meta.provider}'. "
-                         f"Cannot apply diff patch. Stop immediately and inform the user.")
-            logger.error(error_msg)
-            raise ValueError(error_msg)
-
-        llm = await self.llm_service.llm_factory.get_client(
-            model_name=LLMModel.GPT_4_1_MINI, temperature=0, api_key=api_key
+        llm = await self.llm_service.get_client(
+            model_name=LLMModel.GPT_4_1_MINI, temperature=0
         )
 
         messages = [

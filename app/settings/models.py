@@ -3,14 +3,11 @@ from sqlalchemy import (
     Enum,
     Float,
     ForeignKey,
-    Integer,
-    String,
-    UniqueConstraint,
+    Integer
 )
 from sqlalchemy.orm import relationship
 
 from app.core.db import Base
-from app.llms.enums import LLMProvider
 from app.settings.enums import CodingMode, ContextStrategy, OperationalMode
 
 
@@ -29,15 +26,3 @@ class Settings(Base):
     coding_llm_settings = relationship(
         "LLMSettings", foreign_keys="Settings.coding_llm_settings_id", lazy="selectin"
     )
-
-
-class LLMSettings(Base):
-    __tablename__ = "llm_settings"
-
-    id = Column(Integer, primary_key=True)
-    model_name = Column(String, nullable=False, unique=True)
-    provider = Column(Enum(LLMProvider), nullable=False)
-    api_key = Column(String, nullable=True)
-    context_window = Column(Integer, nullable=False)
-
-    __table_args__ = (UniqueConstraint("model_name", name="_model_name_uc"),)

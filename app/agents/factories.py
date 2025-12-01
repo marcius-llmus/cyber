@@ -4,6 +4,7 @@ from app.core.db import sessionmanager
 from app.context.factories import build_codebase_service, build_repo_map_service
 from app.settings.factories import build_settings_service
 from app.llms.factories import build_llm_service
+from app.llms.enums import LLMModel
 from llama_index.core.agent.workflow import FunctionAgent
 from llama_index.core.tools import BaseTool
 from app.context.tools import SearchTools, ContextTools
@@ -25,7 +26,11 @@ async def build_agent(db: AsyncSession, session_id: int) -> FunctionAgent:
     repo_map_service = await build_repo_map_service(db)
 
     settings = await settings_service.get_settings()
-    llm = await llm_service.get_coding_llm()
+    
+    llm = await llm_service.get_client(
+        model_name=LLMModel(settings.coding_llm_settings.model_name),
+        temperature=settings.coding_llm_temperature
+    )
 
     tools: list[BaseTool] = []
 

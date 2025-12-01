@@ -8,7 +8,7 @@ from genai_prices import extract_usage, calc_price # noqa
 
 from app.usage.schemas import SessionMetrics
 from app.usage.repositories import UsageRepository, GlobalUsageRepository
-from app.llms.factories import LLMFactory
+from app.llms.services import LLMService
 from app.llms.enums import LLMModel
 from app.settings.services import SettingsService
 
@@ -20,12 +20,12 @@ class UsageService:
         self,
         usage_repo: UsageRepository,
         global_usage_repo: GlobalUsageRepository,
-        llm_factory: LLMFactory,
+        llm_service: LLMService,
         settings_service: SettingsService
     ):
         self.usage_repo = usage_repo
         self.global_usage_repo = global_usage_repo
-        self.llm_factory = llm_factory
+        self.llm_service = llm_service
         self.settings_service = settings_service
 
     async def process_workflow_usage(self, session_id: int, response: Any) -> SessionMetrics:
@@ -35,7 +35,7 @@ class UsageService:
         # 1. Resolve Model & Adapter
         settings = await self.settings_service.get_settings()
         model_name = LLMModel(settings.coding_llm_settings.model_name)
-        llm_meta = await self.llm_factory.get_llm(model_name)
+        llm_meta = await self.llm_service.get_model_metadata(model_name)
 
         # 2. Extract Usage & Calculate Cost
         try:
