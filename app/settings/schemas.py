@@ -43,11 +43,5 @@ class SettingsUpdate(BaseModel):
     max_history_length: int | None = None
     ast_token_limit: int | None = None
     coding_llm_temperature: Decimal | None = Field(default=None, ge=0, le=1, max_digits=3, decimal_places=2)
-    coding_llm_settings_id: int | None = None
+    coding_llm_settings_id: int = Field(exclude=True) # Exclude from Settings DB update
     coding_llm_settings: LLMSettingsUpdate | None = Field(default=None, exclude=True)
-
-
-class SettingsRead(SettingsBase):
-    id: int
-    coding_llm_settings: LLMSettingsRead
-    model_config = ConfigDict(from_attributes=True)

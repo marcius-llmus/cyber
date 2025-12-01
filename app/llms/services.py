@@ -5,7 +5,7 @@ from llama_index.llms.google_genai import GoogleGenAI
 from llama_index.llms.openai import OpenAI
 
 from app.llms.schemas import LLM
-from app.llms.enums import LLMModel, LLMProvider
+from app.llms.enums import LLMModel, LLMProvider, LLMRole
 from app.llms.registry import LLMFactory
 from app.llms.repositories import LLMSettingsRepository
 from app.llms.models import LLMSettings
@@ -33,6 +33,12 @@ class LLMService:
             raise LLMSettingsNotFoundException(f"LLMSettings for model {model_name} not found.")
         return db_obj
 
+    async def get_coding_llm(self) -> LLMSettings:
+        """Returns the LLM currently assigned the CODER role."""
+        db_obj = await self.llm_settings_repo.get_by_role(LLMRole.CODER)
+        if not db_obj:
+            raise LLMSettingsNotFoundException("No LLM is currently assigned as the Coder.")
+        return db_obj
 
     async def update_settings(self, llm_id: int, settings_in: LLMSettingsUpdate) -> LLMSettings:
         db_obj = await self.llm_settings_repo.get(llm_id)
@@ -53,6 +59,13 @@ class LLMService:
             )
 
         return await self.llm_settings_repo.update(db_obj=db_obj, obj_in=settings_in)
+
+    async def update_coding_llm(self, llm_id: int, settings_in: LLMSettingsUpdate) -> LLMSettings:
+        """
+        Promotes the specified LLM to the CODER role and updates its configuration.
+        """
+        await self.llm_settings_repo.set_active_role(llm_id=llm_id, role=LLMRole.CODER)
+        return await self.update_settings(llm_id=llm_id, settings_in=settings_in)
 
     async def get_client(self, model_name: LLMModel, temperature: float) -> Union[OpenAI, Anthropic, GoogleGenAI]:
         """

@@ -33,8 +33,9 @@ class UsageService:
         Extracts usage from response, updates DBs, and returns the event.
         """
         # 1. Resolve Model & Adapter
-        settings = await self.settings_service.get_settings()
-        model_name = LLMModel(settings.coding_llm_settings.model_name)
+        # todo: can simplify later (maybe create the coder service)
+        coder_settings = await self.llm_service.get_coding_llm()
+        model_name = LLMModel(coder_settings.model_name)
         llm_meta = await self.llm_service.get_model_metadata(model_name)
 
         # 2. Extract Usage & Calculate Cost

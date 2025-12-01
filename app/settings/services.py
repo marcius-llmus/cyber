@@ -25,8 +25,9 @@ class SettingsService:
         db_obj = await self.get_settings()
 
         if settings_in.coding_llm_settings:
-            await self.llm_service.update_settings(
-                llm_id=db_obj.coding_llm_settings_id,
+            # We treat the ID passed in the schema as the one to promote to CODER
+            await self.llm_service.update_coding_llm(
+                llm_id=settings_in.coding_llm_settings_id,
                 settings_in=settings_in.coding_llm_settings,
             )
 
@@ -41,8 +42,10 @@ class SettingsPageService:
     async def get_settings_page_data(self) -> dict:
         settings = await self.settings_service.get_settings()
         # Fetch actual DB records to get IDs
+        current_coder = await self.llm_service.get_coding_llm()
         llm_options = await self.llm_service.get_all_llm_settings()
-        return {"settings": settings, "llm_options": llm_options}
+
+        return {"settings": settings, "current_coder": current_coder, "llm_options": llm_options}
 
     async def get_api_key_input_data_by_id(self, llm_id: int) -> dict:
         llm_settings = await self.llm_service.llm_settings_repo.get(llm_id)

@@ -1,6 +1,6 @@
 from sqlalchemy import select, update
 from app.commons.repositories import BaseRepository
-from app.llms.enums import LLMProvider
+from app.llms.enums import LLMProvider, LLMRole
 from app.llms.models import LLMSettings
 
 
@@ -32,3 +32,19 @@ class LLMSettingsRepository(BaseRepository[LLMSettings]):
         if settings := llm_setting_with_key.scalars().first():
             return settings.api_key
         return None
+
+    async def get_by_role(self, role: LLMRole) -> LLMSettings | None:
+        result = await self.db.execute(select(self.model).filter_by(active_role=role))
+        return result.scalars().one_or_none()
+
+    async def set_active_role(self, llm_id: int, role: LLMRole) -> None:
+        # clear role for any other LLM
+        await self.db.execute(
+            update(self.model)
+            .where(self.model.active_role == role)
+            .values(active_role=None)
+        )
+        # set role for the target LLM
+        await self.db.execute(
+            update(self.model).where(self.model.id == llm_id).values(active_role=role)
+        )

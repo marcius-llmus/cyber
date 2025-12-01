@@ -13,13 +13,13 @@
                         hx-target="#api-key-container"
                         hx-swap="outerHTML">
                         {% for option in llm_options %}
-                            <option value="{{ option.id }}" {% if settings.coding_llm_settings_id == option.id %}selected{% endif %}>
+                            <option value="{{ option.id }}" {% if current_coder.id == option.id %}selected{% endif %}>
                                 {{ option.model_name }} - {{ option.provider }}
                             </option>
                         {% endfor %}
                     </select>
                 </div>
-                {% with provider=settings.coding_llm_settings.provider, api_key=settings.coding_llm_settings.api_key %}
+                {% with provider=current_coder.provider, api_key=current_coder.api_key %}
                     {% include "settings/partials/api_key_input.html" %}
                 {% endwith %}
             </div>

@@ -2,10 +2,8 @@ from sqlalchemy import (
     Column,
     Enum,
     Float,
-    ForeignKey,
     Integer
 )
-from sqlalchemy.orm import relationship
 
 from app.core.db import Base
 from app.settings.enums import CodingMode, ContextStrategy, OperationalMode
@@ -21,8 +19,3 @@ class Settings(Base):
     max_history_length = Column(Integer, nullable=False)
     coding_llm_temperature = Column(Float, nullable=False)
     ast_token_limit = Column(Integer, nullable=False)
-    coding_llm_settings_id = Column(Integer, ForeignKey("llm_settings.id"), nullable=False)
-
-    coding_llm_settings = relationship(
-        "LLMSettings", foreign_keys="Settings.coding_llm_settings_id", lazy="selectin"
-    )

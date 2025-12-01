@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Enum, Integer, String, UniqueConstraint
 from app.core.db import Base
-from app.llms.enums import LLMProvider
+from app.llms.enums import LLMProvider, LLMRole
 
 
 class LLMSettings(Base):
@@ -11,5 +11,6 @@ class LLMSettings(Base):
     provider = Column(Enum(LLMProvider), nullable=False)
     api_key = Column(String, nullable=True)
     context_window = Column(Integer, nullable=False)
+    active_role = Column(Enum(LLMRole), nullable=True, unique=True)
 
     __table_args__ = (UniqueConstraint("model_name", name="_model_name_uc"),)
