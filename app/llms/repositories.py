@@ -11,6 +11,10 @@ class LLMSettingsRepository(BaseRepository[LLMSettings]):
         result = await self.db.execute(select(LLMSettings).filter_by(model_name=model_name))
         return result.scalars().first()
 
+    async def get_all(self) -> list[LLMSettings]:
+        result = await self.db.execute(select(self.model))
+        return list(result.scalars().all())
+
     async def update_api_key_for_provider(self, provider: LLMProvider, api_key: str | None) -> None:
         await self.db.execute(
             update(self.model)

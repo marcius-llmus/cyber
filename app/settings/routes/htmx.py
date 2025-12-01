@@ -32,10 +32,10 @@ async def get_settings_form(
 @router.get("/api-key-input", response_class=HTMLResponse)
 async def get_api_key_input(
     request: Request,
-    model_name: str = Query(..., alias="coding_llm_settings.model_name"),
+    coding_llm_settings_id: int = Query(...),
     service: SettingsPageService = Depends(get_settings_page_service),
 ):
-    context = await service.get_api_key_input_data(model_name)
+    context = await service.get_api_key_input_data_by_id(coding_llm_settings_id)
     return templates.TemplateResponse(
         "settings/partials/api_key_input.html",
         {"request": request, **context},

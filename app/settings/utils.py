@@ -26,6 +26,7 @@ async def initialize_application_settings(db: AsyncSession) -> None:
     logger.info("Initializing application settings...")
 
     # Use repository directly for seeding to avoid service-layer exceptions on not-found.
+    # todo check later (validate if we can use service instead)
     llm_settings_repo = LLMSettingsRepository(db)
     llm_service = await build_llm_service(db)
     all_llms = await llm_service.get_all_models()

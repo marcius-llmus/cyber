@@ -22,7 +22,6 @@ class LLMSettingsRead(LLMSettingsBase):
 
 
 class LLMSettingsUpdate(BaseModel):
-    model_name: str | None = None
     context_window: int | None = None
     api_key: str | None = None
 
@@ -32,8 +31,8 @@ class SettingsBase(BaseModel):
     coding_mode: CodingMode
     context_strategy: ContextStrategy
     max_history_length: int
-    coding_llm_temperature: Decimal = Field(..., ge=0, le=1, max_digits=3, decimal_places=2)
     ast_token_limit: int
+    coding_llm_temperature: Decimal = Field(..., ge=0, le=1, max_digits=3, decimal_places=2)
 
 
 class SettingsCreate(SettingsBase):
@@ -44,6 +43,7 @@ class SettingsUpdate(BaseModel):
     max_history_length: int | None = None
     ast_token_limit: int | None = None
     coding_llm_temperature: Decimal | None = Field(default=None, ge=0, le=1, max_digits=3, decimal_places=2)
+    coding_llm_settings_id: int | None = None
     coding_llm_settings: LLMSettingsUpdate | None = Field(default=None, exclude=True)
 
 

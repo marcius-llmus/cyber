@@ -24,37 +24,35 @@ class LLMService:
     async def get_all_models(self) -> list[LLM]:
         return await self.llm_factory.get_all_llms()
 
+    async def get_all_llm_settings(self) -> list[LLMSettings]:
+        return await self.llm_settings_repo.get_all()
+
     async def get_llm_settings(self, model_name: str) -> LLMSettings:
         db_obj = await self.llm_settings_repo.get_by_model_name(model_name)
         if not db_obj:
             raise LLMSettingsNotFoundException(f"LLMSettings for model {model_name} not found.")
         return db_obj
 
-    async def update_configuration(self, obj_in: LLMSettingsUpdate) -> LLMSettings:
-        """
-        Updates the configuration for a specific LLM, including validation.
-        """
-        current_settings = await self.get_llm_settings(obj_in.model_name)
-        
+
+    async def update_settings(self, llm_id: int, settings_in: LLMSettingsUpdate) -> LLMSettings:
+        db_obj = await self.llm_settings_repo.get(llm_id)
+        if not db_obj:
+            raise LLMSettingsNotFoundException(f"LLMSettings with id {llm_id} not found.")
+
         # Validate Context Window
-        if obj_in.context_window is not None:
-            model_meta = await self.llm_factory.get_llm(LLMModel(current_settings.model_name))
-            if obj_in.context_window > model_meta.default_context_window:
+        if settings_in.context_window is not None:
+            model_meta = await self.llm_factory.get_llm(LLMModel(db_obj.model_name))
+            if settings_in.context_window > model_meta.default_context_window:
                 raise ContextWindowExceededException(
-                    f"Context window for {current_settings.model_name} "
-                    f"cannot exceed {model_meta.default_context_window} tokens."
+                    f"Context window cannot exceed {model_meta.default_context_window} tokens."
                 )
 
-        # Update the specific model settings
-        updated_settings = await self.llm_settings_repo.update(db_obj=current_settings, obj_in=obj_in)
-
-        # If API key is provided, update it for ALL models of this provider
-        if obj_in.api_key:
+        if settings_in.api_key:
              await self.llm_settings_repo.update_api_key_for_provider(
-                provider=current_settings.provider, api_key=obj_in.api_key
+                provider=db_obj.provider, api_key=settings_in.api_key
             )
-            
-        return updated_settings
+
+        return await self.llm_settings_repo.update(db_obj=db_obj, obj_in=settings_in)
 
     async def get_client(self, model_name: LLMModel, temperature: float) -> Union[OpenAI, Anthropic, GoogleGenAI]:
         """

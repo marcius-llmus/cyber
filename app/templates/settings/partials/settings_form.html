@@ -6,20 +6,20 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-300 mb-2">Coding LLM</label>
                     <select
-                        name="coding_llm_settings.model_name"
+                        name="coding_llm_settings_id"
                         class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm"
                         hx-get="/settings/api-key-input"
                         hx-trigger="change"
                         hx-target="#api-key-container"
                         hx-swap="outerHTML">
-                        {% for model, provider in llm_model_providers.items() %}
-                            <option value="{{ model.value }}" {% if settings.coding_llm_settings.model_name == model.value %}selected{% endif %}>
-                                {{ model.value }} - {{ provider }}
+                        {% for option in llm_options %}
+                            <option value="{{ option.id }}" {% if settings.coding_llm_settings_id == option.id %}selected{% endif %}>
+                                {{ option.model_name }} - {{ option.provider }}
                             </option>
                         {% endfor %}
                     </select>
                 </div>
-                {% with provider=settings.coding_llm_settings.provider.value, api_key=settings.coding_llm_settings.api_key %}
+                {% with provider=settings.coding_llm_settings.provider, api_key=settings.coding_llm_settings.api_key %}
                     {% include "settings/partials/api_key_input.html" %}
                 {% endwith %}
             </div>
