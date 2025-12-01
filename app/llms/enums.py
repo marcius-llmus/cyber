@@ -23,3 +23,7 @@ class LLMModel(StrEnum):
     GPT_4_1 = "gpt-4.1"
     GPT_4_1_MINI = "gpt-4.1-mini"
     GPT_4_1_NANO = "gpt-4.1-nano"
+
+
+class LLMRole(StrEnum):
+    CODER = "coder"

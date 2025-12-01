@@ -42,6 +42,13 @@ class ChatSession(Base):
         uselist=False,
         lazy="selectin",
     )
+    usage_stats = relationship(
+        "SessionUsage",
+        back_populates="session",
+        cascade="all, delete-orphan",
+        uselist=False,
+        lazy="selectin",
+    )
 
 
 class Message(Base):

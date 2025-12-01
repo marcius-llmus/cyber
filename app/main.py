@@ -18,6 +18,7 @@ from app.settings.routes.htmx import router as settings_htmx_router
 from app.settings.utils import initialize_application_settings
 from app.core.config import settings
 from app.core.observability import init_observability
+from app.usage.factories import build_price_updater
 
 
 logging.basicConfig(
@@ -31,13 +32,20 @@ async def lifespan(app: FastAPI): # noqa
     """
     Ensures that the default application settings are created on startup.
     """
+    price_updater = build_price_updater()
+    # Start the background price updater (wait=False to avoid blocking startup)
+    price_updater.start(wait=False)
+
     # Initialize Observability (Arize Phoenix) if enabled
     if settings.OBSERVABILITY_ENABLED:
         init_observability()
 
     async with sessionmanager.session() as session:
         await initialize_application_settings(session)
+    
     yield
+    
+    price_updater.stop()
     await sessionmanager.cleanup()
 
 

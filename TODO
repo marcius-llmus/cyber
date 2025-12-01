@@ -7,3 +7,21 @@ fix presentation structure
 check missing async functions (convert to coroutine)
 context: networkx with semtools. agent: can I access the whole project? (in case user question is for whole project) case not, llm refuses to act
 loading in button needs spacing from text
+--------
+remove files / messages from metrics
+fix cache and improve prompt with xml tags and correct positioning for CACHE
+monthly usage
+clear chat should clear ind db
+styles model height
+check if repomap is really accurate
+expand usage per provider
+check default fonts
+check if log is worth saving / rerendering
+check auto scrolling
+single shot?
+verify tools
+improve agent streaming feedback like loading, thinks, too calling etc etc..
+add slash commands
+change prompt individually based on existing prompts and current conversation (versioning)
+add comprehensive planning system
+add image processing and multi modal detector

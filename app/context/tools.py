@@ -7,7 +7,7 @@ from app.core.db import DatabaseSessionManager
 from app.settings.models import Settings
 from app.commons.tools import BaseToolSet
 from app.context.services import CodebaseService
-from app.context.dependencies import build_context_service
+from app.context.factories import build_context_service
 from app.projects.exceptions import ActiveProjectRequiredException
 
 

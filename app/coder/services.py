@@ -22,6 +22,7 @@ from app.coder.schemas import (
     WorkflowErrorEvent,
     WorkflowLogEvent,
     LogLevel,
+    UsageMetricsUpdatedEvent,
 )
 from app.context.services import ContextService
 from app.agents.services import WorkflowService
@@ -40,11 +41,13 @@ class CoderService:
         chat_service_factory: Callable[[AsyncSession], Awaitable[ChatService]],
         workflow_service_factory: Callable[[AsyncSession], Awaitable[WorkflowService]],
         agent_factory: Callable[[AsyncSession, int], Coroutine[Any, Any, Any]],
+        usage_service_factory: Callable[[AsyncSession], Awaitable[Any]],
     ):
         self.db = db
         self.chat_service_factory = chat_service_factory
         self.agent_factory = agent_factory
         self.workflow_service_factory = workflow_service_factory
+        self.usage_service_factory = usage_service_factory
 
     async def handle_user_message(
         self, *, user_message: str, session_id: int
@@ -79,6 +82,8 @@ class CoderService:
             llm_full_response = await handler
             final_content = str(llm_full_response)
 
+            # session here is the db session
+            # session_id is the 'history', the one user can delete, not db
             async with self.db.session() as session:
                 chat_service = await self.chat_service_factory(session)
                 await chat_service.add_user_message(session_id=session_id, content=user_message)
@@ -87,6 +92,19 @@ class CoderService:
                 # Persist Context State
                 workflow_service = await self.workflow_service_factory(session)
                 await workflow_service.save_context(session_id, ctx)
+
+                # Process Usage and get Event
+                usage_service = await self.usage_service_factory(session)
+                metrics = await usage_service.process_workflow_usage(session_id, llm_full_response)
+
+            # Emit Usage Event
+            yield UsageMetricsUpdatedEvent(
+                session_cost=metrics.session_cost,
+                monthly_cost=metrics.monthly_cost,
+                input_tokens=metrics.input_tokens,
+                output_tokens=metrics.output_tokens,
+                cached_tokens=metrics.cached_tokens
+            )
 
             yield AIMessageCompletedEvent(
                 message=final_content
@@ -133,7 +151,7 @@ class CoderService:
         return None
 
     @staticmethod
-    async def _handle_agent_input(event: AgentInput) -> WorkflowLogEvent:
+    async def _handle_agent_input(event: AgentInput) -> WorkflowLogEvent: # noqa
         return WorkflowLogEvent(message="Agent is planning next steps...", level=LogLevel.INFO)
 
     @staticmethod
@@ -180,6 +198,7 @@ class CoderPageService:
         usage_data = await self.usage_page_service.get_session_metrics_page_data()
         session = await self.chat_service.get_session_by_id(session_id=session_id)
         context_files = await self.context_service.get_active_context(session_id)
+        
         return {
             **usage_data,
             "session": session,

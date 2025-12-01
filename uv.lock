@@ -924,6 +924,19 @@ wheels = [
 ]
 
 [[package]]
+name = "genai-prices"
+version = "0.0.47"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "httpx" },
+    { name = "pydantic" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b8/47/f25fb84fa40142699dc54ca294628d600625eb3d90fead103a606b4e999a/genai_prices-0.0.47.tar.gz", hash = "sha256:3b8c514f0ce5818b3944a371861586ed9bfe10d02598e62c350b5bd2916d03c2", size = 54501, upload-time = "2025-11-25T18:38:17.695Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4e/84/d50c52d0eeadb9dbf7f2f86da9b6257e162b7c6a791f5b1009bae912c103/genai_prices-0.0.47-py3-none-any.whl", hash = "sha256:735e45950d2299276f2c00cd18075b77a124cd24ee58243f236ee29af3210594", size = 57000, upload-time = "2025-11-25T18:38:16.464Z" },
+]
+
+[[package]]
 name = "google-auth"
 version = "2.43.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1278,6 +1291,7 @@ dependencies = [
     { name = "arize-phoenix" },
     { name = "async-lru" },
     { name = "fastapi", extra = ["standard"] },
+    { name = "genai-prices" },
     { name = "grep-ast" },
     { name = "llama-index-core" },
     { name = "llama-index-llms-anthropic" },
@@ -1312,6 +1326,7 @@ requires-dist = [
     { name = "arize-phoenix", specifier = ">=12.18.0" },
     { name = "async-lru", specifier = ">=2.0.5" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.120.2" },
+    { name = "genai-prices", specifier = ">=0.0.47" },
     { name = "grep-ast", specifier = ">=0.9.0" },
     { name = "llama-index-core", specifier = ">=0.14.5" },
     { name = "llama-index-llms-anthropic", specifier = ">=0.10.0" },

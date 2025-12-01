@@ -13,6 +13,8 @@ from app.prompts.models import *  # noqa
 from app.settings.models import *  # noqa
 from app.context.models import * # noqa
 from app.agents.models import * # noqa
+from app.usage.models import * # noqa
+from app.llms.models import * # noqa
 
 
 # this is the Alembic Config object, which provides
