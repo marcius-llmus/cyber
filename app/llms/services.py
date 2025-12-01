@@ -47,7 +47,7 @@ class LLMService:
                     f"Context window cannot exceed {model_meta.default_context_window} tokens."
                 )
 
-        if settings_in.api_key:
+        if settings_in.api_key is not None:
              await self.llm_settings_repo.update_api_key_for_provider(
                 provider=db_obj.provider, api_key=settings_in.api_key
             )
