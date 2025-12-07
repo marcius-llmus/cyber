@@ -1,6 +1,5 @@
-from app.projects.models import Project
 import os
-import asyncio
+import aiofiles.os
 
 from app.core.config import settings
 from app.projects.exceptions import ProjectNotFoundException
@@ -18,18 +17,19 @@ class ProjectService:
         return await self.project_repo.list()
 
     @staticmethod
-    def _get_fs_project_paths_sync() -> set[str]:
+    async def _get_fs_project_paths() -> set[str]:
         root_dir = settings.PROJECTS_ROOT_DIR
-        if not os.path.isdir(root_dir):
-            os.makedirs(root_dir, exist_ok=True)
+        if not await aiofiles.os.path.isdir(root_dir):
+            await aiofiles.os.makedirs(root_dir, exist_ok=True)
             return set()
 
         try:
-            return {
-                os.path.join(root_dir, name)
-                for name in os.listdir(root_dir)
-                if os.path.isdir(os.path.join(root_dir, name))
-            }
+            paths = set()
+            for name in await aiofiles.os.listdir(root_dir):
+                full_path = os.path.join(root_dir, name)
+                if await aiofiles.os.path.isdir(full_path):
+                    paths.add(full_path)
+            return paths
         except FileNotFoundError:
             return set()
 
@@ -37,11 +37,12 @@ class ProjectService:
         """
         Synchronizes the projects in the database with the directories in PROJECTS_ROOT_DIR.
         """
-        fs_project_paths = await asyncio.to_thread(self._get_fs_project_paths_sync)
+        fs_project_paths = await self._get_fs_project_paths()
 
         db_projects = await self.project_repo.list()
         db_projects_in_root = {p.path: p for p in db_projects if p.path.startswith(settings.PROJECTS_ROOT_DIR)}
 
+        # todo: check if it's not redundant
         # Add new projects
         for path in fs_project_paths:
             if path not in db_projects_in_root:

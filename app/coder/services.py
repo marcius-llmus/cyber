@@ -24,7 +24,7 @@ from app.coder.schemas import (
     LogLevel,
     UsageMetricsUpdatedEvent,
 )
-from app.context.services import ContextService
+from app.context.services import WorkspaceService
 from app.agents.services import WorkflowService
 from app.history.enums import HistoryEventType
 from app.usage.services import UsagePageService
@@ -187,7 +187,7 @@ class CoderPageService:
         self,
         usage_page_service: UsagePageService,
         chat_service: ChatService,
-        context_service: ContextService,
+        context_service: WorkspaceService,
     ):
         self.usage_page_service = usage_page_service
         self.chat_service = chat_service

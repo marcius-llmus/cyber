@@ -1,4 +1,6 @@
+from enum import StrEnum
 from pydantic import BaseModel
+from typing import List, Optional
 
 
 class ContextFileCreate(BaseModel):
@@ -20,3 +22,29 @@ class Tag(BaseModel):
 
 class ContextFileBatchUpdate(BaseModel):
     filepaths: list[str] = []
+
+
+class FileStatus(StrEnum):
+    SUCCESS = "success"
+    ERROR = "error"
+    BINARY = "binary"
+    IGNORED = "ignored"
+    NOT_FOUND = "not_found"
+
+
+class FileReadResult(BaseModel):
+    file_path: str
+    content: str | None = None
+    status: FileStatus
+    error_message: str | None = None
+
+
+class FileTreeNode(BaseModel):
+    """
+    Represents a node in the file system (File or Folder).
+    Pure domain object, unaware of UI selection state.
+    """
+    name: str
+    path: str
+    is_dir: bool
+    children: Optional[List["FileTreeNode"]] = None

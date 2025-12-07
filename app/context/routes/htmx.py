@@ -5,7 +5,7 @@ from app.core.templating import templates
 
 from app.context.dependencies import get_context_page_service, get_context_service
 from app.context.schemas import ContextFileBatchUpdate
-from app.context.services import ContextPageService, ContextService
+from app.context.services import ContextPageService, WorkspaceService
 
 router = APIRouter()
 
@@ -26,7 +26,7 @@ async def batch_update_context_files(
     request: Request,
     session_id: int,
     data: ContextFileBatchUpdate,
-    service: ContextService = Depends(get_context_service),
+    service: WorkspaceService = Depends(get_context_service),
     page_service: ContextPageService = Depends(get_context_page_service),
 ):
     await service.sync_files(session_id, data.filepaths)
@@ -41,7 +41,7 @@ async def batch_update_context_files(
 async def clear_all_context_files(
     request: Request,
     session_id: int,
-    service: ContextService = Depends(get_context_service),
+    service: WorkspaceService = Depends(get_context_service),
     page_service: ContextPageService = Depends(get_context_page_service),
 ):
     await service.delete_context_for_session(session_id)
@@ -57,7 +57,7 @@ async def remove_context_file(
     request: Request,
     session_id: int,
     context_file_id: int,
-    service: ContextService = Depends(get_context_service),
+    service: WorkspaceService = Depends(get_context_service),
     page_service: ContextPageService = Depends(get_context_page_service),
 ):
     await service.remove_file(session_id, context_file_id)

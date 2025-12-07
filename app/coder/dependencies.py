@@ -11,14 +11,14 @@ from app.core.db import sessionmanager
 from app.agents.factories import build_agent
 from app.agents.factories import build_workflow_service
 from app.context.dependencies import get_context_service
-from app.context.services import ContextService
+from app.context.services import WorkspaceService
 from usage.factories import build_usage_service
 
 
 async def get_coder_page_service(
     usage_page_service: UsagePageService = Depends(get_usage_page_service),
     chat_service: ChatService = Depends(get_chat_service),
-    context_service: ContextService = Depends(get_context_service),
+    context_service: WorkspaceService = Depends(get_context_service),
 ) -> CoderPageService:
     return CoderPageService(
         usage_page_service=usage_page_service, chat_service=chat_service, context_service=context_service

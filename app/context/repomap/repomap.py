@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Dict, List, Tuple
 
 import networkx as nx
+import aiofiles
 from grep_ast import TreeContext, filename_to_lang
 from grep_ast.tsl import get_language, get_parser
 from tree_sitter import QueryCursor
@@ -41,7 +42,7 @@ class RepoMap:
         self.token_limit = token_limit
         self.queries_dir = Path(settings.queries_dir)
 
-    def generate(self) -> str:
+    async def generate(self) -> str:
         """
         Generates the repository map string.
         """
@@ -54,16 +55,17 @@ class RepoMap:
         current_tokens += self._estimate_token_count(header)
 
         # 2. Add Full Content of Active Files (Context)
-        current_tokens = self._add_active_files_content(output_parts, current_tokens)
+        current_tokens = await self._add_active_files_content(output_parts, current_tokens)
 
         # 3. Add Ranked Definitions from Other Files
-        self._add_ranked_definitions(output_parts, current_tokens)
+        await self._add_ranked_definitions(output_parts, current_tokens)
 
         return "".join(output_parts)
 
     @staticmethod
     def _estimate_token_count(text: str) -> int:
         """Approximation of token count."""
+        # todo it is a mock
         return len(text) // 4
 
     def _get_rel_path(self, file_path: str) -> str:
@@ -75,7 +77,7 @@ class RepoMap:
         except ValueError:
             return file_path
 
-    def extract_tags(self, file_path: str) -> List[Tag]:
+    async def extract_tags(self, file_path: str) -> List[Tag]:
         """
         Extracts definitions and references from a file using Tree-sitter.
         Raises RepoMapExtractionException on failure.
@@ -85,8 +87,8 @@ class RepoMap:
             return []
 
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                code = f.read()
+            async with aiofiles.open(file_path, "r", encoding="utf-8") as f:
+                code = await f.read()
             
             if not code:
                 return []
@@ -123,7 +125,7 @@ class RepoMap:
         except Exception as e:
             raise RepoMapExtractionException(f"Failed to extract tags from {file_path}: {str(e)}") from e
 
-    def _rank_files(self) -> Tuple[Dict[str, float], Dict[Tuple[str, str], List[Tag]]]:
+    async def _rank_files(self) -> Tuple[Dict[str, float], Dict[Tuple[str, str], List[Tag]]]:
         """
         Builds a dependency graph and runs PageRank to identify important files and definitions.
         """
@@ -135,7 +137,7 @@ class RepoMap:
         for file_path in self.all_files:
             rel_path = self._get_rel_path(file_path)
             try:
-                tags = self.extract_tags(file_path)
+                tags = await self.extract_tags(file_path)
             except RepoMapExtractionException as e:
                 logger.warning(str(e))
                 continue
@@ -195,15 +197,15 @@ class RepoMap:
 
         return ranked, definitions
 
-    def _add_active_files_content(self, output_parts: List[str], current_tokens: int) -> int:
+    async def _add_active_files_content(self, output_parts: List[str], current_tokens: int) -> int:
         """
         Adds full content of active files.
         """
         for file_path in sorted(self.active_context_files):
             rel_path = self._get_rel_path(file_path)
             try:
-                with open(file_path, "r", encoding="utf-8") as f:
-                    content = f.read()
+                async with aiofiles.open(file_path, "r", encoding="utf-8") as f:
+                    content = await f.read()
 
                 header = f"{rel_path}:\n"
                 ext = Path(rel_path).suffix.lstrip('.')
@@ -221,11 +223,11 @@ class RepoMap:
 
         return current_tokens
 
-    def _add_ranked_definitions(self, output_parts: List[str], current_tokens: int) -> None:
+    async def _add_ranked_definitions(self, output_parts: List[str], current_tokens: int) -> None:
         """
         Adds ranked snippets from the repository.
         """
-        ranked_files, definitions = self._rank_files()
+        ranked_files, definitions = await self._rank_files()
         if not ranked_files:
             return
 
@@ -253,8 +255,8 @@ class RepoMap:
 
             try:
                 abs_path = os.path.join(self.root, rel_path)
-                with open(abs_path, "r", encoding="utf-8") as f:
-                    code = f.read()
+                async with aiofiles.open(abs_path, "r", encoding="utf-8") as f:
+                    code = await f.read()
 
                 tc = TreeContext(rel_path, code)
                 tc.add_lines_of_interest(lois)
