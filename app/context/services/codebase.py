@@ -47,6 +47,15 @@ class CodebaseService:
         """Checks if path is a subpath of root."""
         return path.resolve().is_relative_to(root.resolve())
 
+    @staticmethod
+    def _resolve_search_roots(root: Path, paths: list[str] | None) -> list[Path]:
+        if not paths:
+            return [root]
+        return [
+            abs_p for p in paths
+            if (abs_p := (root / p).resolve()).exists() and abs_p.is_relative_to(root)
+        ]
+
     async def validate_file_path(self, project_root: str, file_path: str, must_exist: bool = True) -> Path:
         """
         Validates that a file is safe to access (inside root) and not ignored.
@@ -55,7 +64,7 @@ class CodebaseService:
         """
         root = Path(project_root).resolve()
         path = Path(file_path)
-        
+
         # 1. Security: Resolve and ensure inside root
         abs_path = path.resolve() if path.is_absolute() else (root / path).resolve()
 
@@ -97,7 +106,8 @@ class CodebaseService:
         root = Path(project_root).resolve()
         spec = await self.matcher.get_spec(project_root)
 
-        search_roots = [root / p for p in paths] if paths else [root]
+        search_roots = self._resolve_search_roots(root, paths)
+
         target_files = set()
 
         async def _scan_dir(current_dir: Path):
@@ -135,7 +145,7 @@ class CodebaseService:
 
         return sorted(list(target_files))
 
-    async def read_file_content(self, project_root: str, file_path: str) -> FileReadResult:
+    async def read_file(self, project_root: str, file_path: str) -> FileReadResult:
         """
         Reads content of a single file returning structured result.
         """
@@ -151,15 +161,6 @@ class CodebaseService:
             return FileReadResult(file_path=file_path, status=FileStatus.ERROR, error_message=str(e))
         except Exception as e:
             return FileReadResult(file_path=file_path, status=FileStatus.ERROR, error_message=str(e))
-
-    async def read_files_content(self, project_root: str, file_paths: list[str]) -> list[FileReadResult]:
-        """
-        Reads content of multiple files returning structured results.
-        """
-        results = []
-        for fp in file_paths:
-            results.append(await self.read_file_content(project_root, fp))
-        return results
 
     async def resolve_file_patterns(self, project_root: str, patterns: list[str]) -> list[str]:
         """Resolves globs to relative file paths."""

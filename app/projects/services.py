@@ -20,29 +20,32 @@ class ProjectService:
     async def _get_fs_project_paths() -> set[str]:
         root_dir = settings.PROJECTS_ROOT_DIR
         if not await aiofiles.os.path.isdir(root_dir):
-            await aiofiles.os.makedirs(root_dir, exist_ok=True)
-            return set()
+            raise FileNotFoundError(f"Projects root directory not found: {root_dir}")
 
-        try:
-            paths = set()
-            for name in await aiofiles.os.listdir(root_dir):
-                full_path = os.path.join(root_dir, name)
-                if await aiofiles.os.path.isdir(full_path):
-                    paths.add(full_path)
-            return paths
-        except FileNotFoundError:
-            return set()
+        paths = set()
+        for name in await aiofiles.os.listdir(root_dir):
+            full_path = os.path.join(root_dir, name)
+            if await aiofiles.os.path.isdir(full_path):
+                paths.add(full_path)
+        return paths
 
-    async def _synchronize_projects(self) -> None:  # noqa
+    async def _synchronize_projects(self) -> None:
         """
         Synchronizes the projects in the database with the directories in PROJECTS_ROOT_DIR.
         """
         fs_project_paths = await self._get_fs_project_paths()
 
         db_projects = await self.project_repo.list()
-        db_projects_in_root = {p.path: p for p in db_projects if p.path.startswith(settings.PROJECTS_ROOT_DIR)}
+        
+        # Ensure strict directory matching by appending separator
+        root_prefix = os.path.join(settings.PROJECTS_ROOT_DIR, "")
+        
+        db_projects_in_root = {
+            p.path: p 
+            for p in db_projects 
+            if p.path.startswith(root_prefix)
+        }
 
-        # todo: check if it's not redundant
         # Add new projects
         for path in fs_project_paths:
             if path not in db_projects_in_root:

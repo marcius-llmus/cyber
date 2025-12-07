@@ -3,110 +3,46 @@ import logging
 from typing import Annotated
 
 from pydantic import Field
-from grep_ast import TreeContext
 from app.core.db import DatabaseSessionManager
 from app.settings.models import Settings
 from app.commons.tools import BaseToolSet
-from app.context.factories import build_workspace_service
-from app.projects.exceptions import ActiveProjectRequiredException
+from app.context.factories import build_filesystem_service, build_search_service
 from app.context.schemas import FileStatus
 
 logger = logging.getLogger(__name__)
 
 
-class ContextTools(BaseToolSet):
-    """Tools for managing the LLM's active context (reading/adding files)."""
-    # spec_functions = ["add_to_context", "remove_from_context"]
-    spec_functions = ["read_files"]
+class FileTools(BaseToolSet):
+    """Tools for reading files from the codebase."""
+    spec_functions = ["read_file"]
 
-    async def read_files(
+    async def read_file(
         self,
-        patterns: Annotated[
-            list[str],
+        file_path: Annotated[
+            str,
             Field(
-                description="List of file paths or glob patterns to read (e.g., ['src/*.py', 'README.md']). "
-                "The tool will resolve globs and return the content of all matching files."
+                description="The relative path of the file to read. Use this to inspect the full content of a file found via grep or the repository map."
             ),
         ],
     ) -> str:
         """
-        Reads the full content of files matching the provided patterns.
+        Reads the full content of a specific file.
         """
         try:
             if not self.session_id:
                 return "Error: No active session ID."
 
             async with self.db.session() as session:
-                context_service = await build_workspace_service(session)
+                fs_service = await build_filesystem_service(session)
+                result = await fs_service.read_file(file_path)
                 
-                # Centralized call: Service handles project check, pattern resolution, and reading
-                contents = await context_service.read_files_by_patterns(patterns)
-                
-                if not contents:
-                    return "No files found matching the patterns."
-
-                output = []
-                for result in contents:
-                    if result.status == FileStatus.SUCCESS:
-                        output.append(f"## File: {result.file_path}\n{result.content}")
-                    else:
-                        output.append(f"## File: {result.file_path}\n[Error reading file: {result.status} - {result.error_message}]")
-                
-                return "\n\n".join(output)
+                if result.status == FileStatus.SUCCESS:
+                    return f"## File: {result.file_path}\n{result.content}"
+                else:
+                    return f"Error reading file {result.file_path}: {result.status} - {result.error_message or 'Unknown error'}"
 
         except Exception as e:
-            logger.error(f"ContextTools: Error in read_files: {e}", exc_info=True)
-            return f"Error reading files: {str(e)}"
-
-    async def add_to_context(
-        self,
-        files: Annotated[
-            list[str],
-            Field(
-                description="List of relative file paths to load into the active context. Use this when you need to read the full content of files to understand or modify them."
-            ),
-        ],
-    ) -> str:
-        """
-        Adds files to the active context.
-        Use this to read the full content of files you need to edit or understand deeply.
-        """
-        try:
-            if not self.session_id:
-                return "Error: No active session ID."
-
-            async with self.db.session() as session:
-                service = await build_workspace_service(session)
-                await service.add_context_files(self.session_id, files)
-
-            return f"Added {len(files)} files to context."
-        except Exception as e:
-            return f"Error adding files: {str(e)}"
-
-    async def remove_from_context(
-        self,
-        files: Annotated[
-            list[str],
-            Field(
-                description="List of relative file paths to unload from the active context. Use this to free up token space when specific files are no longer needed for the current task."
-            ),
-        ],
-    ) -> str:
-        """
-        Removes files from the active context.
-        Use this to free up token space when you are done with specific files.
-        """
-        try:
-            if not self.session_id:
-                return "Error: No active session ID."
-
-            async with self.db.session() as session:
-                service = await build_workspace_service(session)
-                await service.remove_context_files_by_path(self.session_id, files)
-
-            return f"Removed {len(files)} files from context."
-        except Exception as e:
-            return f"Error removing files: {str(e)}"
+            return f"Error reading file: {str(e)}"
 
 
 class SearchTools(BaseToolSet):
@@ -146,30 +82,9 @@ class SearchTools(BaseToolSet):
         Searches for a pattern in the specified files and returns the AST context 
         (surrounding classes/functions) for matches.
         """
-        async with self.db.session() as session:
-            service = await build_workspace_service(session)
-            # 1. Scan for target files (enforces Active Project check)
-            target_files = await service.scan_project_files(paths)
-            
-            # 2. Read content safely via Service
-            read_results = await service.read_files(target_files)
-
-        output = []
-
-        # Grep
-        for result in read_results:
-            try:
-                if result.status != FileStatus.SUCCESS:
-                    continue
-                
-                tc = TreeContext(result.file_path, result.content)
-                loi = tc.grep(pattern, ignore_case=ignore_case)
-                
-                if loi:
-                    tc.add_lines_of_interest(loi)
-                    tc.add_context()
-                    output.append(f"{result.file_path}:\n{tc.format()}")
-            except Exception as e:
-                output.append(f"Error processing {result.file_path}: {e}")
-
-        return "\n\n".join(output) if output else "No matches found."
+        try:
+            async with self.db.session() as session:
+                search_service = await build_search_service(session)
+                return await search_service.grep(pattern, paths, ignore_case)
+        except Exception as e:
+            return f"Error searching code: {str(e)}"
