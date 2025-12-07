@@ -49,15 +49,6 @@ class CodebaseService:
         """Checks if path is a subpath of root."""
         return path.resolve().is_relative_to(root.resolve())
 
-    @staticmethod
-    def _resolve_search_roots(root: Path, paths: list[str] | None) -> list[Path]:
-        if not paths:
-            return [root]
-        return [
-            abs_p for p in paths
-            if (abs_p := (root / p).resolve()).exists() and abs_p.is_relative_to(root)
-        ]
-
     async def validate_file_path(self, project_root: str, file_path: str, must_exist: bool = True) -> Path:
         """
         Validates that a file is safe to access (inside root) and not ignored.
@@ -100,9 +91,9 @@ class CodebaseService:
                 
         return self.matcher.matches(spec, str(path), is_dir=False)
 
-    async def _walk(self, project_root: Path, target_dir: Path, spec: PathSpec) -> set[str]:
+    async def _collect_files(self, project_root: Path, path: Path, spec: PathSpec) -> set[str]:
         """
-        Recursively walks a directory, yielding all valid file paths relative to project_root.
+        Collects valid files from a path (file or directory), respecting ignores.
         """
         files = set()
 
@@ -129,7 +120,13 @@ class CodebaseService:
                 except ValueError:
                     continue
 
-        await _scan_dir(target_dir)
+        if path.is_file():
+            file_rel_path = path.relative_to(project_root)
+            if not self.matcher.matches(spec, str(file_rel_path), is_dir=False):
+                files.add(str(file_rel_path))
+        elif path.is_dir():
+            await _scan_dir(path)
+            
         return files
 
     async def read_file(self, project_root: str, file_path: str) -> FileReadResult:
@@ -158,7 +155,7 @@ class CodebaseService:
             results.append(await self.read_file(project_root, fp))
         return results
 
-    async def resolve_file_patterns(self, project_root: str, patterns: list[str] = None) -> list[str]:
+    async def resolve_file_patterns(self, project_root: str, patterns: list[str] | None = None) -> list[str]:
         """Resolves globs to relative file paths."""
         root = Path(project_root).resolve()
         spec = await self.matcher.get_spec(project_root)
@@ -175,15 +172,9 @@ class CodebaseService:
                 path_obj = Path(p)
                 if not self._is_subpath(root, path_obj):
                     continue
-
-                rel_path = path_obj.relative_to(root)
                 
-                if path_obj.is_dir():
-                    # Reusable Logic: If glob hits a dir, walk it
-                    dir_files = await self._walk(root, path_obj, spec)
-                    results.update(dir_files)
-                elif path_obj.is_file() and not self.matcher.matches(spec, str(rel_path), is_dir=False):
-                    results.add(str(rel_path))
+                files = await self._collect_files(root, path_obj, spec)
+                results.update(files)
 
         return sorted(list(results))
 
