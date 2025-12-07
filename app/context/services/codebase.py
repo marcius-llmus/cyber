@@ -11,7 +11,7 @@ from app.context.schemas import FileReadResult, FileStatus, FileTreeNode
 class _IgnoreMatcher:
     """Internal helper for gitignore pattern matching."""
     DEFAULT_PATTERNS = [
-        ".git", ".idea/", ".vscode/", ".venv/", "node_modules/", "__pycache__/",
+        ".git", ".idea/", ".vscode/", ".venv/", "node_modules/", "__pycache__/", ".env",
         "*.pyc", "*.log", ".DS_Store", "Thumbs.db", "*.svg", "*.pdf", "*.png", "*.jpg"
     ]
 
