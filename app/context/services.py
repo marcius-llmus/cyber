@@ -2,6 +2,9 @@ import os
 import pathspec
 import asyncio
 import logging
+import glob
+import aiofiles
+import aiofiles.os
 from pathlib import Path
 from pathspec.patterns import GitWildMatchPattern
 from app.settings.services import SettingsService
@@ -55,15 +58,16 @@ class IgnoreMatcher:
         "coverage/",  # Code coverage reports
     ]
 
-    def get_spec(self, project_root: str) -> pathspec.PathSpec:
+    async def get_spec(self, project_root: str) -> pathspec.PathSpec:
         """Reads .gitignore and combines with default ignore patterns."""
         root = Path(project_root)
         gitignore_path = root / ".gitignore"
         lines = self.DEFAULT_PATTERNS[:]
 
-        if gitignore_path.exists():
-            with open(gitignore_path, "r") as f:
-                lines.extend(f.read().splitlines())
+        if await aiofiles.os.path.exists(gitignore_path):
+            async with aiofiles.open(gitignore_path, "r") as f:
+                content = await f.read()
+                lines.extend(content.splitlines())
 
         return pathspec.PathSpec.from_lines(GitWildMatchPattern, lines)
 
@@ -74,9 +78,9 @@ class FileScanner:
     def __init__(self, matcher: IgnoreMatcher):
         self.matcher = matcher
 
-    def scan(self, project_root: str, paths: list[str] | None) -> list[str]:
+    async def scan(self, project_root: str, paths: list[str] | None) -> list[str]:
         root = Path(project_root).resolve()
-        spec = self.matcher.get_spec(project_root)
+        spec = await self.matcher.get_spec(project_root)
 
         # Determine search roots: join project root with provided relative paths, or use project root
         if paths:
@@ -88,7 +92,7 @@ class FileScanner:
 
         for item in search_roots:
             # Ensure item exists and is within root
-            if not item.exists():
+            if not await aiofiles.os.path.exists(item):
                 continue
 
             # Calculate relative path for matching
@@ -98,21 +102,32 @@ class FileScanner:
                 # Path is not inside project root
                 continue
 
-            if item.is_file():
+            if await aiofiles.os.path.isfile(item):
                 if not spec.match_file(str(rel_item)):
                     target_files.add(str(rel_item))
-            elif item.is_dir():
-                for dirpath, _, filenames in os.walk(item):
-                    for filename in filenames:
-                        file_path = Path(dirpath) / filename
-                        try:
-                            rel_path = file_path.relative_to(root)
-                            if not spec.match_file(str(rel_path)):
-                                target_files.add(str(rel_path))
-                        except ValueError:
-                            continue
+            elif await aiofiles.os.path.isdir(item):
+                await self._scan_dir_recursive(item, root, spec, target_files)
 
         return sorted(list(target_files))
+
+    async def _scan_dir_recursive(self, current_dir: Path, root: Path, spec: pathspec.PathSpec, target_files: set):
+        try:
+            entries = await aiofiles.os.listdir(current_dir)
+        except OSError:
+            return
+
+        for entry in entries:
+            full_path = current_dir / entry
+            
+            if await aiofiles.os.path.isdir(full_path):
+                await self._scan_dir_recursive(full_path, root, spec, target_files)
+            else:
+                try:
+                    rel_path = full_path.relative_to(root)
+                    if not spec.match_file(str(rel_path)):
+                        target_files.add(str(rel_path))
+                except ValueError:
+                    continue
 
 
 class FileTreeBuilder:
@@ -121,12 +136,12 @@ class FileTreeBuilder:
     def __init__(self, matcher: IgnoreMatcher):
         self.matcher = matcher
 
-    def build(self, project_root: str, active_files: set[str]) -> list[dict]:
-        spec = self.matcher.get_spec(project_root)
+    async def build(self, project_root: str, active_files: set[str]) -> list[dict]:
+        spec = await self.matcher.get_spec(project_root)
 
-        def _recurse(current_path: str) -> list[dict]:
+        async def _recurse(current_path: str) -> list[dict]:
             try:
-                entries = sorted(os.listdir(current_path))
+                entries = sorted(await aiofiles.os.listdir(current_path))
             except PermissionError:
                 return []
 
@@ -140,8 +155,8 @@ class FileTreeBuilder:
                 if spec.match_file(rel_path_str):
                     continue
 
-                if os.path.isdir(full_path):
-                    children = _recurse(full_path)
+                if await aiofiles.os.path.isdir(full_path):
+                    children = await _recurse(full_path)
                     if children:
                         nodes.append({
                             "type": "folder",
@@ -160,7 +175,7 @@ class FileTreeBuilder:
             # Sort folders first, then files
             return sorted(nodes, key=lambda x: (x["type"] == "file", x["name"].lower()))
 
-        return _recurse(project_root)
+        return await _recurse(project_root)
 
 
 class CodebaseService:
@@ -174,6 +189,24 @@ class CodebaseService:
         self.scanner = FileScanner(self.matcher)
         self.tree_builder = FileTreeBuilder(self.matcher)
 
+    @staticmethod
+    def _is_subpath(root: Path, path: Path) -> bool:
+        """Checks if path is a subpath of root."""
+        return path.resolve().is_relative_to(root.resolve())
+
+    def is_safe_file(self, project_root: str | Path, file_path: str | Path) -> bool:
+        """
+        Verifies that the file path resolves to a location within the project root,
+        exists, and is a file.
+        """
+        try:
+            root = Path(project_root).resolve()
+            path = Path(file_path)
+            abs_path = path.resolve() if path.is_absolute() else (root / path).resolve()
+            return self._is_subpath(root, abs_path) and abs_path.exists() and abs_path.is_file()
+        except (OSError, ValueError):
+            return False
+
     async def scan_files(self, project_root: str, paths: list[str] | None = None) -> list[str]:
         """
         Scans the project for files, respecting .gitignore.
@@ -181,14 +214,69 @@ class CodebaseService:
         Always returns relative paths from project root.
         Runs in a thread to avoid blocking the event loop.
         """
-        return await asyncio.to_thread(self.scanner.scan, project_root, paths)
+        return await self.scanner.scan(project_root, paths)
 
     async def build_file_tree(self, project_root: str, active_files: set[str]) -> list[dict]:
         """
         Asynchronously builds the file tree.
         active_files: A set of relative file paths that are currently in the context.
         """
-        return await asyncio.to_thread(self.tree_builder.build, project_root, active_files)
+        return await self.tree_builder.build(project_root, active_files)
+
+    async def resolve_file_patterns(self, project_root: str, patterns: list[str]) -> list[str]:
+        """
+        Resolves a list of file paths or glob patterns to a list of existing relative file paths.
+        Respects .gitignore via IgnoreMatcher.
+        """
+        spec = await self.matcher.get_spec(project_root)
+        return await asyncio.to_thread(self._resolve_patterns_sync, project_root, patterns, spec)
+
+    def _resolve_patterns_sync(self, project_root: str, patterns: list[str], spec: pathspec.PathSpec) -> list[str]:
+        matched_files = set()
+        root_path = Path(project_root).resolve()
+
+        for pattern in patterns:
+            full_pattern = os.path.join(project_root, pattern)
+            found_paths = glob.glob(full_pattern, recursive=True)
+
+            for path in found_paths:
+                if os.path.isdir(path):
+                    continue
+
+                if not self._is_subpath(root_path, Path(path)):
+                    continue
+                
+                rel_path = os.path.relpath(path, project_root)
+                rel_path_str = str(Path(rel_path).as_posix())
+                
+                if not spec.match_file(rel_path_str):
+                    matched_files.add(rel_path_str)
+                    
+        return sorted(list(matched_files))
+
+    async def read_files_content(self, project_root: str, file_paths: list[str]) -> dict[str, str]:
+        """
+        Reads content of multiple files.
+        Returns a dict of {file_path: content}.
+        """
+        results = {}
+        root = Path(project_root).resolve()
+        for file_path in file_paths:
+            try:
+                full_path = (root / file_path).resolve()
+                if not self._is_subpath(root, full_path):
+                    results[file_path] = "<error: access denied - path outside project root>"
+                    continue
+
+                async with aiofiles.open(str(full_path), "r", encoding="utf-8") as f:
+                    results[file_path] = await f.read()
+            except UnicodeDecodeError:
+                results[file_path] = "<binary file>"
+            except FileNotFoundError:
+                results[file_path] = "<file not found>"
+            except Exception as e:
+                results[file_path] = f"<error reading file: {e}>"
+        return results
 
 
 class ContextService:
@@ -247,8 +335,7 @@ class ContextService:
             # Normalize and validate paths
             valid_paths = []
             for fp in filepaths:
-                abs_path = os.path.join(project.path, fp)
-                if os.path.exists(abs_path) and os.path.isfile(abs_path):
+                if self.codebase_service.is_safe_file(project.path, fp):
                     valid_paths.append(fp)
                 else:
                     logger.warning(f"Ignored invalid or missing file path during sync: {fp}")
@@ -337,4 +424,4 @@ class RepoMapService:
             token_limit=settings.ast_token_limit,
             root=project.path,
         )
-        return repo_mapper.generate()
+        return await repo_mapper.generate()
