@@ -162,6 +162,15 @@ class CodebaseService:
         except Exception as e:
             return FileReadResult(file_path=file_path, status=FileStatus.ERROR, error_message=str(e))
 
+    async def read_files(self, project_root: str, file_paths: list[str]) -> list[FileReadResult]:
+        """
+        Reads content of multiple files returning structured results.
+        """
+        results = []
+        for fp in file_paths:
+            results.append(await self.read_file(project_root, fp))
+        return results
+
     async def resolve_file_patterns(self, project_root: str, patterns: list[str]) -> list[str]:
         """Resolves globs to relative file paths."""
         root = Path(project_root).resolve()

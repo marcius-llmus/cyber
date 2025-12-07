@@ -14,19 +14,20 @@ logger = logging.getLogger(__name__)
 
 class FileTools(BaseToolSet):
     """Tools for reading files from the codebase."""
-    spec_functions = ["read_file"]
+    spec_functions = ["read_files"]
 
-    async def read_file(
+    async def read_files(
         self,
-        file_path: Annotated[
-            str,
+        patterns: Annotated[
+            list[str],
             Field(
-                description="The relative path of the file to read. Use this to inspect the full content of a file found via grep or the repository map."
+                description="List of file paths or glob patterns to read (e.g., ['src/*.py', 'README.md']). "
+                "The tool will resolve globs and return the content of all matching files."
             ),
         ],
     ) -> str:
         """
-        Reads the full content of a specific file.
+        Reads the full content of files matching the provided patterns.
         """
         try:
             if not self.session_id:
@@ -34,12 +35,19 @@ class FileTools(BaseToolSet):
 
             async with self.db.session() as session:
                 fs_service = await build_filesystem_service(session)
-                result = await fs_service.read_file(file_path)
+                results = await fs_service.read_files(patterns)
                 
-                if result.status == FileStatus.SUCCESS:
-                    return f"## File: {result.file_path}\n{result.content}"
-                else:
-                    return f"Error reading file {result.file_path}: {result.status} - {result.error_message or 'Unknown error'}"
+                if not results:
+                    return "No files found matching the patterns."
+
+                output = []
+                for result in results:
+                    if result.status == FileStatus.SUCCESS:
+                        output.append(f"## File: {result.file_path}\n{result.content}")
+                    else:
+                        output.append(f"## File: {result.file_path}\n[Error reading file: {result.status} - {result.error_message}]")
+                
+                return "\n\n".join(output)
 
         except Exception as e:
             return f"Error reading file: {str(e)}"

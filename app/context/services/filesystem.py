@@ -23,6 +23,18 @@ class FileSystemService:
         
         return await self.codebase_service.read_file(project.path, file_path)
 
+    async def read_files(self, patterns: list[str]) -> list[FileReadResult]:
+        """
+        Reads files matching the given glob patterns within the active project.
+        """
+        project = await self.project_service.get_active_project()
+        if not project:
+            raise ActiveProjectRequiredException("Active project required to read files.")
+
+        files = await self.codebase_service.resolve_file_patterns(project.path, patterns)
+        
+        return await self.codebase_service.read_files(project.path, files)
+
     async def write_file(self, file_path: str, content: str) -> None:
         """
         Writes a file to the active project workspace.
