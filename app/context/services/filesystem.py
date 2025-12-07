@@ -53,13 +53,3 @@ class FileSystemService:
         if not project:
             return []
         return await self.codebase_service.build_file_tree(project.path)
-
-    async def filter_and_resolve_paths(self, file_paths: list[str]) -> set[str]:
-        """
-        Filters a list of relative paths, removing ignored or unsafe files.
-        Returns a set of absolute resolved paths.
-        """
-        project = await self.project_service.get_active_project()
-        if not project:
-            raise ActiveProjectRequiredException("Active project required to resolve files.")
-        return await self.codebase_service.filter_and_resolve_paths(project.path, file_paths)

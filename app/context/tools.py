@@ -1,4 +1,3 @@
-import os
 import logging
 from typing import Annotated
 
@@ -50,6 +49,7 @@ class FileTools(BaseToolSet):
                 return "\n\n".join(output)
 
         except Exception as e:
+            logger.error(f"FileTools.read_files failed: {e}", exc_info=True)
             return f"Error reading file: {str(e)}"
 
 
@@ -95,4 +95,5 @@ class SearchTools(BaseToolSet):
                 search_service = await build_search_service(session)
                 return await search_service.grep(search_pattern, file_patterns, ignore_case)
         except Exception as e:
+            logger.error(f"SearchTools.grep failed: {e}", exc_info=True)
             return f"Error searching code: {str(e)}"

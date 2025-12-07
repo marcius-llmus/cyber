@@ -129,12 +129,18 @@ class CodebaseService:
             
         return files
 
-    async def read_file(self, project_root: str, file_path: str) -> FileReadResult:
+    async def read_file(self, project_root: str, file_path: str, must_exist: bool = True) -> FileReadResult:
         """
         Reads content of a single file returning structured result.
         """
         try:
-            abs_path = await self.validate_file_path(project_root, file_path, must_exist=True)
+            abs_path = await self.validate_file_path(project_root, file_path, must_exist=must_exist)
+
+            if not abs_path.exists():
+                # If we are here, must_exist=False (otherwise validate would have raised)
+                # In case file doesn't exist, we just return empty as success in order for it to be created
+                return FileReadResult(file_path=file_path, content="", status=FileStatus.SUCCESS)
+
             async with aiofiles.open(abs_path, "r", encoding="utf-8") as f:
                 content = await f.read()
                 return FileReadResult(file_path=file_path, content=content, status=FileStatus.SUCCESS)
@@ -166,12 +172,14 @@ class CodebaseService:
 
         for pattern in patterns:
             full_pattern = str(root / pattern)
+
+            if not self._is_subpath(root, Path(full_pattern)):
+                raise ValueError(f"Access denied: Pattern '{pattern}' targets outside project root.")
+
             matched_paths = glob.glob(full_pattern, recursive=True)
             
             for p in matched_paths:
                 path_obj = Path(p)
-                if not self._is_subpath(root, path_obj):
-                    continue
                 
                 files = await self._collect_files(root, path_obj, spec)
                 results.update(files)

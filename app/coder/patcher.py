@@ -37,12 +37,16 @@ class PatcherService:
         if not project:
             raise ActiveProjectRequiredException("Active project required to apply patches.")
 
-        read_result = await self.codebase_service.read_file(project.path, file_path)
+        # We allow non-existent files (creation) by passing must_exist=False
+        # In case it doesn't exist, we, the caller, tell explicitly to no raise (must_exist=False)
+        read_result = await self.codebase_service.read_file(project.path, file_path, must_exist=False)
         
-        if read_result.status != FileStatus.SUCCESS:
-            raise ValueError(f"Could not read file {file_path}: {read_result.status}")
-
-        original_content = read_result.content
+        if read_result.status == FileStatus.SUCCESS:
+            original_content = read_result.content
+        elif read_result.status == FileStatus.BINARY:
+            raise ValueError(f"Cannot patch binary file: {file_path}")
+        else:
+            raise ValueError(f"Could not read file {file_path}: {read_result.error_message}")
 
         if strategy == PatchStrategy.LLM_GATHER:
             patched_content = await self._apply_via_llm(original_content, diff_content)
