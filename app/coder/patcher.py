@@ -2,6 +2,9 @@ import logging
 import re
 from pathlib import Path
 
+import aiofiles
+import aiofiles.os
+
 from llama_index.core.llms import ChatMessage
 
 from app.coder.constants import DIFF_PATCHER_PROMPT
@@ -37,17 +40,17 @@ class PatcherService:
 
         original_content = ""
         if target_path.exists():
-            with open(target_path, "r", encoding="utf-8") as f:
-                original_content = f.read()
+            async with aiofiles.open(target_path, "r", encoding="utf-8") as f:
+                original_content = await f.read()
 
         if strategy == PatchStrategy.LLM_GATHER:
             patched_content = await self._apply_via_llm(original_content, diff_content)
         else:
             raise NotImplementedError(f"Strategy {strategy} not implemented")
 
-        target_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(target_path, "w", encoding="utf-8") as f:
-            f.write(patched_content)
+        await aiofiles.os.makedirs(target_path.parent, exist_ok=True)
+        async with aiofiles.open(target_path, "w", encoding="utf-8") as f:
+            await f.write(patched_content)
 
         return f"Successfully patched {file_path}"
 
