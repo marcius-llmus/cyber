@@ -13,7 +13,7 @@ class SearchService:
         self.project_service = project_service
         self.codebase_service = codebase_service
 
-    async def grep(self, pattern: str, paths: list[str] | None = None, ignore_case: bool = True) -> str:
+    async def grep(self, search_pattern: str, file_patterns: list[str] | None = None, ignore_case: bool = True) -> str:
         """
         Searches for a pattern in the active project.
         """
@@ -21,7 +21,7 @@ class SearchService:
         if not project:
             raise ActiveProjectRequiredException("Active project required to grep code.")
         
-        files = await self.codebase_service.scan_files(project.path, paths)
+        files = await self.codebase_service.scan_files(project.path, file_patterns)
         output = []
 
         for file_path in files:
@@ -31,7 +31,7 @@ class SearchService:
 
             try:
                 tc = TreeContext(result.file_path, result.content)
-                loi = tc.grep(pattern, ignore_case=ignore_case)
+                loi = tc.grep(search_pattern, ignore_case=ignore_case)
                 if loi:
                     tc.add_lines_of_interest(loi)
                     tc.add_context()

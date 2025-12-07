@@ -18,7 +18,7 @@ class FileTools(BaseToolSet):
 
     async def read_files(
         self,
-        patterns: Annotated[
+        file_patterns: Annotated[
             list[str],
             Field(
                 description="List of file paths or glob patterns to read (e.g., ['src/*.py', 'README.md']). "
@@ -35,10 +35,10 @@ class FileTools(BaseToolSet):
 
             async with self.db.session() as session:
                 fs_service = await build_filesystem_service(session)
-                results = await fs_service.read_files(patterns)
+                results = await fs_service.read_files(file_patterns)
                 
                 if not results:
-                    return "No files found matching the patterns."
+                    return "No files found matching the file patterns."
 
                 output = []
                 for result in results:
@@ -67,16 +67,16 @@ class SearchTools(BaseToolSet):
 
     async def grep(
         self,
-        pattern: Annotated[
+        search_pattern: Annotated[
             str,
             Field(
                 description="The regular expression pattern to search for. Use this to find definitions, references, or specific code structures (e.g., 'class .*Service') across the codebase."
             ),
         ],
-        paths: Annotated[
+        file_patterns: Annotated[
             list[str],
             Field(
-                description="Optional list of specific file paths or directories to limit the search scope. If empty, the search is performed across the entire project."
+                description="Optional list of glob patterns (e.g., 'src/**/*.py', 'tests/*.ts') to limit the search scope. If empty, searches the entire project."
             ),
         ] = None,
         ignore_case: Annotated[
@@ -93,6 +93,6 @@ class SearchTools(BaseToolSet):
         try:
             async with self.db.session() as session:
                 search_service = await build_search_service(session)
-                return await search_service.grep(pattern, paths, ignore_case)
+                return await search_service.grep(search_pattern, file_patterns, ignore_case)
         except Exception as e:
             return f"Error searching code: {str(e)}"

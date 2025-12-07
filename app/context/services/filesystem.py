@@ -23,7 +23,7 @@ class FileSystemService:
         
         return await self.codebase_service.read_file(project.path, file_path)
 
-    async def read_files(self, patterns: list[str]) -> list[FileReadResult]:
+    async def read_files(self, file_patterns: list[str]) -> list[FileReadResult]:
         """
         Reads files matching the given glob patterns within the active project.
         """
@@ -31,7 +31,7 @@ class FileSystemService:
         if not project:
             raise ActiveProjectRequiredException("Active project required to read files.")
 
-        files = await self.codebase_service.resolve_file_patterns(project.path, patterns)
+        files = await self.codebase_service.resolve_file_patterns(project.path, file_patterns)
         
         return await self.codebase_service.read_files(project.path, files)
 

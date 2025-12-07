@@ -98,15 +98,18 @@ class CodebaseService:
                 
         return self.matcher.matches(spec, str(path), is_dir=False)
 
-    async def scan_files(self, project_root: str, paths: list[str] | None = None) -> list[str]:
+    async def scan_files(self, project_root: str, patterns: list[str] | None = None) -> list[str]:
         """
         Scans the project for files, respecting .gitignore.
+        If patterns are provided, resolves them as globs.
+        If no patterns, scans the entire project.
         Returns relative paths.
         """
+        if patterns:
+            return await self.resolve_file_patterns(project_root, patterns)
+
         root = Path(project_root).resolve()
         spec = await self.matcher.get_spec(project_root)
-
-        search_roots = self._resolve_search_roots(root, paths)
 
         target_files = set()
 
@@ -134,14 +137,8 @@ class CodebaseService:
                 except ValueError:
                     continue
 
-        for item in search_roots:
-            if await aiofiles.os.path.exists(item):
-                if await aiofiles.os.path.isdir(item):
-                    await _scan_dir(item)
-                elif await aiofiles.os.path.isfile(item):
-                    rel = item.relative_to(root)
-                    if not self.matcher.matches(spec, str(rel), is_dir=False):
-                        target_files.add(str(rel))
+        if await aiofiles.os.path.exists(root):
+            await _scan_dir(root)
 
         return sorted(list(target_files))
 
