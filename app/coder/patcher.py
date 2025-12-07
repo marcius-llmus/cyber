@@ -1,9 +1,5 @@
 import logging
 import re
-from pathlib import Path
-
-import aiofiles
-import aiofiles.os
 
 from llama_index.core.llms import ChatMessage
 
@@ -11,16 +7,17 @@ from app.coder.constants import DIFF_PATCHER_PROMPT
 from app.coder.enums import PatchStrategy
 from app.llms.enums import LLMModel
 from app.llms.services import LLMService
-from app.projects.services import ProjectService
+from app.context.services import WorkspaceService
+from app.context.schemas import FileStatus
 from app.chat.enums import MessageRole
 
 logger = logging.getLogger(__name__)
 
 
 class PatcherService:
-    def __init__(self, llm_service: LLMService, project_service: ProjectService):
+    def __init__(self, llm_service: LLMService, context_service: WorkspaceService):
         self.llm_service = llm_service
-        self.project_service = project_service
+        self.context_service = context_service
 
     async def apply_diff(
         self,
@@ -28,29 +25,19 @@ class PatcherService:
         diff_content: str,
         strategy: PatchStrategy = PatchStrategy.LLM_GATHER,
     ) -> str:
-        project = await self.project_service.get_active_project()
-        if not project:
-            raise ValueError("No active project found.")
+        read_result = await self.context_service.read_file(file_path)
+        
+        if read_result.status != FileStatus.SUCCESS:
+            raise ValueError(f"Could not read file {file_path}: {read_result.status}")
 
-        abs_project_path = Path(project.path).resolve()
-        target_path = (abs_project_path / file_path).resolve()
-
-        if not target_path.is_relative_to(abs_project_path):
-            raise ValueError(f"Target file {file_path} is outside project root.")
-
-        original_content = ""
-        if target_path.exists():
-            async with aiofiles.open(target_path, "r", encoding="utf-8") as f:
-                original_content = await f.read()
+        original_content = read_result.content
 
         if strategy == PatchStrategy.LLM_GATHER:
             patched_content = await self._apply_via_llm(original_content, diff_content)
         else:
             raise NotImplementedError(f"Strategy {strategy} not implemented")
 
-        await aiofiles.os.makedirs(target_path.parent, exist_ok=True)
-        async with aiofiles.open(target_path, "w", encoding="utf-8") as f:
-            await f.write(patched_content)
+        await self.context_service.save_file(file_path, patched_content)
 
         return f"Successfully patched {file_path}"
 

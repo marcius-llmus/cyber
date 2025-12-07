@@ -1,15 +1,17 @@
 import os
+import logging
 from typing import Annotated
-import aiofiles
 
 from pydantic import Field
 from grep_ast import TreeContext
 from app.core.db import DatabaseSessionManager
 from app.settings.models import Settings
 from app.commons.tools import BaseToolSet
-from app.context.services import CodebaseService
-from app.context.factories import build_context_service
+from app.context.factories import build_workspace_service
 from app.projects.exceptions import ActiveProjectRequiredException
+from app.context.schemas import FileStatus
+
+logger = logging.getLogger(__name__)
 
 
 class ContextTools(BaseToolSet):
@@ -35,24 +37,25 @@ class ContextTools(BaseToolSet):
                 return "Error: No active session ID."
 
             async with self.db.session() as session:
-                context_service = await build_context_service(session)
-                project = await context_service.project_service.get_active_project()
-                if not project:
-                    return "Error: No active project found."
-
-                files = await context_service.codebase_service.resolve_file_patterns(project.path, patterns)
-                if not files:
+                context_service = await build_workspace_service(session)
+                
+                # Centralized call: Service handles project check, pattern resolution, and reading
+                contents = await context_service.read_files_by_patterns(patterns)
+                
+                if not contents:
                     return "No files found matching the patterns."
 
-                contents = await context_service.codebase_service.read_files_content(project.path, files)
-
                 output = []
-                for file_path, content in contents.items():
-                    output.append(f"## File: {file_path}\n{content}")
+                for result in contents:
+                    if result.status == FileStatus.SUCCESS:
+                        output.append(f"## File: {result.file_path}\n{result.content}")
+                    else:
+                        output.append(f"## File: {result.file_path}\n[Error reading file: {result.status} - {result.error_message}]")
                 
                 return "\n\n".join(output)
 
         except Exception as e:
+            logger.error(f"ContextTools: Error in read_files: {e}", exc_info=True)
             return f"Error reading files: {str(e)}"
 
     async def add_to_context(
@@ -73,7 +76,7 @@ class ContextTools(BaseToolSet):
                 return "Error: No active session ID."
 
             async with self.db.session() as session:
-                service = await build_context_service(session)
+                service = await build_workspace_service(session)
                 await service.add_context_files(self.session_id, files)
 
             return f"Added {len(files)} files to context."
@@ -98,7 +101,7 @@ class ContextTools(BaseToolSet):
                 return "Error: No active session ID."
 
             async with self.db.session() as session:
-                service = await build_context_service(session)
+                service = await build_workspace_service(session)
                 await service.remove_context_files_by_path(self.session_id, files)
 
             return f"Removed {len(files)} files from context."
@@ -114,11 +117,9 @@ class SearchTools(BaseToolSet):
         self,
         db: DatabaseSessionManager,
         settings: Settings,
-        codebase_service: CodebaseService,
         session_id: int | None = None,
     ):
         super().__init__(db, settings, session_id)
-        self.codebase_service = codebase_service
 
     async def grep(
         self,
@@ -146,31 +147,29 @@ class SearchTools(BaseToolSet):
         (surrounding classes/functions) for matches.
         """
         async with self.db.session() as session:
-            service = await build_context_service(session)
-            project = await service.project_service.get_active_project()
-            if not project:
-                raise ActiveProjectRequiredException("Active project required to grep code.")
-            project_path = project.path
-
-        target_files = await self.codebase_service.scan_files(project_root=project_path, paths=paths)
+            service = await build_workspace_service(session)
+            # 1. Scan for target files (enforces Active Project check)
+            target_files = await service.scan_project_files(paths)
+            
+            # 2. Read content safely via Service
+            read_results = await service.read_files(target_files)
 
         output = []
 
         # Grep
-        for file_path in target_files:
+        for result in read_results:
             try:
-                full_path = os.path.join(project_path, file_path)
-                async with aiofiles.open(full_path, "r", encoding="utf-8") as f:
-                    code = await f.read()
+                if result.status != FileStatus.SUCCESS:
+                    continue
                 
-                tc = TreeContext(file_path, code)
+                tc = TreeContext(result.file_path, result.content)
                 loi = tc.grep(pattern, ignore_case=ignore_case)
                 
                 if loi:
                     tc.add_lines_of_interest(loi)
                     tc.add_context()
-                    output.append(f"{file_path}:\n{tc.format()}")
+                    output.append(f"{result.file_path}:\n{tc.format()}")
             except Exception as e:
-                output.append(f"Error processing {file_path}: {e}")
+                output.append(f"Error processing {result.file_path}: {e}")
 
         return "\n\n".join(output) if output else "No matches found."
