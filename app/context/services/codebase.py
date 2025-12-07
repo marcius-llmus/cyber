@@ -7,6 +7,8 @@ from pathspec.patterns import GitWildMatchPattern
 
 from app.context.schemas import FileReadResult, FileStatus, FileTreeNode
 
+SCAN_ALL_PATTERN = ["."]
+
 
 class _IgnoreMatcher:
     """Internal helper for gitignore pattern matching."""
@@ -98,20 +100,11 @@ class CodebaseService:
                 
         return self.matcher.matches(spec, str(path), is_dir=False)
 
-    async def scan_files(self, project_root: str, patterns: list[str] | None = None) -> list[str]:
+    async def _walk(self, project_root: Path, target_dir: Path, spec: PathSpec) -> set[str]:
         """
-        Scans the project for files, respecting .gitignore.
-        If patterns are provided, resolves them as globs.
-        If no patterns, scans the entire project.
-        Returns relative paths.
+        Recursively walks a directory, yielding all valid file paths relative to project_root.
         """
-        if patterns:
-            return await self.resolve_file_patterns(project_root, patterns)
-
-        root = Path(project_root).resolve()
-        spec = await self.matcher.get_spec(project_root)
-
-        target_files = set()
+        files = set()
 
         async def _scan_dir(current_dir: Path):
             try:
@@ -122,25 +115,22 @@ class CodebaseService:
             for entry in entries:
                 full_path = current_dir / entry
                 try:
-                    rel_path = full_path.relative_to(root)
+                    rel_path = full_path.relative_to(project_root)
                     is_dir = await aiofiles.os.path.isdir(full_path)
                     
                     if self.matcher.matches(spec, str(rel_path), is_dir=is_dir):
                         continue
 
                     if is_dir:
-                         # Don't follow symlinks to avoid loops
                         if not await aiofiles.os.path.islink(full_path):
                             await _scan_dir(full_path)
                     else:
-                        target_files.add(str(rel_path))
+                        files.add(str(rel_path))
                 except ValueError:
                     continue
 
-        if await aiofiles.os.path.exists(root):
-            await _scan_dir(root)
-
-        return sorted(list(target_files))
+        await _scan_dir(target_dir)
+        return files
 
     async def read_file(self, project_root: str, file_path: str) -> FileReadResult:
         """
@@ -168,11 +158,14 @@ class CodebaseService:
             results.append(await self.read_file(project_root, fp))
         return results
 
-    async def resolve_file_patterns(self, project_root: str, patterns: list[str]) -> list[str]:
+    async def resolve_file_patterns(self, project_root: str, patterns: list[str] = None) -> list[str]:
         """Resolves globs to relative file paths."""
         root = Path(project_root).resolve()
         spec = await self.matcher.get_spec(project_root)
         results = set()
+
+        if not patterns:
+            patterns = SCAN_ALL_PATTERN
 
         for pattern in patterns:
             full_pattern = str(root / pattern)
@@ -180,11 +173,16 @@ class CodebaseService:
             
             for p in matched_paths:
                 path_obj = Path(p)
-                if not path_obj.is_file() or not self._is_subpath(root, path_obj):
+                if not self._is_subpath(root, path_obj):
                     continue
 
                 rel_path = path_obj.relative_to(root)
-                if not self.matcher.matches(spec, str(rel_path), is_dir=False):
+                
+                if path_obj.is_dir():
+                    # Reusable Logic: If glob hits a dir, walk it
+                    dir_files = await self._walk(root, path_obj, spec)
+                    results.update(dir_files)
+                elif path_obj.is_file() and not self.matcher.matches(spec, str(rel_path), is_dir=False):
                     results.add(str(rel_path))
 
         return sorted(list(results))

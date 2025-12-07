@@ -21,7 +21,7 @@ class SearchService:
         if not project:
             raise ActiveProjectRequiredException("Active project required to grep code.")
         
-        files = await self.codebase_service.scan_files(project.path, file_patterns)
+        files = await self.codebase_service.resolve_file_patterns(project.path, file_patterns)
         output = []
 
         for file_path in files:
