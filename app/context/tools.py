@@ -1,5 +1,6 @@
 import os
 from typing import Annotated
+import aiofiles
 
 from pydantic import Field
 from grep_ast import TreeContext
@@ -13,7 +14,46 @@ from app.projects.exceptions import ActiveProjectRequiredException
 
 class ContextTools(BaseToolSet):
     """Tools for managing the LLM's active context (reading/adding files)."""
-    spec_functions = ["add_to_context", "remove_from_context"]
+    # spec_functions = ["add_to_context", "remove_from_context"]
+    spec_functions = ["read_files"]
+
+    async def read_files(
+        self,
+        patterns: Annotated[
+            list[str],
+            Field(
+                description="List of file paths or glob patterns to read (e.g., ['src/*.py', 'README.md']). "
+                "The tool will resolve globs and return the content of all matching files."
+            ),
+        ],
+    ) -> str:
+        """
+        Reads the full content of files matching the provided patterns.
+        """
+        try:
+            if not self.session_id:
+                return "Error: No active session ID."
+
+            async with self.db.session() as session:
+                context_service = await build_context_service(session)
+                project = await context_service.project_service.get_active_project()
+                if not project:
+                    return "Error: No active project found."
+
+                files = await context_service.codebase_service.resolve_file_patterns(project.path, patterns)
+                if not files:
+                    return "No files found matching the patterns."
+
+                contents = await context_service.codebase_service.read_files_content(project.path, files)
+
+                output = []
+                for file_path, content in contents.items():
+                    output.append(f"## File: {file_path}\n{content}")
+                
+                return "\n\n".join(output)
+
+        except Exception as e:
+            return f"Error reading files: {str(e)}"
 
     async def add_to_context(
         self,
@@ -120,8 +160,8 @@ class SearchTools(BaseToolSet):
         for file_path in target_files:
             try:
                 full_path = os.path.join(project_path, file_path)
-                with open(full_path, "r", encoding="utf-8") as f:
-                    code = f.read()
+                async with aiofiles.open(full_path, "r", encoding="utf-8") as f:
+                    code = await f.read()
                 
                 tc = TreeContext(file_path, code)
                 loi = tc.grep(pattern, ignore_case=ignore_case)

@@ -29,3 +29,5 @@ check if tool is in conversation
 how will we cache prompts? what is the order?
 does the workflow outputs only final round usage or the sum up of everything? (can see at phoenix)
 verify if all tool rounds are bein passed in the whole conversation by ctx when it loads current conversation (chat history helps?)
+on project change, reload for a new session
+
