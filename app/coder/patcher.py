@@ -7,7 +7,9 @@ from app.coder.constants import DIFF_PATCHER_PROMPT
 from app.coder.enums import PatchStrategy
 from app.llms.enums import LLMModel
 from app.llms.services import LLMService
-from app.context.services import WorkspaceService
+from app.context.services.codebase import CodebaseService
+from app.projects.services import ProjectService
+from app.projects.exceptions import ActiveProjectRequiredException
 from app.context.schemas import FileStatus
 from app.chat.enums import MessageRole
 
@@ -15,9 +17,15 @@ logger = logging.getLogger(__name__)
 
 
 class PatcherService:
-    def __init__(self, llm_service: LLMService, context_service: WorkspaceService):
+    def __init__(
+        self,
+        llm_service: LLMService,
+        project_service: ProjectService,
+        codebase_service: CodebaseService,
+    ):
         self.llm_service = llm_service
-        self.context_service = context_service
+        self.project_service = project_service
+        self.codebase_service = codebase_service
 
     async def apply_diff(
         self,
@@ -25,19 +33,27 @@ class PatcherService:
         diff_content: str,
         strategy: PatchStrategy = PatchStrategy.LLM_GATHER,
     ) -> str:
-        read_result = await self.context_service.read_file(file_path)
-        
-        if read_result.status != FileStatus.SUCCESS:
-            raise ValueError(f"Could not read file {file_path}: {read_result.status}")
+        project = await self.project_service.get_active_project()
+        if not project:
+            raise ActiveProjectRequiredException("Active project required to apply patches.")
 
-        original_content = read_result.content
+        # We allow non-existent files (creation) by passing must_exist=False
+        # In case it doesn't exist, we, the caller, tell explicitly to no raise (must_exist=False)
+        read_result = await self.codebase_service.read_file(project.path, file_path, must_exist=False)
+        
+        if read_result.status == FileStatus.SUCCESS:
+            original_content = read_result.content
+        elif read_result.status == FileStatus.BINARY:
+            raise ValueError(f"Cannot patch binary file: {file_path}")
+        else:
+            raise ValueError(f"Could not read file {file_path}: {read_result.error_message}")
 
         if strategy == PatchStrategy.LLM_GATHER:
             patched_content = await self._apply_via_llm(original_content, diff_content)
         else:
             raise NotImplementedError(f"Strategy {strategy} not implemented")
 
-        await self.context_service.save_file(file_path, patched_content)
+        await self.codebase_service.write_file(project.path, file_path, patched_content)
 
         return f"Successfully patched {file_path}"
 

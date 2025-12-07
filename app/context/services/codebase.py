@@ -7,6 +7,8 @@ from pathspec.patterns import GitWildMatchPattern
 
 from app.context.schemas import FileReadResult, FileStatus, FileTreeNode
 
+SCAN_ALL_PATTERN = ["."]
+
 
 class _IgnoreMatcher:
     """Internal helper for gitignore pattern matching."""
@@ -55,7 +57,7 @@ class CodebaseService:
         """
         root = Path(project_root).resolve()
         path = Path(file_path)
-        
+
         # 1. Security: Resolve and ensure inside root
         abs_path = path.resolve() if path.is_absolute() else (root / path).resolve()
 
@@ -89,16 +91,11 @@ class CodebaseService:
                 
         return self.matcher.matches(spec, str(path), is_dir=False)
 
-    async def scan_files(self, project_root: str, paths: list[str] | None = None) -> list[str]:
+    async def _collect_files(self, project_root: Path, path: Path, spec: PathSpec) -> set[str]:
         """
-        Scans the project for files, respecting .gitignore.
-        Returns relative paths.
+        Collects valid files from a path (file or directory), respecting ignores.
         """
-        root = Path(project_root).resolve()
-        spec = await self.matcher.get_spec(project_root)
-
-        search_roots = [root / p for p in paths] if paths else [root]
-        target_files = set()
+        files = set()
 
         async def _scan_dir(current_dir: Path):
             try:
@@ -109,38 +106,41 @@ class CodebaseService:
             for entry in entries:
                 full_path = current_dir / entry
                 try:
-                    rel_path = full_path.relative_to(root)
+                    rel_path = full_path.relative_to(project_root)
                     is_dir = await aiofiles.os.path.isdir(full_path)
                     
                     if self.matcher.matches(spec, str(rel_path), is_dir=is_dir):
                         continue
 
                     if is_dir:
-                         # Don't follow symlinks to avoid loops
                         if not await aiofiles.os.path.islink(full_path):
                             await _scan_dir(full_path)
                     else:
-                        target_files.add(str(rel_path))
+                        files.add(str(rel_path))
                 except ValueError:
                     continue
 
-        for item in search_roots:
-            if await aiofiles.os.path.exists(item):
-                if await aiofiles.os.path.isdir(item):
-                    await _scan_dir(item)
-                elif await aiofiles.os.path.isfile(item):
-                    rel = item.relative_to(root)
-                    if not self.matcher.matches(spec, str(rel), is_dir=False):
-                        target_files.add(str(rel))
+        if path.is_file():
+            file_rel_path = path.relative_to(project_root)
+            if not self.matcher.matches(spec, str(file_rel_path), is_dir=False):
+                files.add(str(file_rel_path))
+        elif path.is_dir():
+            await _scan_dir(path)
+            
+        return files
 
-        return sorted(list(target_files))
-
-    async def read_file_content(self, project_root: str, file_path: str) -> FileReadResult:
+    async def read_file(self, project_root: str, file_path: str, must_exist: bool = True) -> FileReadResult:
         """
         Reads content of a single file returning structured result.
         """
         try:
-            abs_path = await self.validate_file_path(project_root, file_path, must_exist=True)
+            abs_path = await self.validate_file_path(project_root, file_path, must_exist=must_exist)
+
+            if not abs_path.exists():
+                # If we are here, must_exist=False (otherwise validate would have raised)
+                # In case file doesn't exist, we just return empty as success in order for it to be created
+                return FileReadResult(file_path=file_path, content="", status=FileStatus.SUCCESS)
+
             async with aiofiles.open(abs_path, "r", encoding="utf-8") as f:
                 content = await f.read()
                 return FileReadResult(file_path=file_path, content=content, status=FileStatus.SUCCESS)
@@ -152,33 +152,37 @@ class CodebaseService:
         except Exception as e:
             return FileReadResult(file_path=file_path, status=FileStatus.ERROR, error_message=str(e))
 
-    async def read_files_content(self, project_root: str, file_paths: list[str]) -> list[FileReadResult]:
+    async def read_files(self, project_root: str, file_paths: list[str]) -> list[FileReadResult]:
         """
         Reads content of multiple files returning structured results.
         """
         results = []
         for fp in file_paths:
-            results.append(await self.read_file_content(project_root, fp))
+            results.append(await self.read_file(project_root, fp))
         return results
 
-    async def resolve_file_patterns(self, project_root: str, patterns: list[str]) -> list[str]:
+    async def resolve_file_patterns(self, project_root: str, patterns: list[str] | None = None) -> list[str]:
         """Resolves globs to relative file paths."""
         root = Path(project_root).resolve()
         spec = await self.matcher.get_spec(project_root)
         results = set()
 
+        if not patterns:
+            patterns = SCAN_ALL_PATTERN
+
         for pattern in patterns:
             full_pattern = str(root / pattern)
+
+            if not self._is_subpath(root, Path(full_pattern)):
+                raise ValueError(f"Access denied: Pattern '{pattern}' targets outside project root.")
+
             matched_paths = glob.glob(full_pattern, recursive=True)
             
             for p in matched_paths:
                 path_obj = Path(p)
-                if not path_obj.is_file() or not self._is_subpath(root, path_obj):
-                    continue
-
-                rel_path = path_obj.relative_to(root)
-                if not self.matcher.matches(spec, str(rel_path), is_dir=False):
-                    results.add(str(rel_path))
+                
+                files = await self._collect_files(root, path_obj, spec)
+                results.update(files)
 
         return sorted(list(results))
 

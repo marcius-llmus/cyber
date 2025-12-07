@@ -21,7 +21,10 @@ check auto scrolling
 single shot?
 verify tools
 improve agent streaming feedback like loading, thinks, too calling etc etc..
-add slash commands
+cap max messages
+
+ROADMAP
+--
 change prompt individually based on existing prompts and current conversation (versioning)
 add comprehensive planning system
 add image processing and multi modal detector
@@ -30,4 +33,4 @@ how will we cache prompts? what is the order?
 does the workflow outputs only final round usage or the sum up of everything? (can see at phoenix)
 verify if all tool rounds are bein passed in the whole conversation by ctx when it loads current conversation (chat history helps?)
 on project change, reload for a new session
-
+add slash commands

@@ -1,13 +1,15 @@
 from typing import Any, Dict, List
 from app.context.services.context import WorkspaceService
+from app.context.services.filesystem import FileSystemService
 from app.context.schemas import FileTreeNode
 
 class ContextPageService:
     """
     Adapts domain data for HTML rendering.
     """
-    def __init__(self, context_service: WorkspaceService):
+    def __init__(self, context_service: WorkspaceService, fs_service: FileSystemService):
         self.context_service = context_service
+        self.fs_service = fs_service
 
     async def get_file_tree_page_data(self, session_id: int) -> dict:
         project = await self.context_service.project_service.get_active_project()
@@ -15,7 +17,7 @@ class ContextPageService:
             return {"file_tree": {}}
 
         # 1. Get Pure Domain Tree
-        domain_nodes = await self.context_service.get_project_file_tree()
+        domain_nodes = await self.fs_service.get_project_file_tree()
         
         # 2. Get Active Context (to mark selection)
         active_files = await self.context_service.get_active_context(session_id)

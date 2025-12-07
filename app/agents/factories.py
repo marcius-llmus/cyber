@@ -1,13 +1,13 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import sessionmanager
-from app.context.factories import build_codebase_service, build_repo_map_service
+from app.context.factories import build_repo_map_service
 from app.settings.factories import build_settings_service
 from app.llms.factories import build_llm_service
 from app.llms.enums import LLMModel
 from llama_index.core.agent.workflow import FunctionAgent
 from llama_index.core.tools import BaseTool
-from app.context.tools import SearchTools, ContextTools
+from app.context.tools import SearchTools, FileTools
 from app.coder.tools import PatcherTools
 from app.agents.repositories import WorkflowStateRepository
 from app.agents.services import WorkflowService
@@ -34,17 +34,13 @@ async def build_agent(db: AsyncSession, session_id: int) -> FunctionAgent:
 
     tools: list[BaseTool] = []
 
-    context_tools = ContextTools(db=sessionmanager, settings=settings, session_id=session_id)
-    tools.extend(context_tools.to_tool_list())
+    file_tools = FileTools(db=sessionmanager, settings=settings, session_id=session_id)
+    tools.extend(file_tools.to_tool_list())
 
-    search_tools = SearchTools(
-        db=sessionmanager, settings=settings, session_id=session_id
-    )
+    search_tools = SearchTools(db=sessionmanager, settings=settings, session_id=session_id)
     tools.extend(search_tools.to_tool_list())
 
-    patcher_tools = PatcherTools(
-        db=sessionmanager, settings=settings, session_id=session_id
-    )
+    patcher_tools = PatcherTools(db=sessionmanager, settings=settings, session_id=session_id)
     tools.extend(patcher_tools.to_tool_list())
 
     repo_map = await repo_map_service.generate_repo_map(session_id)
@@ -62,6 +58,11 @@ NEVER EVER SAY YOU ARE GOING TO USE TOOL XYZ. USE IT DIRECTLY OR TELL THE USER Y
 ----
 MULTI-STEP LOGIC:
 If a task requires multiple tool calls (e.g., "call X 5 times"), you must execute them sequentially or in parallel, collect the outputs, and perform any requested aggregation (sum, average, etc.) yourself.
+
+OPERATING PROTOCOL:
+1. EXPLORE: Use `grep` to find relevant code if the Repo Map is insufficient.
+2. READ: Use `read_file` to inspect the code content. YOU MUST READ THE FILE BEFORE EDITING IT to ensure you have the latest content and line numbers.
+3. EDIT: Use `apply_diff` to modify files.
 
 REPOSITORY CONTEXT:
 {repo_map}

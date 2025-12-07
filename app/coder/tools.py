@@ -1,3 +1,4 @@
+import logging
 from typing import Annotated
 
 from pydantic import Field
@@ -5,6 +6,8 @@ from pydantic import Field
 from app.coder.constants import PATCHER_TOOL_DESCRIPTION
 from app.coder.factories import build_patcher_service
 from app.commons.tools import BaseToolSet
+
+logger = logging.getLogger(__name__)
 
 
 class PatcherTools(BaseToolSet):
@@ -32,4 +35,5 @@ class PatcherTools(BaseToolSet):
                 return await patcher.apply_diff(file_path=file_path, diff_content=diff)
 
         except Exception as e:
+            logger.error(f"PatcherTools.apply_diff failed: {e}", exc_info=True)
             return f"Error applying patch: {str(e)}"
