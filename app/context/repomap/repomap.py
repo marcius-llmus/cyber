@@ -55,6 +55,7 @@ class RepoMap:
         current_tokens += self._estimate_token_count(header)
 
         # 2. Add Full Content of Active Files (Context)
+        # todo this must be reworked
         if include_active_content:
             current_tokens = await self._add_active_files_content(output_parts, current_tokens)
 
