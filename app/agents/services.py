@@ -96,6 +96,8 @@ class AgentContextService:
         return "\n\n".join(xml_parts)
 
     async def _build_prompts_xml(self, project_id: int) -> str:
+        # note: later down the road we could make prompts by session no matter the project
+        #       and allow user to clone current session so independent prompts but cloned
         prompts = await self.prompt_service.get_active_prompts(project_id)
         if not prompts:
             return ""
