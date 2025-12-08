@@ -6,6 +6,7 @@ from app.settings.factories import build_settings_service
 from app.llms.factories import build_llm_service
 from app.llms.enums import LLMModel
 from app.projects.factories import build_project_service
+from app.prompts.factories import build_prompt_service
 from llama_index.core.agent.workflow import FunctionAgent
 from llama_index.core.tools import BaseTool
 from app.context.tools import SearchTools, FileTools
@@ -24,12 +25,14 @@ async def build_agent_context_service(db: AsyncSession) -> AgentContextService:
     workspace_service = await build_workspace_service(db)
     codebase_service = await build_codebase_service()
     project_service = await build_project_service(db)
+    prompt_service = await build_prompt_service(db)
     
     return AgentContextService(
         repo_map_service=repo_map_service,
         workspace_service=workspace_service,
         codebase_service=codebase_service,
-        project_service=project_service
+        project_service=project_service,
+        prompt_service=prompt_service,
     )
 
 

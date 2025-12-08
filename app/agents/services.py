@@ -1,8 +1,10 @@
+import logging
 from llama_index.core.workflow import Context, Workflow
 
 from app.agents.repositories import WorkflowStateRepository
 from app.context.services import RepoMapService, WorkspaceService, CodebaseService
 from app.projects.services import ProjectService
+from app.prompts.services import PromptService
 from app.context.schemas import FileStatus
 from app.agents.constants import (
     AGENT_IDENTITY,
@@ -11,7 +13,9 @@ from app.agents.constants import (
     REPO_MAP_DESCRIPTION,
     ACTIVE_CONTEXT_DESCRIPTION,
 )
+from projects.exceptions import ActiveProjectRequiredException
 
+logger = logging.getLogger(__name__)
 
 class WorkflowService:
     def __init__(self, workflow_repo: WorkflowStateRepository):
@@ -40,23 +44,31 @@ class AgentContextService:
         workspace_service: WorkspaceService,
         codebase_service: CodebaseService,
         project_service: ProjectService,
+        prompt_service: PromptService,
     ):
         self.repo_map_service = repo_map_service
         self.workspace_service = workspace_service
         self.codebase_service = codebase_service
         self.project_service = project_service
+        self.prompt_service = prompt_service
 
     async def build_system_prompt(self, session_id: int) -> str:
+        # fetch custom prompts (stable)
+        custom_prompts_xml = await self._build_prompts_xml(session_id)
+
+        # fetch repo map (semi-stable)
         repo_map = await self.repo_map_service.generate_repo_map(
             session_id=session_id,
             include_active_content=False
         )
 
+        # fetch active context (volatile)
         active_context_xml = await self._build_active_context_xml(session_id)
 
         parts = [
             f"<identity>\n{AGENT_IDENTITY}\n</identity>",
             f"<rules>\n{TOOL_USAGE_RULES}\n{OPERATING_PROTOCOL}\n</rules>",
+            f"<custom_instructions>\n{custom_prompts_xml}\n</custom_instructions>",
             f"<repository_map>\n<!-- {REPO_MAP_DESCRIPTION} -->\n{repo_map}\n</repository_map>",
             f"<active_context>\n<!-- {ACTIVE_CONTEXT_DESCRIPTION} -->\n{active_context_xml}\n</active_context>",
         ]
@@ -66,7 +78,7 @@ class AgentContextService:
     async def _build_active_context_xml(self, session_id: int) -> str:
         project = await self.project_service.get_active_project()
         if not project:
-            return ""
+            raise ActiveProjectRequiredException("Active project required to apply patches.")
 
         active_files = await self.workspace_service.get_active_context(session_id)
         if not active_files:
@@ -81,3 +93,16 @@ class AgentContextService:
                 )
         
         return "\n\n".join(xml_parts)
+
+    async def _build_prompts_xml(self, session_id: int) -> str:
+        project = await self.project_service.get_active_project()
+        if not project:
+            return ""
+
+        prompts = await self.prompt_service.get_active_prompts(project.id)
+        if not prompts:
+            return ""
+
+        return "\n\n".join(
+            [f'<instruction name="{p.name}">\n{p.content}\n</instruction>' for p in prompts]
+        )

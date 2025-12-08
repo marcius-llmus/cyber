@@ -56,6 +56,15 @@ class PromptService:
             return []
         return await self.prompt_repo.list_by_project(project_id=project.id)
 
+    async def get_attached_prompts(self, project_id: int) -> list[Prompt]:
+        return await self.prompt_repo.get_attached_prompts(project_id)
+
+    async def get_active_prompts(self, project_id: int) -> list[Prompt]:
+        """Returns all Global prompts + Attached Project prompts."""
+        global_prompts = await self.get_global_prompts()
+        project_prompts = await self.get_attached_prompts(project_id)
+        return global_prompts + project_prompts
+
     @staticmethod
     async def _generate_blueprint_content(path: str) -> str:
         """
