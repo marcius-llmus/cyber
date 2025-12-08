@@ -339,3 +339,4 @@ cache.*
 tailwindcss
 .idea
 *.db
+workspace/

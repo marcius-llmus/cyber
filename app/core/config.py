@@ -13,9 +13,9 @@ class Settings(BaseSettings):
         env_ignore_empty=True,
         extra="ignore",
     )
-    DATABASE_URL: str = "sqlite+aiosqlite:///./database.db"
-    PROJECTS_ROOT_DIR: str = "projects"
-    BLUEPRINTS_ROOT_DIR: str = "blueprints"
+    DATABASE_URL: str = "sqlite+aiosqlite:///workspace/database.db"
+    PROJECTS_ROOT_DIR: str = "workspace/projects"
+    BLUEPRINTS_ROOT_DIR: str = "workspace/blueprints"
     LOG_LEVEL: LogLevel = LogLevel.INFO
     OBSERVABILITY_ENABLED: bool = False
 
