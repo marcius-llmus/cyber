@@ -95,9 +95,10 @@ class AgentContextService:
         return "\n\n".join(xml_parts)
 
     async def _build_prompts_xml(self, session_id: int) -> str:
+        # todo: check architecture. too many project checks?
         project = await self.project_service.get_active_project()
         if not project:
-            return ""
+            raise ActiveProjectRequiredException("Active project required to apply patches.")
 
         prompts = await self.prompt_service.get_active_prompts(project.id)
         if not prompts:
