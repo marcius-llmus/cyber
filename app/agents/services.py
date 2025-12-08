@@ -14,6 +14,7 @@ from app.agents.constants import (
     ACTIVE_CONTEXT_DESCRIPTION,
 )
 from projects.exceptions import ActiveProjectRequiredException
+from app.projects.models import Project
 
 logger = logging.getLogger(__name__)
 
@@ -53,8 +54,12 @@ class AgentContextService:
         self.prompt_service = prompt_service
 
     async def build_system_prompt(self, session_id: int) -> str:
+        project = await self.project_service.get_active_project()
+        if not project:
+            raise ActiveProjectRequiredException("Active project required to build system prompt.")
+
         # fetch custom prompts (stable)
-        custom_prompts_xml = await self._build_prompts_xml(session_id)
+        custom_prompts_xml = await self._build_prompts_xml(project.id)
 
         # fetch repo map (semi-stable)
         repo_map = await self.repo_map_service.generate_repo_map(
@@ -63,7 +68,7 @@ class AgentContextService:
         )
 
         # fetch active context (volatile)
-        active_context_xml = await self._build_active_context_xml(session_id)
+        active_context_xml = await self._build_active_context_xml(session_id, project)
 
         parts = [
             f"<identity>\n{AGENT_IDENTITY}\n</identity>",
@@ -75,11 +80,7 @@ class AgentContextService:
 
         return "\n\n".join(parts)
 
-    async def _build_active_context_xml(self, session_id: int) -> str:
-        project = await self.project_service.get_active_project()
-        if not project:
-            raise ActiveProjectRequiredException("Active project required to apply patches.")
-
+    async def _build_active_context_xml(self, session_id: int, project: Project) -> str:
         active_files = await self.workspace_service.get_active_context(session_id)
         if not active_files:
             return ""
@@ -91,16 +92,11 @@ class AgentContextService:
                 xml_parts.append(
                     f'    <file path="{context_file.file_path}">\n{result.content}\n    </file>'
                 )
-        
+
         return "\n\n".join(xml_parts)
 
-    async def _build_prompts_xml(self, session_id: int) -> str:
-        # todo: check architecture. too many project checks?
-        project = await self.project_service.get_active_project()
-        if not project:
-            raise ActiveProjectRequiredException("Active project required to apply patches.")
-
-        prompts = await self.prompt_service.get_active_prompts(project.id)
+    async def _build_prompts_xml(self, project_id: int) -> str:
+        prompts = await self.prompt_service.get_active_prompts(project_id)
         if not prompts:
             return ""
 
