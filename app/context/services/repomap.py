@@ -25,6 +25,7 @@ class RepoMapService:
         session_id: int,
         mentioned_filenames: set[str] | None = None,
         mentioned_idents: set[str] | None = None,
+        include_active_content: bool = True,
     ) -> str:
         project = await self.context_service.project_service.get_active_project()
         if not project:
@@ -51,4 +52,4 @@ class RepoMapService:
             token_limit=settings.ast_token_limit,
             root=project.path,
         )
-        return await repo_mapper.generate()
+        return await repo_mapper.generate(include_active_content=include_active_content)

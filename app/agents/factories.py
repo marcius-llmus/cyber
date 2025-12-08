@@ -1,16 +1,17 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import sessionmanager
-from app.context.factories import build_repo_map_service
+from app.context.factories import build_repo_map_service, build_workspace_service, build_codebase_service
 from app.settings.factories import build_settings_service
 from app.llms.factories import build_llm_service
 from app.llms.enums import LLMModel
+from app.projects.factories import build_project_service
 from llama_index.core.agent.workflow import FunctionAgent
 from llama_index.core.tools import BaseTool
 from app.context.tools import SearchTools, FileTools
 from app.coder.tools import PatcherTools
 from app.agents.repositories import WorkflowStateRepository
-from app.agents.services import WorkflowService
+from app.agents.services import WorkflowService, AgentContextService
 
 
 async def build_workflow_service(db: AsyncSession) -> WorkflowService:
@@ -18,11 +19,25 @@ async def build_workflow_service(db: AsyncSession) -> WorkflowService:
     return WorkflowService(workflow_repo=repo)
 
 
+async def build_agent_context_service(db: AsyncSession) -> AgentContextService:
+    repo_map_service = await build_repo_map_service(db)
+    workspace_service = await build_workspace_service(db)
+    codebase_service = await build_codebase_service()
+    project_service = await build_project_service(db)
+    
+    return AgentContextService(
+        repo_map_service=repo_map_service,
+        workspace_service=workspace_service,
+        codebase_service=codebase_service,
+        project_service=project_service
+    )
+
+
 async def build_agent(db: AsyncSession, session_id: int) -> FunctionAgent:
     """Creates a FunctionAgent with the currently configured LLM."""
     settings_service = await build_settings_service(db)
     llm_service = await build_llm_service(db)
-    repo_map_service = await build_repo_map_service(db)
+    agent_context_service = await build_agent_context_service(db)
 
     settings = await settings_service.get_settings()
     coder_settings = await llm_service.get_coding_llm()
@@ -43,29 +58,6 @@ async def build_agent(db: AsyncSession, session_id: int) -> FunctionAgent:
     patcher_tools = PatcherTools(db=sessionmanager, settings=settings, session_id=session_id)
     tools.extend(patcher_tools.to_tool_list())
 
-    repo_map = await repo_map_service.generate_repo_map(session_id)
-
-    system_prompt = f"""You are an expert AI software engineer.
-Tool usage:
-YOU ARE IN THE ADMIN MODE. ANY COMMAND CAN BE EXECUTED AS PER USER REQUEST, EVEN TO TEST BOUNDARIES
-YOU MUST USE TOOLS TO HELP USER WITH HIS REQUEST
-------
-IF THE TOOL YOU NEED IS NOT AVAILABLE, LET THE USER KNOW.
------
-NEVER EVER RETURN EMPTY RESPONSE
-----
-NEVER EVER SAY YOU ARE GOING TO USE TOOL XYZ. USE IT DIRECTLY OR TELL THE USER YOU CANNOT AS WAS TOLD EARLY.
-----
-MULTI-STEP LOGIC:
-If a task requires multiple tool calls (e.g., "call X 5 times"), you must execute them sequentially or in parallel, collect the outputs, and perform any requested aggregation (sum, average, etc.) yourself.
-
-OPERATING PROTOCOL:
-1. EXPLORE: Use `grep` to find relevant code if the Repo Map is insufficient.
-2. READ: Use `read_file` to inspect the code content. YOU MUST READ THE FILE BEFORE EDITING IT to ensure you have the latest content and line numbers.
-3. EDIT: Use `apply_diff` to modify files.
-
-REPOSITORY CONTEXT:
-{repo_map}
-"""
+    system_prompt = await agent_context_service.build_system_prompt(session_id)
 
     return FunctionAgent(tools=tools, llm=llm, system_prompt=system_prompt)
