@@ -42,7 +42,7 @@ class RepoMap:
         self.token_limit = token_limit
         self.queries_dir = Path(settings.queries_dir)
 
-    async def generate(self) -> str:
+    async def generate(self, include_active_content: bool = True) -> str:
         """
         Generates the repository map string.
         """
@@ -55,7 +55,9 @@ class RepoMap:
         current_tokens += self._estimate_token_count(header)
 
         # 2. Add Full Content of Active Files (Context)
-        current_tokens = await self._add_active_files_content(output_parts, current_tokens)
+        # todo this must be reworked
+        if include_active_content:
+            current_tokens = await self._add_active_files_content(output_parts, current_tokens)
 
         # 3. Add Ranked Definitions from Other Files
         await self._add_ranked_definitions(output_parts, current_tokens)

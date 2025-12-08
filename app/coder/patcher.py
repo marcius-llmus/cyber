@@ -71,6 +71,9 @@ class PatcherService:
         response = await llm.achat(messages)
         content = response.message.content
 
+        if content is None:
+            return ""
+
         return self._strip_markdown(content)
 
     @staticmethod
