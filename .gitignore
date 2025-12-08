@@ -339,4 +339,5 @@ cache.*
 tailwindcss
 .idea
 *.db
-workspace/
+workspace/*
+!workspace/.gitkeep
