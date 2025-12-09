@@ -1,6 +1,5 @@
 services:
   app:
-    image: llama-coding:latest
     build: .
     container_name: llama_coding
     ports:
@@ -8,6 +7,8 @@ services:
     volumes:
       # Only persist data, not code. Code lives in the image.
       - ${HOME}/llama-coding:/app/workspace
+    # Enable Podman's keep-id mode to map container UID to host UID
+    userns_mode: "keep-id"
     environment:
       - HOST_UID=${UID}
       - HOST_GID=${GID}
