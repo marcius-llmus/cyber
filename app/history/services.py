@@ -23,11 +23,18 @@ class HistoryService:
     async def set_active_session(self, session_id: int) -> ChatSession:
         session = await self.get_session(session_id=session_id)
 
+        # Ensure the project associated with this session is active
+        await self.project_service.set_active_project(session.project_id)
+
         # Deactivate all other sessions for this project
         await self.session_repo.deactivate_all_for_project(project_id=session.project_id)
 
         # Activate the target session
-        return await self.session_repo.activate(session)
+        session = await self.session_repo.activate(session)
+
+        await self.project_service.set_active_project(project_id=session.project_id)
+
+        return session
 
     async def delete_session(self, session_id_to_delete: int) -> bool:
         """Deletes a chat session.
