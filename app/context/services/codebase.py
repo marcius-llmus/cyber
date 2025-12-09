@@ -14,7 +14,8 @@ class _IgnoreMatcher:
     """Internal helper for gitignore pattern matching."""
     DEFAULT_PATTERNS = [
         ".git", ".idea/", ".vscode/", ".venv/", "node_modules/", "__pycache__/", ".env",
-        "*.pyc", "*.log", ".DS_Store", "Thumbs.db", "*.svg", "*.pdf", "*.png", "*.jpg"
+        "*.pyc", "*.log", ".DS_Store", "Thumbs.db", "*.svg", "*.pdf", "*.png", "*.jpg",
+        ".dockerignore", ".gitattributes", "*.lock", "package-lock.json", "yarn.lock"
     ]
 
     @staticmethod
@@ -128,6 +129,40 @@ class CodebaseService:
             await _scan_dir(path)
             
         return files
+
+    async def list_dir(self, project_root: str, dir_path: str = ".") -> list[str]:
+        """
+        Lists contents of a directory, respecting ignores.
+        Returns list of names (appended with / for dirs).
+        """
+        root = Path(project_root).resolve()
+        spec = await self.matcher.get_spec(project_root)
+
+        target_path = (root / dir_path).resolve()
+
+        # todo: we could unify file traversal checking
+        if not self._is_subpath(root, target_path):
+             raise ValueError(f"Access denied: '{dir_path}' is outside project root.")
+             
+        if not target_path.exists() or not target_path.is_dir():
+            raise ValueError(f"Directory not found: '{dir_path}'")
+
+        try:
+            entries = sorted(await aiofiles.os.listdir(target_path))
+        except OSError as e:
+            raise ValueError(f"Error reading directory: {e}")
+
+        results = []
+        for entry in entries:
+            full_path = target_path / entry
+            rel_path = full_path.relative_to(root)
+            is_dir = await aiofiles.os.path.isdir(full_path)
+            
+            if not self.matcher.matches(spec, str(rel_path), is_dir=is_dir):
+                suffix = "/" if is_dir else ""
+                results.append(f"{entry}{suffix}")
+
+        return results
 
     async def read_file(self, project_root: str, file_path: str, must_exist: bool = True) -> FileReadResult:
         """

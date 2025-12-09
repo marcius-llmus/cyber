@@ -13,15 +13,16 @@ logger = logging.getLogger(__name__)
 
 class FileTools(BaseToolSet):
     """Tools for reading files from the codebase."""
-    spec_functions = ["read_files"]
+    spec_functions = ["read_files"] # "list_files"
 
     async def read_files(
         self,
         file_patterns: Annotated[
             list[str],
             Field(
-                description="List of file paths or glob patterns to read (e.g., ['src/*.py', 'README.md']). "
-                "The tool will resolve globs and return the content of all matching files."
+                description="List of specific file paths or narrow glob patterns to read (e.g., ['src/auth/service.py', 'tests/unit/*.py']). "
+                "DO NOT read the entire repository ('.') or broad patterns ('**') unless absolutely necessary. "
+                "Use the Repository Map or grep to locate specific files first."
             ),
         ],
     ) -> str:
@@ -52,6 +53,33 @@ class FileTools(BaseToolSet):
             logger.error(f"FileTools.read_files failed: {e}", exc_info=True)
             return f"Error reading file: {str(e)}"
 
+    async def list_files(
+        self,
+        dir_path: Annotated[
+            str,
+            Field(
+                description="The relative path of the directory to list (e.g., 'src', '.'). "
+                "Use this ONLY if you need to explore the directory structure and the Repository Map is insufficient or missing. "
+                "Do not use this to search for code; use grep instead."
+            ),
+        ] = ".",
+    ) -> str:
+        """
+        Lists files and directories in the given path.
+        """
+        try:
+            if not self.session_id:
+                return "Error: No active session ID."
+
+            async with self.db.session() as session:
+                fs_service = await build_filesystem_service(session)
+                items = await fs_service.list_files(dir_path)
+                return "\n".join(items) if items else "Directory is empty."
+
+        except Exception as e:
+            logger.error(f"FileTools.list_files failed: {e}", exc_info=True)
+            return f"Error listing files: {str(e)}"
+
 
 class SearchTools(BaseToolSet):
     """Tools for high-level understanding via AST/Repo Maps (Tier 1)."""
@@ -70,13 +98,17 @@ class SearchTools(BaseToolSet):
         search_pattern: Annotated[
             str,
             Field(
-                description="The regular expression pattern to search for. Use this to find definitions, references, or specific code structures (e.g., 'class .*Service') across the codebase."
+                description="The regular expression pattern to search for. Use it to explore the file. "
+                "Be specific. Avoid generic terms that match thousands of lines. "
+                "Use this to find definitions, references, or specific code structures (e.g., 'class .*Service')."
             ),
         ],
         file_patterns: Annotated[
             list[str],
             Field(
-                description="Optional list of glob patterns (e.g., 'src/**/*.py', 'tests/*.ts') to limit the search scope. If empty, searches the entire project."
+                description="Optional list of glob patterns (e.g., 'src/**/*.py', 'tests/*.ts') to limit the search scope. "
+                "You MUST provide specific file patterns or directories if known. "
+                "Only leave empty if you truly need to search the ENTIRE project, which is slow."
             ),
         ] = None,
         ignore_case: Annotated[

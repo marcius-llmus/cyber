@@ -54,12 +54,15 @@ class RepoMap:
         output_parts.append(header)
         current_tokens += self._estimate_token_count(header)
 
-        # 2. Add Full Content of Active Files (Context)
-        # todo this must be reworked
+        # 2. Add File Structure (Prioritized)
+        current_tokens = self._add_file_structure(output_parts, current_tokens)
+
+        # 3. Add Full Content of Active Files (Context)
         if include_active_content:
             current_tokens = await self._add_active_files_content(output_parts, current_tokens)
 
-        # 3. Add Ranked Definitions from Other Files
+        # 4. Add Ranked Definitions from Other Files
+        # We pass the responsibility of checking limits and adding headers to the method
         await self._add_ranked_definitions(output_parts, current_tokens)
 
         return "".join(output_parts)
@@ -69,6 +72,34 @@ class RepoMap:
         """Approximation of token count."""
         # todo it is a mock
         return len(text) // 4
+
+    def _add_file_structure(self, output_parts: List[str], current_tokens: int) -> int:
+        """
+        Adds a flat list of files to ensure structure is visible even if ranking fails.
+        """
+        header = "#### File Structure\n"
+        temp_parts = [header]
+        temp_tokens = self._estimate_token_count(header)
+        
+        # Use up to the global limit. File structure is priority #1.
+        
+        for file_path in self.all_files:
+            rel_path = self._get_rel_path(file_path)
+            line = f"{rel_path}\n"
+            line_tokens = self._estimate_token_count(line)
+            
+            if current_tokens + temp_tokens + line_tokens > self.token_limit:
+                temp_parts.append("... (file list truncated)\n")
+                temp_tokens += self._estimate_token_count("... (file list truncated)\n")
+                break
+            
+            temp_parts.append(line)
+            temp_tokens += line_tokens
+            
+        # Ensures the text is actually added to the output
+        output_parts.extend(temp_parts)
+        output_parts.append("\n")
+        return current_tokens + temp_tokens + 1
 
     def _get_rel_path(self, file_path: str) -> str:
         """
@@ -88,6 +119,11 @@ class RepoMap:
         if not lang:
             return []
 
+        scm_path = self.queries_dir / f"{lang}-tags.scm"
+        if not scm_path.exists():
+            # logger.warning(f"RepoMap: Tag query file not found for {lang} at {scm_path}")
+            return []
+
         try:
             async with aiofiles.open(file_path, "r", encoding="utf-8") as f:
                 code = await f.read()
@@ -98,10 +134,6 @@ class RepoMap:
             language = get_language(lang)
             parser = get_parser(lang)
             tree = parser.parse(bytes(code, "utf8"))
-
-            scm_path = self.queries_dir / f"{lang}-tags.scm"
-            if not scm_path.exists():
-                return []
 
             query_scm = scm_path.read_text()
             query = language.query(query_scm)
@@ -203,6 +235,16 @@ class RepoMap:
         """
         Adds full content of active files.
         """
+        if not self.active_context_files:
+            return current_tokens
+
+        header = "#### Active Context\n"
+        if current_tokens + self._estimate_token_count(header) >= self.token_limit:
+            return current_tokens
+            
+        output_parts.append(header)
+        current_tokens += self._estimate_token_count(header)
+
         for file_path in sorted(self.active_context_files):
             rel_path = self._get_rel_path(file_path)
             try:
@@ -232,6 +274,12 @@ class RepoMap:
         ranked_files, definitions = await self._rank_files()
         if not ranked_files:
             return
+
+        header = "#### Ranked Definitions\n"
+        if current_tokens + self._estimate_token_count(header) > self.token_limit:
+             return
+        output_parts.append(header)
+        current_tokens += self._estimate_token_count(header)
 
         # Sort files by rank
         sorted_files = sorted(ranked_files.items(), key=lambda x: x[1], reverse=True)
@@ -269,6 +317,7 @@ class RepoMap:
                 entry_tokens = self._estimate_token_count(entry)
 
                 if current_tokens + entry_tokens > self.token_limit:
+                    output_parts.append("\n... (remaining definitions truncated due to token limit)\n")
                     return
 
                 output_parts.append(entry)
