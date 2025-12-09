@@ -5,6 +5,7 @@ export GID = $(shell id -g)
 ifneq ($(USE_PODMAN),)
 	ENGINE := podman
 	COMPOSE := podman-compose
+	export PODMAN_USERNS = keep-id
 else
 	ENGINE := docker
 	COMPOSE := docker compose

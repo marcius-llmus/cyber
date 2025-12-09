@@ -8,8 +8,9 @@ services:
       # Only persist data, not code. Code lives in the image.
       - ${HOME}/llama-coding:/app/workspace
     # Enable Podman's keep-id mode to map container UID to host UID
-    userns_mode: "keep-id"
+    userns_mode: keep-id
     environment:
       - HOST_UID=${UID}
       - HOST_GID=${GID}
+      - PHOENIX_WORKING_DIR=/app/workspace/.phoenix
     restart: "no"

@@ -23,7 +23,7 @@ if [ "$CURRENT_UID" -eq 0 ]; then
         useradd -u "$USER_ID" -g "$GROUP_ID" -m appuser
     fi
     APP_USER=$(getent passwd "$USER_ID" | cut -d: -f1)
-    chown -R "$APP_USER":"$APP_USER" /app
+    chown -R "$APP_USER":"$APP_USER" /app/workspace
     exec gosu "$APP_USER" "$@"
 else
     echo "ERROR: Container UID ($CURRENT_UID) does not match Host UID ($USER_ID). Aborting."
