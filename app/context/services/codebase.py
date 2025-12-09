@@ -138,7 +138,8 @@ class CodebaseService:
         spec = await self.matcher.get_spec(project_root)
 
         target_path = (root / dir_path).resolve()
-        
+
+        # todo: we could unify file traversal checking
         if not self._is_subpath(root, target_path):
              raise ValueError(f"Access denied: '{dir_path}' is outside project root.")
              
