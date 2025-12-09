@@ -13,7 +13,7 @@ from app.agents.constants import (
     REPO_MAP_DESCRIPTION,
     ACTIVE_CONTEXT_DESCRIPTION,
 )
-from projects.exceptions import ActiveProjectRequiredException
+from app.projects.exceptions import ActiveProjectRequiredException
 from app.projects.models import Project
 
 logger = logging.getLogger(__name__)

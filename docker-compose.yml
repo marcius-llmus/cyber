@@ -1,13 +1,14 @@
 services:
   app:
+    image: llama-coding:latest
     build: .
     container_name: llama_coding
     ports:
       - "8000:8000"
     volumes:
-      # Persist all data (DB, Projects, Blueprints) to the host workspace
+      # Only persist data, not code. Code lives in the image.
       - ${HOME}/llama-coding:/app/workspace
     environment:
       - HOST_UID=${UID}
       - HOST_GID=${GID}
-    restart: unless-stopped
+    restart: "no"

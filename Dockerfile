@@ -1,4 +1,7 @@
-FROM ghcr.io/astral-sh/uv:python3.14-bookworm-slim
+FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim
+
+# Label ensures we can identify and prune only this project's images
+LABEL com.llama-coding.project="true"
 
 # Enable bytecode compilation
 ENV UV_COMPILE_BYTECODE=1
@@ -16,24 +19,29 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install dependencies
-COPY pyproject.toml uv.lock ./
-
-# Sync dependencies without installing the project itself (caching layer)
-RUN uv sync --no-install-project --no-dev
+# Use Bind Mounts to avoid copying files for the dependency layer
+# Use Cache Mount to persist downloaded packages
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=/app/uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=/app/pyproject.toml \
+    uv sync --frozen --no-install-project --no-dev
 
 # Copy the application source code
 COPY . .
 
 # Install the project
-RUN uv sync --no-dev
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev
 
 # Setup Entrypoint
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
+RUN chmod +x /app/start.sh
 
 # Place executables in the environment at the front of the path
 ENV PATH="/app/.venv/bin:$PATH"
 
 ENTRYPOINT ["/entrypoint.sh"]
-# Run migrations and start the server
-CMD ["uv", "run", "sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+
+# Run migrations and start the server.
+CMD ["/app/start.sh"]

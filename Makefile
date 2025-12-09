@@ -10,7 +10,10 @@ else
 	COMPOSE := docker compose
 endif
 
-.PHONY: install up update down logs
+# Command to prune only dangling images with our specific label
+CLEAN_CMD := $(ENGINE) image prune -a -f --filter label=com.llama-coding.project="true"
+
+.PHONY: install up update down logs build
 
 init:
 	@# Check for prerequisites
@@ -19,17 +22,20 @@ init:
 
 up: init
 	@echo "Starting Llama Coding using $(ENGINE)..."
-	@$(COMPOSE) up -d --build
+	@$(COMPOSE) up -d
 	@echo "Llama Coding is running at http://localhost:8000"
 
-down:
+down: init
 	@$(COMPOSE) down
 
-logs:
+logs: init
 	@$(COMPOSE) logs -f
 
-update:
+build: init
+	@$(COMPOSE) build
+
+update: init
 	@git pull origin master
-	@make down
-	@make up
-	@$(ENGINE) image prune -f
+	@$(COMPOSE) down
+	@-$(CLEAN_CMD)
+	@$(COMPOSE) build --no-cache
