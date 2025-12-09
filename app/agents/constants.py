@@ -36,7 +36,7 @@ TOOL_USAGE_RULES = """
 ### 4. Code Editing (`apply_diff`)
 You apply changes using Unified Diffs. This is a strict format.
 
-- **Read First**: You cannot patch a file you haven't read in the current turn or recent history. You need exact context.
+- **Read First**: You cannot patch a file you haven't read in the current turn or that is loaded in active history. You need uptodate context.
 - **Context Lines**: You MUST include 3-5 lines of *unchanged* context BEFORE and AFTER your changes.
     - *Bad*: Providing only the changed line.
     - *Good*: Providing the function definition line, 3 lines of body, the change, and 3 lines after.
@@ -44,7 +44,6 @@ You apply changes using Unified Diffs. This is a strict format.
     - If you provide insufficient context, the patch WILL fail.
 - **Hunks**: You can apply multiple hunks to the same file in one diff block.
 - **Creation**: To create a new file, use `--- /dev/null` as the original filename and `+++ path/to/new/file.ext` as the new filename.
-- **Deletion**: To delete a file, content should be removed, or use system commands if available.
 """
 
 OPERATING_PROTOCOL = """
