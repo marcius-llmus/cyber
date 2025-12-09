@@ -317,6 +317,7 @@ class RepoMap:
                 entry_tokens = self._estimate_token_count(entry)
 
                 if current_tokens + entry_tokens > self.token_limit:
+                    output_parts.append("\n... (remaining definitions truncated due to token limit)\n")
                     return
 
                 output_parts.append(entry)
