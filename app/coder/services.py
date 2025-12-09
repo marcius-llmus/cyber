@@ -28,7 +28,10 @@ from app.context.services import WorkspaceService
 from app.agents.services import WorkflowService
 from app.history.enums import HistoryEventType
 from app.usage.services import UsagePageService
+from app.usage.schemas import SessionMetrics
 from app.prompts.enums import PromptEventType
+from app.projects.exceptions import ActiveProjectRequiredException
+from app.history.exceptions import ChatSessionNotFoundException
 
 
 logger = logging.getLogger(__name__)
@@ -193,18 +196,39 @@ class CoderPageService:
         self.chat_service = chat_service
         self.context_service = context_service
 
-    async def get_main_page_data(self, session_id: int) -> dict:
+    async def get_main_page_data(self, session_id: int | None = None) -> dict:
         """Aggregates data from various services for the main page view."""
-        usage_data = await self.usage_page_service.get_session_metrics_page_data()
-        session = await self.chat_service.get_session_by_id(session_id=session_id)
-        context_files = await self.context_service.get_active_context(session_id)
-        
+        if session_id and (session := await self.chat_service.get_session_by_id(session_id=session_id)):
+            usage_data = await self.usage_page_service.get_session_metrics_page_data()
+            context_files = await self.context_service.get_active_context(session.id)
+            page_data = {
+                **usage_data,
+                "session": session,
+                "messages": session.messages,
+                "files": context_files,
+                "active_project": session.project,
+            }
+        else:
+            page_data = await self._get_empty_session_data()
+
         return {
-            **usage_data,
-            "session": session,
-            "messages": session.messages,
-            "files": context_files,
+            **page_data,
             "PromptEventType": PromptEventType,
             "HistoryEventType": HistoryEventType,
-            "active_project": session.project,
+        }
+
+    async def _get_empty_session_data(self) -> dict:
+        active_project = await self.chat_service.project_service.get_active_project()
+        return {
+            "metrics": SessionMetrics(
+                session_cost=0,
+                monthly_cost=0,
+                input_tokens=0,
+                output_tokens=0,
+                cached_tokens=0,
+            ),
+            "session": None,
+            "messages": [],
+            "files": [],
+            "active_project": active_project,
         }

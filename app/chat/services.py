@@ -23,11 +23,13 @@ class ChatService:
         active_project = await self.project_service.project_repo.get_active()
         if not active_project:
             raise ActiveProjectRequiredException("Cannot start a chat without an active project.")
+        return await self.get_or_create_session_for_project(active_project.id)
 
-        if session := await self.history_service.get_most_recent_session_by_project(project_id=active_project.id):
+    async def get_or_create_session_for_project(self, project_id: int) -> ChatSession:
+        if session := await self.history_service.get_most_recent_session_by_project(project_id=project_id):
             return session
 
-        session_in = ChatSessionCreate(name="New Session", project_id=active_project.id)
+        session_in = ChatSessionCreate(name="New Session", project_id=project_id)
         return await self.history_service.create_session(session_in=session_in)
 
     async def add_user_message(self, *, content: str, session_id: int) -> Message:

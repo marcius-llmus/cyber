@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="flex-1 flex flex-col items-center justify-center h-full text-center p-8">
+    <div class="max-w-md space-y-6">
+        <div class="w-20 h-20 bg-dark-lighter rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+            </svg>
+        </div>
+        
+        <h1 class="text-2xl font-bold text-gray-200">No Active Project</h1>
+        <p class="text-gray-400">Please select or create a project to start coding.</p>
+        
+        <button 
+            data-modal-open="project-modal"
+            class="px-6 py-3 bg-primary hover:bg-primary-dark text-white rounded-lg font-medium transition-colors inline-flex items-center"
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Select Project
+        </button>
+    </div>
+</div>
+{% endblock %}
