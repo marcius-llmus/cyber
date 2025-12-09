@@ -15,16 +15,25 @@ from app.core.templating import templates
 from app.history.exceptions import ChatSessionNotFoundException
 from app.history.services import HistoryService
 from app.history.dependencies import get_history_service
+from app.projects.exceptions import ActiveProjectRequiredException
 
 router = APIRouter()
 
 
 @router.get("/", response_class=HTMLResponse)
 async def redirect_to_session(
+    request: Request,
     chat_service: ChatService = Depends(get_chat_service),
+    page_service: CoderPageService = Depends(get_coder_page_service),
 ):
-    session = await chat_service.get_or_create_active_session()
-    return RedirectResponse(url=f"session/{session.id}")
+    try:
+        session = await chat_service.get_or_create_active_session()
+        return RedirectResponse(url=f"session/{session.id}")
+    except ActiveProjectRequiredException:
+        page_data = await page_service.get_main_page_data(session_id=None)
+        return templates.TemplateResponse(
+            "projects/pages/no_active_project.html", {"request": request, "session": None, **page_data}
+        )
 
 
 @router.get("/session/{session_id}", response_class=HTMLResponse)
