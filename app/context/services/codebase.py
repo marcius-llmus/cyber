@@ -14,7 +14,8 @@ class _IgnoreMatcher:
     """Internal helper for gitignore pattern matching."""
     DEFAULT_PATTERNS = [
         ".git", ".idea/", ".vscode/", ".venv/", "node_modules/", "__pycache__/", ".env",
-        "*.pyc", "*.log", ".DS_Store", "Thumbs.db", "*.svg", "*.pdf", "*.png", "*.jpg"
+        "*.pyc", "*.log", ".DS_Store", "Thumbs.db", "*.svg", "*.pdf", "*.png", "*.jpg",
+        ".dockerignore", ".gitattributes", "*.lock", "package-lock.json", "yarn.lock"
     ]
 
     @staticmethod

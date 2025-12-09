@@ -12,6 +12,7 @@ from app.agents.constants import (
     OPERATING_PROTOCOL,
     REPO_MAP_DESCRIPTION,
     ACTIVE_CONTEXT_DESCRIPTION,
+    CODER_BEHAVIOR,
 )
 from app.projects.exceptions import ActiveProjectRequiredException
 from app.projects.models import Project
@@ -73,6 +74,7 @@ class AgentContextService:
         parts = [
             f"<identity>\n{AGENT_IDENTITY}\n</identity>",
             f"<rules>\n{TOOL_USAGE_RULES}\n{OPERATING_PROTOCOL}\n</rules>",
+            f"<guidelines>\n{CODER_BEHAVIOR}\n</guidelines>",
             f"<custom_instructions>\n{custom_prompts_xml}\n</custom_instructions>",
             f"<repository_map>\n<!-- {REPO_MAP_DESCRIPTION} -->\n{repo_map}\n</repository_map>",
             f"<active_context>\n<!-- {ACTIVE_CONTEXT_DESCRIPTION} -->\n{active_context_xml}\n</active_context>",
