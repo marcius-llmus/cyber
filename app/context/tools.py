@@ -13,8 +13,7 @@ logger = logging.getLogger(__name__)
 
 class FileTools(BaseToolSet):
     """Tools for reading files from the codebase."""
-    # spec_functions = ["read_files", "list_files"]
-    spec_functions = ["read_files"]
+    spec_functions = ["read_files"] # "list_files"
 
     async def read_files(
         self,

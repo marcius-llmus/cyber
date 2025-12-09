@@ -47,7 +47,7 @@ OPERATING_PROTOCOL = """
 ## PHASE 1: DISCOVERY & PLANNING
 If you are unsure about the answer or the location of code:
 1. **Consult the Repo Map**: It is your map. Use it to find filenames and structures.
-2. **Search**: If the Map is insufficient, use `grep` to find symbols or `list_files` to explore directories.
+2. **Search**: If the Map is insufficient, use `grep` to find symbols.
 3. **Batch Read**: Once you identify target files, read them ALL in one batch. Do not read one, analyze, then read another.
 4. **Plan**: Formulate a mental plan. "I need to modify Service X, which requires updating Model Y and Schema Z."
 
@@ -78,7 +78,7 @@ file_path:
 
 - Use this to avoid blindly listing directories.
 - If a file is listed here, it exists, and you can read it.
-- If a file is NOT listed here, it might still exist (if the map is truncated), but you should verify with `list_files` or `grep` before assuming.
+- If a file is NOT listed here, it might still exist (if the map is truncated), but you should verify with `grep` before assuming.
 """
 
 ACTIVE_CONTEXT_DESCRIPTION = """
