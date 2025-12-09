@@ -119,6 +119,11 @@ class RepoMap:
         if not lang:
             return []
 
+        scm_path = self.queries_dir / f"{lang}-tags.scm"
+        if not scm_path.exists():
+            # logger.warning(f"RepoMap: Tag query file not found for {lang} at {scm_path}")
+            return []
+
         try:
             async with aiofiles.open(file_path, "r", encoding="utf-8") as f:
                 code = await f.read()
@@ -129,11 +134,6 @@ class RepoMap:
             language = get_language(lang)
             parser = get_parser(lang)
             tree = parser.parse(bytes(code, "utf8"))
-
-            scm_path = self.queries_dir / f"{lang}-tags.scm"
-            if not scm_path.exists():
-                logger.warning(f"RepoMap: Tag query file not found for {lang} at {scm_path}")
-                return []
 
             query_scm = scm_path.read_text()
             query = language.query(query_scm)
