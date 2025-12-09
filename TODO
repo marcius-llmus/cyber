@@ -34,3 +34,5 @@ does the workflow outputs only final round usage or the sum up of everything? (c
 verify if all tool rounds are bein passed in the whole conversation by ctx when it loads current conversation (chat history helps?)
 on project change, reload for a new session
 add slash commands
+lock message box while workflow is happening
+allow workflow stop
