@@ -1,11 +1,11 @@
 import logging
 from decimal import Decimal
 from app.llms.enums import LLMModel, LLMRole
+from app.llms.factories import build_llm_service
 from app.settings.enums import CodingMode, ContextStrategy, OperationalMode
 from app.settings.repositories import SettingsRepository
 from app.settings.schemas import LLMSettingsCreate, SettingsCreate
 from sqlalchemy.ext.asyncio import AsyncSession
-from llms.factories import build_llm_service
 
 logger = logging.getLogger(__name__)
 
@@ -42,10 +42,10 @@ async def initialize_application_settings(db: AsyncSession) -> None:
             )
 
     # Set the default coding LLM for the main settings
-    default_llm = await llm_service.llm_settings_repo.get_by_model_name(LLMModel.GPT_4_1)
+    default_llm = await llm_service.llm_settings_repo.get_by_model_name(LLMModel.GPT_4_1_MINI)
     if not default_llm:
         # This should be unreachable if the factories contains GPT_4_1, but it's a safe fallback.
-        raise RuntimeError("Default LLM model GPT-4.1 not found after seeding. Check llms.factories._MODEL_REGISTRY.")
+        raise RuntimeError("Default LLM model GPT-4.1-mini not found after seeding. Check llms.factories._MODEL_REGISTRY.")
 
     # Promote default to Coder
     await llm_service.llm_settings_repo.set_active_role(default_llm.id, LLMRole.CODER)
@@ -57,8 +57,7 @@ async def initialize_application_settings(db: AsyncSession) -> None:
             context_strategy=ContextStrategy.MANUAL,
             max_history_length=50,
             coding_llm_temperature=Decimal("0.7"),
-            ast_token_limit=10000,
-            coding_llm_settings_id=default_llm.id
+            ast_token_limit=10000
         )
     )
     await db.commit()

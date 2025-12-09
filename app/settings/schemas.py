@@ -36,7 +36,7 @@ class SettingsBase(BaseModel):
 
 
 class SettingsCreate(SettingsBase):
-    coding_llm_settings_id: int
+    pass
 
 
 class SettingsUpdate(BaseModel):

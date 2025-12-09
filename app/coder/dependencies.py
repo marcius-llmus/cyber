@@ -12,7 +12,7 @@ from app.agents.factories import build_agent
 from app.agents.factories import build_workflow_service
 from app.context.dependencies import get_context_service
 from app.context.services import WorkspaceService
-from usage.factories import build_usage_service
+from app.usage.factories import build_usage_service
 
 
 async def get_coder_page_service(
