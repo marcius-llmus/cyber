@@ -1,0 +1,7 @@
+<div id="tool-status-{{ tool_run_id }}" hx-swap-oob="true" class="text-green-500 text-xs font-bold flex items-center gap-1"><i class="fas fa-check text-[10px]"></i> <span class="text-[10px]">Done</span></div>
+<div hx-swap-oob="beforeend:#tool-content-{{ tool_run_id }}">
+    <div class="p-3 border-t border-dark-lighter bg-dark">
+        <div class="text-[10px] text-gray-500 mb-2 uppercase tracking-wider font-semibold flex items-center gap-2"><i class="fas fa-arrow-right text-gray-600"></i> Result</div>
+        <pre class="text-gray-300 whitespace-pre-wrap max-h-60 overflow-y-auto text-xs font-mono leading-relaxed pl-1">{{ tool_output }}</pre>
+    </div>
+</div>

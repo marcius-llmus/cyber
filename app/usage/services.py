@@ -2,14 +2,16 @@ import logging
 from typing import Any
 from decimal import Decimal
 
+from pydantic import BaseModel
 from pydantic.alias_generators import to_camel
+from llama_index.core.instrumentation.events import BaseEvent
 # extract_usage is not in __all__ by some reason
 from genai_prices import extract_usage, calc_price # noqa
 
+from app.usage.exceptions import UsageTrackingException
 from app.usage.schemas import SessionMetrics
 from app.usage.repositories import UsageRepository, GlobalUsageRepository
 from app.llms.services import LLMService
-from app.llms.enums import LLMModel
 from app.settings.services import SettingsService
 
 logger = logging.getLogger(__name__)
@@ -28,61 +30,55 @@ class UsageService:
         self.llm_service = llm_service
         self.settings_service = settings_service
 
-    async def process_workflow_usage(self, session_id: int, response: Any) -> SessionMetrics:
-        """
-        Extracts usage from response, updates DBs, and returns the event.
-        """
-        # 1. Resolve Model & Adapter
-        # todo: can simplify later (maybe create the coder service)
-        coder_settings = await self.llm_service.get_coding_llm()
-        model_name = LLMModel(coder_settings.model_name)
-        llm_meta = await self.llm_service.get_model_metadata(model_name)
-
-        # 2. Extract Usage & Calculate Cost
+    async def track_event(self, session_id: int, event: BaseEvent) -> None:
+        """Process a single usage event and update repositories."""
         try:
-            # genai-prices expects lowercase provider id
-            provider_id = llm_meta.provider.value.lower()
+            if not hasattr(event, "response"):
+                raise ValueError(f"Event {type(event)} does not have a response attribute.")
 
-            raw_data = self._normalize_raw_data(response.raw)
-            # Use genai-prices to extract usage and calculate price
-            extraction_data = extract_usage(raw_data, provider_id=provider_id)
-            usage_data = extraction_data.usage
-            # btw, the example at https://github.com/pydantic/genai-prices/blob/main/packages/python/README.md
-            # didn't work very well. model was not present if calc_price was called from extract_usage
-            price_data = calc_price(usage_data, model_ref=model_name, provider_id=provider_id) # noqa
+            # 1. Extract Identity from Event Tags (Injected by InstrumentedLLMMixin)
+            if not (tags := event.tags):
+                raise ValueError("Event tags are missing. Ensure InstrumentedLLM is being used.")
 
-            cost = Decimal(str(price_data.total_price))
-            
-            input_tokens = usage_data.input_tokens or 0
-            output_tokens = usage_data.output_tokens or 0
-            cached_tokens = usage_data.cache_read_tokens or 0
+            provider_id = tags["__provider_id__"]
+            model_name = tags["__model_name__"]
+            flavor = tags["__api_flavor__"]
 
-            logger.debug(
-                f"Usage Extracted [Session={session_id}]: {provider_id}/{model_name} | "
-                f"Cost=${cost:.6f} | Tokens: In={input_tokens}, Out={output_tokens}, Cache={cached_tokens}"
+            if not provider_id or not model_name:
+                raise ValueError("Event missing required instrumentation tags (__provider_id__, __model_name__).")
+
+            cost, input_t, output_t, cached_t = await self._calculate_event_usage(event, provider_id, model_name, flavor)
+
+            await self._update_usage_repositories(
+                session_id, provider_id, cost, input_t, output_t, cached_t
             )
-            
         except Exception as e:
-            logger.warning(f"Failed to calculate usage metrics: {e}")
-            return SessionMetrics()
+            raise UsageTrackingException(f"Failed to track usage event: {str(e)}") from e
 
-        # 4. Update DBs
+    async def _update_usage_repositories(
+        self,
+        session_id: int,
+        provider_name: str,
+        cost: Decimal,
+        input_tokens: int,
+        output_tokens: int,
+        cached_tokens: int
+    ) -> SessionMetrics:
         session_usage = await self.usage_repo.increment_usage(
             session_id, cost, input_tokens, output_tokens, cached_tokens
         )
+
         global_usage = await self.global_usage_repo.increment_provider_usage(
-            llm_meta.provider, cost, input_tokens, output_tokens, cached_tokens
+            provider_name, cost, input_tokens, output_tokens, cached_tokens
         )
-        
+
         logger.debug(
             f"DB Updated: Session {session_id} Total=${session_usage.cost:.6f} | "
-            f"Global ({llm_meta.provider}) Total=${global_usage.total_cost:.6f}"
+            f"Global ({provider_name}) Total=${global_usage.total_cost:.6f}"
         )
 
-        # Calculate total global cost across all providers
         total_global_cost = await self.global_usage_repo.get_total_global_cost()
 
-        # 5. Return Metrics
         return SessionMetrics(
             session_cost=session_usage.cost,
             monthly_cost=float(total_global_cost),
@@ -105,13 +101,44 @@ class UsageService:
             cached_tokens=usage.cached_tokens
         )
 
+    async def _calculate_event_usage(
+         self, event, provider_id: str, model_ref: str, flavor: str
+    ) -> tuple[Decimal, int, int, int]:
+        """
+        Helper to extract usage from a single response object using existing logic.
+        Returns (cost, input_tokens, output_tokens, cached_tokens).
+        """
+        raw_data = self._normalize_raw_data(event.response.raw, flavor)
+        # Use genai-prices to extract usage and calculate price
+        extraction_data = extract_usage(raw_data, provider_id=provider_id, api_flavor=flavor)
+        usage_data = extraction_data.usage
+        # btw, the example at https://github.com/pydantic/genai-prices/blob/main/packages/python/README.md
+        # didn't work very well. model was not present if calc_price was called from extract_usage
+        price_data = calc_price(usage_data, model_ref=model_ref, provider_id=provider_id) # noqa
+
+        cost = Decimal(str(price_data.total_price))
+        
+        input_tokens = usage_data.input_tokens or 0
+        output_tokens = usage_data.output_tokens or 0
+        cached_tokens = usage_data.cache_read_tokens or 0
+        
+        return cost, input_tokens, output_tokens, cached_tokens
+
     @staticmethod
-    def _normalize_raw_data(data: Any) -> Any:
+    def _normalize_raw_data(data: dict | BaseModel, flavor) -> Any:
         """
         Converts the raw response object into a dictionary with camelCase keys.
         This is necessary because the `genai_prices` library expects the raw API response format (camelCase),
+        But for openai for example, which uses chat flavor, it is snake_case
         but Python SDKs (and Pydantic models) often use snake_case.
         """
+
+        if isinstance(data, BaseModel):
+            data = data.model_dump()
+
+        # bruh, different flavors have different cases :c
+        if flavor != "default":
+            return data
 
         def _recursive_to_camel(obj: Any) -> Any:
             if isinstance(obj, dict):

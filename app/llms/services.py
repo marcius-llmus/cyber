@@ -1,9 +1,11 @@
 import logging
+import functools
 from typing import Union
 from async_lru import alru_cache
 from llama_index.llms.anthropic import Anthropic
 from llama_index.llms.google_genai import GoogleGenAI
 from llama_index.llms.openai import OpenAI
+from llama_index_instrumentation.dispatcher import instrument_tags
 
 from app.llms.schemas import LLM
 from app.llms.enums import LLMModel, LLMProvider, LLMRole
@@ -15,6 +17,62 @@ from app.settings.exceptions import ContextWindowExceededException, LLMSettingsN
 
 
 logger = logging.getLogger(__name__)
+
+
+def instrument_generator(func):
+    """Decorator that wraps the result of an async generator factory with instrumentation tags."""
+    @functools.wraps(func)
+    async def wrapper(self, *args, **kwargs):
+        # 1. Await the original method to get the actual generator
+        stream = await func(self, *args, **kwargs)
+        
+        # 2. Wrap the iteration in the instrumentation context
+        async def wrapped_gen():
+            with instrument_tags(self._get_instrumentation_tags()):
+                async for item in stream:
+                    yield item
+        
+        # 3. Return the wrapped generator (matching the original return type)
+        return wrapped_gen()
+    return wrapper
+
+
+class InstrumentedLLMMixin:
+    """Helper to generate instrumentation tags."""
+    _provider_id: str
+    _api_flavor: str
+    model: str
+
+    def _get_instrumentation_tags(self) -> dict:
+        return {
+            "__provider_id__": self._provider_id,
+            "__model_name__": self.model,
+            "__api_flavor__": self._api_flavor
+        }
+
+    async def achat(self, *args, **kwargs):
+        with instrument_tags(self._get_instrumentation_tags()):
+            return await super().achat(*args, **kwargs) # noqa
+
+    @instrument_generator
+    async def astream_chat(self, *args, **kwargs):
+        return await super().astream_chat(*args, **kwargs) # noqa
+
+
+class InstrumentedOpenAI(InstrumentedLLMMixin, OpenAI):
+    _provider_id: str = "openai"
+    _api_flavor: str = "chat"
+
+
+class InstrumentedAnthropic(InstrumentedLLMMixin, Anthropic):
+    _provider_id: str = "anthropic"
+    _api_flavor: str = "default"
+
+
+class InstrumentedGoogleGenAI(InstrumentedLLMMixin, GoogleGenAI):
+    _provider_id: str = "google"
+    _api_flavor: str = "default"
+
 
 class LLMService:
     def __init__(self, llm_settings_repo: LLMSettingsRepository, llm_factory: LLMFactory):
@@ -93,10 +151,10 @@ class LLMService:
         provider = llm_metadata.provider
 
         if provider == LLMProvider.OPENAI:
-            return OpenAI(model=model_name, temperature=temperature, api_key=api_key)
+            return InstrumentedOpenAI(model=model_name, temperature=temperature, api_key=api_key)
         elif provider == LLMProvider.ANTHROPIC:
-            return Anthropic(model=model_name, temperature=temperature, api_key=api_key)
+            return InstrumentedAnthropic(model=model_name, temperature=temperature, api_key=api_key)
         elif provider == LLMProvider.GOOGLE:
-            return GoogleGenAI(model=model_name, temperature=temperature, api_key=api_key)
+            return InstrumentedGoogleGenAI(model=model_name, temperature=temperature, api_key=api_key)
         else:
             raise ValueError(f"Unsupported LLM provider: {provider}")

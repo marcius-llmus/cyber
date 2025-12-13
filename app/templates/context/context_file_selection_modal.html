@@ -13,7 +13,7 @@
         <input type="text" id="file-search" placeholder="Search files..." class="bg-dark-lighter border border-dark-light rounded-lg px-3 py-1 text-sm w-64">
     </div>
 
-    <div class="flex-1 overflow-y-auto p-6 modal-scroll-content" style="max-height: calc(75vh - 200px);">
+    <div class="flex-1 overflow-y-auto p-6 modal-scroll-content min-h-0">
         <form id="context-files-form">
             <ul class="space-y-1" id="file-tree"
                 hx-get="/context/session/{{ session.id }}/file-tree"

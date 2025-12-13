@@ -11,11 +11,14 @@
     <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js" integrity="sha384-/TgkGk7p307TH7EXJDuUlgG3Ce1UVolAOFopFekQkkXihi5u/6OCvVKyz1W+idaz" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/htmx-ext-ws@2.0.4" integrity="sha384-1RwI/nvUSrMRuNj7hX1+27J8XDdCoSLf0EjEyF69nacuWyiJYoQ/j39RT1mSnd2G" crossorigin="anonymous"></script>
     <script src="/static/js/htmx-ext-form-json.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.15.1/dist/cdn.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"></script>
     <script src="/static/js/highlight.min.js"></script>
     <!-- Highlight Theme Link (ID required for dynamic switching) -->
     <link id="highlight-theme-link" rel="stylesheet" href="/static/css/highlight/atom-one-dark.min.css">
+    <!-- Anti-FOUC Script -->
+    <script src="/static/js/head.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -61,26 +64,12 @@
         };
     </script>
     <script>
-        // Anti-FOUC: Apply theme immediately
+        // Apply Highlight Theme
         (function() {
-            const map = {
-                'bgColor': '--color-dark', 'bgSecondaryColor': '--color-dark-lighter',
-                'borderColor': '--color-border', 'scrollColor': '--color-scroll-thumb',
-                'bgCardColor': '--color-dark-card', 'bgDarkerColor': '--color-dark-darker', 
-                'textColor': '--color-text',
-                'primaryColor': '--color-primary', 'primaryDarkColor': '--color-primary-dark',
-                'primaryLightColor': '--color-primary-light'
-            };
-            const root = document.documentElement;
-            Object.entries(map).forEach(([key, varName]) => {
-                const val = localStorage.getItem(key);
-                if (val) root.style.setProperty(varName, val);
-            });
-            // Font Sizes
-            const uiSz = localStorage.getItem('uiFontSize');
-            if (uiSz) root.style.setProperty('--fs-ui', uiSz + 'px');
-            const edSz = localStorage.getItem('editorFontSize');
-            if (edSz) root.style.setProperty('--fs-editor', edSz + 'px');
+            const theme = localStorage.getItem('highlightTheme');
+            if (theme) {
+                document.getElementById('highlight-theme-link').href = `/static/css/highlight/${theme}.min.css`;
+            }
         })();
     </script>
     <style>

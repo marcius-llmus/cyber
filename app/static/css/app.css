@@ -22,10 +22,12 @@
     --color-primary: #FF8A3D;
     --color-primary-dark: #B45A2D;
     --color-primary-light: #FF8A3D;
-    --fs-ui: 14px;
-    --fs-editor: 14px;
+    --fs-ui: 15px;
+    --fs-editor: 15px;
     --font-ui: ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;
     --font-editor: ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;
+    --fs-code-scale: 0.925em;
+    --code-bg-override: transparent;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -292,6 +294,18 @@ input:hover:not(:focus), textarea:hover:not(:focus), select:hover:not(:focus) {
     margin: 1rem 0;
     border-radius: 0.375rem;
     overflow: hidden; /* Let code handle the scroll */
+    white-space: pre; /* Force no-wrap for cleaner code blocks */
+    max-width: 100%;  /* Prevent flex container overflow */
+}
+
+/* Diff patches need sharp edges to connect with header */
+[id^="diff-patch-"] pre {
+    border-radius: 0 !important;
+    margin: 0 !important;
+}
+
+[id^="diff-patch-"] pre code {
+    border-radius: 0 !important;
 }
 
 /* 
@@ -303,25 +317,31 @@ input:hover:not(:focus), textarea:hover:not(:focus), select:hover:not(:focus) {
     width: 100%;
     overflow-x: auto; /* Scroll happens here */
     padding: 1rem;    /* Padding happens here */
-    font-size: var(--fs-editor);
-    line-height: calc(var(--fs-editor) * 1.7 - 2px);
+    font-size: var(--fs-code-scale); /* Scaled relative to editor font */
+    line-height: 1.5; /* Math: 1.5 multiplier ≈ 1.25rem fixed unit */
     border-radius: 0.375rem;
+    scrollbar-width: thin !important; /* Elegant thin scrollbar like the example */
     /* Background and Color are set by the loaded Highlight.js theme CSS */
 }
 
+/* Ensure diffs always track the editor font size preference */
+code.language-diff {
+    font-size: var(--fs-code-scale) !important;
+}
+
 /* Override mechanism: Only applies if the body has the class 'custom-code-bg' */
-body.custom-code-bg #message-list pre code.hljs {
-    background-color: var(--code-bg-override) !important;
+html.custom-code-bg #message-list pre code.hljs {
+    background-color: var(--code-bg-override, transparent) !important;
     /* We don't override color (syntax highlighting) just the block background */
 }
 
 /* Inline code styling (when not in pre) */
 .prose :not(pre) > code {
     color: var(--color-primary-light);
-    font-family: monospace;
+    font-family: var(--font-editor);
     font-weight: 500;
     background-color: rgba(255, 255, 255, 0.1);
-    padding: 0.1em 0.3em;
+    padding: 0.12em 0.5em;
     border-radius: 0.25em;
     margin: 0 0.2em; /* Fix: Add breathing room around inline code */
 }
@@ -352,6 +372,7 @@ body.custom-code-bg #message-list pre code.hljs {
 .prose p {
     margin-bottom: 1em;
     margin-top: 1em;
+    line-height: 1.8;
 }
 
 /* List Styling */
@@ -372,6 +393,7 @@ body.custom-code-bg #message-list pre code.hljs {
 .prose li {
     margin-top: 0.25em;
     margin-bottom: 0.25em;
+    line-height: 1.8;
 }
 
 /* Table Styling */

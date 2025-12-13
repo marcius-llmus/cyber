@@ -1,4 +1,4 @@
-<div id="session-metrics-container" hx-swap-oob="true" class="border-b border-dark-light overflow-hidden flex flex-col bg-dark-darker border-t border-dark-light">
+<div id="session-metrics-container" {% if use_oob %}hx-swap-oob="true"{% endif %} class="border-b border-dark-light overflow-hidden flex flex-col bg-dark-darker border-t border-dark-light transition-colors duration-500" x-data="{ flash: false }" :class="flash ? 'bg-primary/10' : 'bg-dark-darker'" x-init="$watch('$el.innerHTML', () => { flash = true; setTimeout(() => flash = false, 1000) })">
     <div class="flex items-center justify-between p-3 bg-dark-card border-b border-dark-light">
         <div class="flex items-center">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">

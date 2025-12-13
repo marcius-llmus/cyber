@@ -1,7 +1,7 @@
 {% from "components/modals/base_modal.html" import modal_shell %}
 
 {% call modal_shell(modal_id='appearance-modal', title='Appearance') %}
-    <div class="p-6 overflow-y-auto flex-1 modal-scroll-content">
+    <div class="p-6 overflow-y-auto flex-1 modal-scroll-content min-h-0">
         <div class="space-y-8" x-data>
             <!-- Colors -->
             <div class="space-y-4">
@@ -152,7 +152,7 @@
             </div>
 
             <!-- Font Sizes -->
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-3 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-400 uppercase tracking-wider mb-2">UI Font Size
                         (px)</label>
@@ -169,6 +169,12 @@
                            onkeydown="return false"
                            class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm">
                 </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 uppercase tracking-wider mb-2">Code Scale (em)</label>
+                    <input type="number" step="0.025" min="0.5" max="1.5" :value="$store.appearance.codeFontScale"
+                           @input="$store.appearance.updateSetting('codeFontScale', $event.target.value)"
+                           class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm">
+                </div>
             </div>
 
             <!-- Editor Font -->
@@ -178,6 +184,7 @@
                     class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm"
                     @change="$store.appearance.updateSetting('editorFontFamily', $event.target.value)">
                     <option value="system_default" :selected="$store.appearance.editorFontFamily === 'system_default'">System Default</option>
+                    <option value="system_mono" :selected="$store.appearance.editorFontFamily === 'system_mono'">System Mono</option>
                     <option value="fira_code" :selected="$store.appearance.editorFontFamily === 'fira_code'">Fira Code</option>
                     <option value="jetbrains_mono" :selected="$store.appearance.editorFontFamily === 'jetbrains_mono'">JetBrains Mono</option>
                     <option value="consolas" :selected="$store.appearance.editorFontFamily === 'consolas'">Consolas</option>

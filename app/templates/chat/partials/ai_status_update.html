@@ -1,0 +1,7 @@
+<div id="ai-status-{{ turn_id }}" hx-swap-oob="true" class="text-xs text-gray-500 italic ml-1 mt-2 mb-2 flex items-center gap-2 {% if not status %}hidden{% endif %}">
+    {% if status %}
+        <i class="fas fa-circle-notch fa-spin text-primary"></i> <span>{{ status }}</span>
+    {% else %}
+        <!-- Empty to clear -->
+    {% endif %}
+</div>

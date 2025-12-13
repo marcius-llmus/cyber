@@ -7,7 +7,7 @@ from app.llms.factories import build_llm_service
 from app.llms.enums import LLMModel
 from app.projects.factories import build_project_service
 from app.prompts.factories import build_prompt_service
-from llama_index.core.agent.workflow import FunctionAgent
+from app.coder.agent import CoderAgent
 from llama_index.core.tools import BaseTool
 from app.context.tools import SearchTools, FileTools
 from app.coder.tools import PatcherTools
@@ -36,8 +36,8 @@ async def build_agent_context_service(db: AsyncSession) -> AgentContextService:
     )
 
 
-async def build_agent(db: AsyncSession, session_id: int) -> FunctionAgent:
-    """Creates a FunctionAgent with the currently configured LLM."""
+async def build_agent(db: AsyncSession, session_id: int) -> CoderAgent:
+    """Creates a CoderAgent (FunctionAgent) with the currently configured LLM."""
     settings_service = await build_settings_service(db)
     llm_service = await build_llm_service(db)
     agent_context_service = await build_agent_context_service(db)
@@ -63,4 +63,4 @@ async def build_agent(db: AsyncSession, session_id: int) -> FunctionAgent:
 
     system_prompt = await agent_context_service.build_system_prompt(session_id)
 
-    return FunctionAgent(tools=tools, llm=llm, system_prompt=system_prompt)
+    return CoderAgent(tools=tools, llm=llm, system_prompt=system_prompt)

@@ -8,6 +8,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    JSON,
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -62,5 +63,7 @@ class Message(Base):
     input_tokens = Column(Integer, nullable=True)
     output_tokens = Column(Integer, nullable=True)
     cost = Column(Float, nullable=True)
+    tool_calls = Column(JSON, nullable=True)
+    diff_patches = Column(JSON, nullable=True)
 
     session = relationship("ChatSession", back_populates="messages", lazy="joined")
