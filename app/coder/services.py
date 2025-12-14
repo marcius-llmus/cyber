@@ -59,6 +59,8 @@ class CoderService:
     async def handle_user_message(
         self, *, user_message: str, session_id: int
     ) -> AsyncGenerator[CoderEvent, None]:
+        yield AgentStateEvent(status="Thinking...")
+
         async with UsageCollector() as event_collector:
             async with self.db.session() as session:
                 workflow = await self.agent_factory(session, session_id)
