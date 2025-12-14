@@ -97,7 +97,7 @@ class ChatApp {
                 editorFontSize: '15',
                 codeFontScale: '0.925',
                 editorFontFamily: 'system_default',
-                codeBgColor: '',
+                codeBgColor: '#1E1E1E',
                 highlightTheme: 'atom-one-dark',
                 themes: availableThemes
             };
@@ -130,7 +130,7 @@ class ChatApp {
                     const f = localStorage.getItem('editorFontFamily');
                     return fontFamilies[f] ? f : defaults.editorFontFamily;
                 })(),
-                codeBgColor: localStorage.getItem('codeBgColor') || defaults.bgSecondaryColor,
+                codeBgColor: localStorage.getItem('codeBgColor') || defaults.codeBgColor,
                 highlightTheme: (() => {
                     const t = localStorage.getItem('highlightTheme');
                     return availableThemes.includes(t) ? t : defaults.highlightTheme;

@@ -11,9 +11,9 @@
             <i class="fas fa-chevron-down text-gray-500 text-[10px] transition-transform duration-200 pointer-events-none"></i>
         </div>
         <div id="tool-content-{{ tool_run_id }}" class="hidden border-t border-dark-lighter">
-            <div class="p-3 bg-dark">
+            <div class="p-3 bg-dark-lighter">
                 <div class="text-[10px] text-gray-500 mb-1.5 uppercase tracking-wider font-semibold">Arguments</div>
-                <pre class="text-xs font-mono text-gray-400 whitespace-pre-wrap break-all"><code class="language-json bg-transparent p-0">{{ tool_kwargs|tojson(indent=2) }}</code></pre>
+                <pre class="text-xs font-mono text-gray-400 whitespace-pre-wrap break-all max-h-[15vh] !overflow-y-auto"><code class="language-json bg-transparent p-0">{{ tool_kwargs|tojson(indent=2) }}</code></pre>
             </div>
         </div>
     </div>

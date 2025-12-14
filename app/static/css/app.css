@@ -13,7 +13,6 @@
 :root {
     --color-dark: #121212;
     --color-dark-lighter: #1E1E1E;
-    --color-dark-light: #2D2D2D;
     --color-dark-card: #252525;
     --color-dark-darker: #000000;
     --color-text: #e0e0e0;
@@ -28,6 +27,10 @@
     --font-editor: ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;
     --fs-code-scale: 0.925em;
     --code-bg-override: transparent;
+}
+
+.bg-dark-lighter-translucent {
+    background-color: color-mix(in srgb, var(--color-dark-lighter), transparent 20%);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -249,8 +252,8 @@ input:hover:not(:focus), textarea:hover:not(:focus), select:hover:not(:focus) {
     top: 8px;
     right: 8px;
     padding: 4px 8px;
-    background: var(--color-dark-light);
-    border: 1px solid var(--color-dark-lighter);
+    background: var(--color-dark-lighter);
+    border: 1px solid var(--color-border);
     border-radius: 4px;
     font-size: 11px;
     color: var(--color-primary-light);
@@ -312,6 +315,12 @@ input:hover:not(:focus), textarea:hover:not(:focus), select:hover:not(:focus) {
    Target the inner code block for the theme application.
    This ensures .hljs class from the theme takes effect for background/color.
 */
+html.custom-code-bg #message-list pre code.hljs,
+html.custom-code-bg #message-list code.language-diff {
+    background-color: var(--code-bg-override, transparent) !important;
+    /* We don't override color (syntax highlighting) just the block background */
+}
+
 #message-list pre code {
     display: block;
     width: 100%;
@@ -327,12 +336,6 @@ input:hover:not(:focus), textarea:hover:not(:focus), select:hover:not(:focus) {
 /* Ensure diffs always track the editor font size preference */
 code.language-diff {
     font-size: var(--fs-code-scale) !important;
-}
-
-/* Override mechanism: Only applies if the body has the class 'custom-code-bg' */
-html.custom-code-bg #message-list pre code.hljs {
-    background-color: var(--code-bg-override, transparent) !important;
-    /* We don't override color (syntax highlighting) just the block background */
 }
 
 /* Inline code styling (when not in pre) */
@@ -406,7 +409,7 @@ html.custom-code-bg #message-list pre code.hljs {
 }
 
 .prose th, .prose td {
-    border: 1px solid var(--color-dark-light);
+    border: 1px solid var(--color-border);
     padding: 0.5em;
 }
 
