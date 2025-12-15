@@ -172,3 +172,7 @@ class UsagePageService:
     async def get_session_metrics_page_data(self) -> dict:
         metrics = await self.usage_service.get_session_metrics(self.session_id)
         return {"metrics": metrics.model_dump()}
+
+    async def get_empty_metrics_page_data(self) -> dict:
+        metrics = await self.usage_service.get_session_metrics(0)
+        return {"metrics": metrics.model_dump()}

@@ -29,7 +29,6 @@ from app.context.services import WorkspaceService
 from app.agents.services import WorkflowService
 from app.history.enums import HistoryEventType
 from app.usage.services import UsagePageService
-from app.usage.schemas import SessionMetrics
 from app.usage.event_handlers import UsageCollector
 from app.prompts.enums import PromptEventType
 
@@ -281,14 +280,9 @@ class CoderPageService:
 
     async def _get_empty_session_data(self) -> dict:
         active_project = await self.chat_service.project_service.get_active_project()
+        usage_data = await self.usage_page_service.get_empty_metrics_page_data()
         return {
-            "metrics": SessionMetrics(
-                session_cost=0,
-                monthly_cost=0,
-                input_tokens=0,
-                output_tokens=0,
-                cached_tokens=0,
-            ),
+            **usage_data,
             "session": None,
             "messages": [],
             "files": [],
