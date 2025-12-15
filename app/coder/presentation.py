@@ -184,6 +184,9 @@ class WebSocketOrchestrator:
         await self.ws_manager.send_html(template)
 
     async def _render_tool_call(self, event: ToolCallEvent, turn_id: str):
+        # Close the current text block so the next text chunk starts a new one AFTER any tool call
+        self._close_active_text_block()
+
         # 1. ALWAYS Render the Tool Call Log Item (Footer)
         tool_context = {
             "tool_id": event.tool_id,
@@ -217,9 +220,6 @@ class WebSocketOrchestrator:
             diff_template = templates.get_template("chat/partials/diff_patch_item.html").render(diff_context)
             
             await self.ws_manager.send_html(diff_template)
-
-            # Close the current text block so the next text chunk starts a new one AFTER this diff
-            self._close_active_text_block()
 
     async def _render_tool_result(self, event: ToolCallResultEvent, turn_id: str): # noqa
         await self._handle_workflow_log(
