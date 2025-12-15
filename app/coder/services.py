@@ -1,5 +1,4 @@
 import logging
-from asyncio import Event
 from typing import Any, AsyncGenerator, Callable, Coroutine, Awaitable
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,7 +10,7 @@ from llama_index.core.agent.workflow.workflow_events import (
     ToolCallResult,
 )
 from llama_index.core.llms import ChatMessage
-from llama_index.core.workflow import StopEvent
+from workflows.events import Event
 
 from app.core.config import settings
 from app.usage.exceptions import UsageTrackingException
@@ -55,6 +54,13 @@ class CoderService:
         self.agent_factory = agent_factory
         self.workflow_service_factory = workflow_service_factory
         self.usage_service_factory = usage_service_factory
+        self.handlers: dict[type, Callable[[Any], AsyncGenerator[CoderEvent, None]]] = {
+            AgentStream: self._handle_agent_stream_event,
+            ToolCall: self._handle_tool_call_event,
+            ToolCallResult: self._handle_tool_call_result_event,
+            AgentInput: self._handle_agent_input_event,
+            AgentOutput: self._handle_agent_output_event,
+        }
 
     async def handle_user_message(
         self, *, user_message: str, session_id: int
@@ -84,13 +90,13 @@ class CoderService:
                 )
 
                 async for event in handler.stream_events():
-                    async for coder_event in self._process_workflow_event(event):
+                    async for coder_event in self._dispatch_event(event):
                         yield coder_event
-                    
+                     
                     new_events, processed_events_count = self._slice_new_events(event_collector, processed_events_count)
                     async for usage_event in self._track_and_yield_usage(session_id, new_events):
                         yield usage_event
- 
+
                 logger.info(f"Workflow stream finished for session {session_id}.")
 
                 # Await the handler to get the final result and ensure completion.
@@ -130,6 +136,34 @@ class CoderService:
                 if unprocessed_count > 0:
                     logger.warning(f"Session {session_id}: {unprocessed_count} usage events were not processed/persisted.")
 
+    async def _dispatch_event(self, event: Any) -> AsyncGenerator[CoderEvent, None]:
+        if not (handler := self.handlers.get(type(event))):
+            logger.warning(f"No handler for event type: {type(event)}")
+            return
+
+        async for coder_event in handler(event):
+            yield coder_event
+
+    async def _handle_agent_stream_event(self, event: AgentStream) -> AsyncGenerator[CoderEvent, None]:
+        if event.delta:
+            yield await self._handle_agent_stream_delta(event)
+        if event.tool_calls:
+            yield await self._handle_agent_stream_tool_calls(event)
+
+    async def _handle_tool_call_event(self, event: ToolCall) -> AsyncGenerator[CoderEvent, None]:
+        yield await self._handle_tool_call_status(event)
+        yield await self._handle_tool_call(event)
+
+    async def _handle_tool_call_result_event(self, event: ToolCallResult) -> AsyncGenerator[CoderEvent, None]:
+        yield await self._handle_tool_call_result(event)
+
+    async def _handle_agent_input_event(self, event: AgentInput) -> AsyncGenerator[CoderEvent, None]:
+        yield await self._handle_agent_input(event)
+
+    async def _handle_agent_output_event(self, event: AgentOutput) -> AsyncGenerator[CoderEvent, None]:
+        yield await self._handle_agent_output_log(event)
+        yield await self._handle_agent_output_status(event)
+
     @staticmethod
     def _slice_new_events(collector: list, processed_count: int) -> tuple[list, int]:
         current_count = len(collector)
@@ -158,28 +192,6 @@ class CoderService:
             cached_tokens=metrics.cached_tokens
         )
 
-    async def _process_workflow_event(self, event: Event) -> AsyncGenerator[CoderEvent, None]:
-        logger.debug(f"Processing workflow event: {type(event)}")
-        
-        if isinstance(event, AgentStream):
-            async for e in self._handle_agent_stream(event):
-                yield e
-        elif isinstance(event, ToolCall):
-            yield AgentStateEvent(status=f"Calling tool `{event.tool_name}`...")
-            yield await self._handle_tool_call(event)
-        elif isinstance(event, ToolCallResult):
-            yield await self._handle_tool_call_result(event)
-        elif isinstance(event, AgentInput):
-            async for e in self._handle_agent_input(event):
-                yield e
-        elif isinstance(event, AgentOutput):
-            async for e in self._handle_agent_output(event):
-                yield e
-        elif isinstance(event, StopEvent):
-            pass
-        else:
-            logger.warning(f"Unknown event type from workflow: {type(event)}")
-
     @staticmethod
     async def _handle_workflow_exception(e: Exception, original_message: str) -> WorkflowErrorEvent:
         error_message = str(e)
@@ -191,34 +203,16 @@ class CoderService:
         )
 
     @staticmethod
-    async def _handle_agent_stream(event: AgentStream) -> AsyncGenerator[CoderEvent, None]:
-        if event.delta:
-            yield AIMessageChunkEvent(delta=event.delta)
-        
-        # Handle tool call construction (if streaming)
-        if event.tool_calls:
-             yield AgentStateEvent(status=f"Calling {len(event.tool_calls)} tools...")
+    async def _handle_agent_stream_delta(event: AgentStream) -> AIMessageChunkEvent:
+        return AIMessageChunkEvent(delta=event.delta)
 
     @staticmethod
-    async def _handle_agent_input(event: AgentInput) -> AsyncGenerator[CoderEvent, None]: # noqa
-        # Yield a state event to show "Thinking..." in the UI
-        yield AgentStateEvent(status="Agent is planning next steps...")
+    async def _handle_agent_stream_tool_calls(event: AgentStream) -> AgentStateEvent:
+        return AgentStateEvent(status=f"Calling {len(event.tool_calls)} tools...")
 
     @staticmethod
-    async def _handle_agent_output(event: AgentOutput) -> AsyncGenerator[CoderEvent, None]:
-        content = ""
-        if event.response and event.response.content:
-            content = f" Output: {event.response.content[:50]}..."
-        
-        yield WorkflowLogEvent(message=f"Agent step completed.{content}", level=LogLevel.INFO)
-        # Clear the status
-        yield AgentStateEvent(status="")
-
-    @staticmethod
-    def _get_run_id(tool_kwargs: dict[str, Any], tool_name: str) -> str:
-        if not (unique_id := tool_kwargs.get("_run_id")):
-            raise ValueError(f"Run ID not found for tool {tool_name}")
-        return unique_id
+    async def _handle_tool_call_status(event: ToolCall) -> AgentStateEvent:
+        return AgentStateEvent(status=f"Calling tool `{event.tool_name}`...")
 
     async def _handle_tool_call(self, event: ToolCall) -> ToolCallEvent:
         unique_id = self._get_run_id(event.tool_kwargs, event.tool_name)
@@ -242,6 +236,28 @@ class CoderService:
             tool_id=event.tool_id,
             tool_run_id=unique_id,
         )
+
+
+    @staticmethod
+    async def _handle_agent_input(event: AgentInput) -> AgentStateEvent: # noqa
+        return AgentStateEvent(status="Agent is planning next steps...")
+
+    @staticmethod
+    async def _handle_agent_output_log(event: AgentOutput) -> WorkflowLogEvent:
+        content = ""
+        if event.response and event.response.content:
+            content = f" Output: {event.response.content[:50]}..."
+        return WorkflowLogEvent(message=f"Agent step completed.{content}", level=LogLevel.INFO)
+
+    @staticmethod
+    async def _handle_agent_output_status(event: AgentOutput) -> AgentStateEvent: # noqa
+        return AgentStateEvent(status="")
+
+    @staticmethod
+    def _get_run_id(tool_kwargs: dict[str, Any], tool_name: str) -> str:
+        if not (unique_id := tool_kwargs.get("_run_id")):
+            raise ValueError(f"Run ID not found for tool {tool_name}")
+        return unique_id
 
 
 class CoderPageService:

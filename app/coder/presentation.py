@@ -52,8 +52,7 @@ class WebSocketOrchestrator:
 
     async def _process_event(self, event: CoderEvent, turn_id: str):
         # todo check later if it is okay to get by klass type directly
-        handler = self.event_handlers.get(type(event))
-        if not handler:
+        if not(handler := self.event_handlers.get(type(event))):
             logger.warning(f"No handler for event type: {type(event)}")
             return
         await handler(event, turn_id=turn_id)
