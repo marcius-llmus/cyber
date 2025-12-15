@@ -4,7 +4,7 @@
             <i class="fas fa-terminal text-primary text-xs"></i>
             <span class="text-xs font-mono text-gray-300">{{ tool_name }} <span class="text-gray-600">({{ tool_id }})</span></span>
             <div id="tool-status-{{ tool_run_id }}" class="text-xs text-gray-500 flex-shrink-0 flex items-center gap-1 ml-2">
-                {% if not is_history %}<i class="fas fa-spinner fa-spin"></i> <span class="text-[10px]">Running...</span>{% endif %}
+                <!-- Status will be swapped here -->
             </div>
         </div>
         <i class="fas fa-chevron-down text-gray-500 text-[10px] transition-transform duration-200 pointer-events-none"></i>

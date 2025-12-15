@@ -51,7 +51,7 @@
                         <div class="mt-2 space-y-2 pl-2 border-l-2 border-gray-700">
                             {% for tool in message.tool_calls %}
                                 {% if tool.name != 'apply_diff' %}
-                                    {% with tool_name=tool.name, tool_kwargs=tool.kwargs, tool_id=tool.id|default(''), tool_run_id=(message.id|string + '-' + loop.index|string), is_history=True %}
+                                    {% with tool_name=tool.name, tool_kwargs=tool.kwargs, tool_id=tool.id|default(''), tool_run_id=(message.id|string + '-' + loop.index|string) %}
                                         {% include "chat/partials/tool_call_item.html" %}
                                     {% endwith %}
                                 {% endif %}
@@ -73,7 +73,7 @@
                         </summary>
                         <div class="mt-2 space-y-2 pl-2 border-l-2 border-gray-700">
                             {% for patch in message.diff_patches %}
-                                {% with file_path=patch.file_path, diff=patch.diff, tool_run_id=(message.id|string + '-diff-' + loop.index|string), additions=0, deletions=0, is_history=True %}
+                                {% with file_path=patch.file_path, diff=patch.diff, tool_run_id=(message.id|string + '-diff-' + loop.index|string), additions=0, deletions=0 %}
                                     {% include "chat/partials/diff_patch_item.html" %}
                                 {% endwith %}
                             {% endfor %}
