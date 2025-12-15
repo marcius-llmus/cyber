@@ -59,14 +59,14 @@ class WebSocketOrchestrator:
 
     async def _prepare_ui_for_new_turn(self, message_content: str) -> str:
         turn_id = str(uuid.uuid4())
-        self.active_text_block_id = None
+        self._close_active_text_block()
         await self._render_user_message(message_content, turn_id)
         await self._render_ai_bubble_placeholder(turn_id)
         await self._ensure_active_text_block(turn_id)
         return turn_id
 
     async def _prepare_ui_for_retry_turn(self, turn_id: str) -> str:
-        self.active_text_block_id = None
+        self._close_active_text_block()
         await self._render_ai_bubble_placeholder(turn_id)
         await self._ensure_active_text_block(turn_id)
         await self._remove_user_message_controls(turn_id)
