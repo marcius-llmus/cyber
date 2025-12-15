@@ -178,8 +178,8 @@ class WebSocketOrchestrator:
             "output_tokens": event.output_tokens,
             "cached_tokens": event.cached_tokens,
         }
-        template = templates.get_template("usage/partials/session_metrics.html").render(
-            {"metrics": context, "use_oob": True}
+        template = templates.get_template("usage/partials/session_metrics_oob.html").render(
+            {"metrics": context}
         )
         await self.ws_manager.send_html(template)
 
@@ -195,7 +195,7 @@ class WebSocketOrchestrator:
             "turn_id": turn_id,
             "tool_run_id": event.tool_run_id,
         }
-        html_response = templates.get_template("chat/partials/tool_call_item.html").render(tool_context)
+        html_response = templates.get_template("chat/partials/tool_call_item_oob.html").render(tool_context)
         await self.ws_manager.send_html(html_response)
 
         # 2. If it is apply_diff, ADDITIONALLY render the Visual Diff Card (Inline Stream)
@@ -217,7 +217,7 @@ class WebSocketOrchestrator:
                 "deletions": deletions,
                 "tool_run_id": event.tool_run_id,
             }
-            diff_template = templates.get_template("chat/partials/diff_patch_item.html").render(diff_context)
+            diff_template = templates.get_template("chat/partials/diff_patch_item_oob.html").render(diff_context)
             
             await self.ws_manager.send_html(diff_template)
 

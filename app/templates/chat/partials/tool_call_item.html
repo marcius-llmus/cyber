@@ -1,20 +1,18 @@
-<div hx-swap-oob="beforeend:#tool-calls-list-{{ turn_id }}">
-    <div id="tool-call-{{ tool_run_id }}" class="rounded-md border border-dark-lighter overflow-hidden shadow-sm bg-dark-card block w-full mb-3">
-        <div class="flex items-center justify-between px-3 py-2.5 cursor-pointer hover:bg-dark-light transition-colors select-none bg-dark-lighter" data-action="toggle-expandable">
-            <div class="flex items-center gap-2 pointer-events-none">
-                <i class="fas fa-terminal text-primary text-xs"></i>
-                <span class="text-xs font-mono text-gray-300">{{ tool_name }} ({{ tool_id }})</span>
-                <div id="tool-status-{{ tool_run_id }}" class="text-xs text-gray-500 flex-shrink-0 flex items-center gap-1 ml-2">
-                    <i class="fas fa-spinner fa-spin"></i> <span class="text-[10px]">Running...</span>
-                </div>
+<div id="tool-call-{{ tool_run_id }}" class="rounded-md border border-dark-lighter overflow-hidden shadow-sm bg-dark-card block w-full mb-3">
+    <div class="flex items-center justify-between px-3 py-2.5 cursor-pointer hover:bg-dark-light transition-colors select-none bg-dark-lighter" data-action="toggle-expandable">
+        <div class="flex items-center gap-2 pointer-events-none">
+            <i class="fas fa-terminal text-primary text-xs"></i>
+            <span class="text-xs font-mono text-gray-300">{{ tool_name }} <span class="text-gray-600">({{ tool_id }})</span></span>
+            <div id="tool-status-{{ tool_run_id }}" class="text-xs text-gray-500 flex-shrink-0 flex items-center gap-1 ml-2">
+                {% if not is_history %}<i class="fas fa-spinner fa-spin"></i> <span class="text-[10px]">Running...</span>{% endif %}
             </div>
-            <i class="fas fa-chevron-down text-gray-500 text-[10px] transition-transform duration-200 pointer-events-none"></i>
         </div>
-        <div id="tool-content-{{ tool_run_id }}" class="hidden border-t border-dark-lighter">
-            <div class="p-3 bg-dark-lighter">
-                <div class="text-[10px] text-gray-500 mb-1.5 uppercase tracking-wider font-semibold">Arguments</div>
-                <pre class="text-xs font-mono text-gray-400 whitespace-pre-wrap break-all max-h-[15vh] !overflow-y-auto"><code class="language-json bg-transparent p-0">{{ tool_kwargs|tojson(indent=2) }}</code></pre>
-            </div>
+        <i class="fas fa-chevron-down text-gray-500 text-[10px] transition-transform duration-200 pointer-events-none"></i>
+    </div>
+    <div id="tool-content-{{ tool_run_id }}" class="hidden border-t border-dark-lighter">
+        <div class="p-3 bg-dark-lighter">
+            <div class="text-[10px] text-gray-500 mb-1.5 uppercase tracking-wider font-semibold">Arguments</div>
+            <pre class="text-xs font-mono text-gray-400 whitespace-pre-wrap break-all max-h-[15vh] !overflow-y-auto"><code class="language-json bg-transparent p-0">{{ tool_kwargs|tojson(indent=2) }}</code></pre>
         </div>
     </div>
 </div>
