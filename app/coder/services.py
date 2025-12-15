@@ -1,5 +1,4 @@
 import logging
-from asyncio import Event
 from typing import Any, AsyncGenerator, Callable, Coroutine, Awaitable
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,8 +10,7 @@ from llama_index.core.agent.workflow.workflow_events import (
     ToolCallResult,
 )
 from llama_index.core.llms import ChatMessage
-from llama_index.core.workflow import StopEvent
-
+from app.core.config import settings
 from app.core.db import DatabaseSessionManager
 from app.chat.services import ChatService
 from app.coder.schemas import (
@@ -21,17 +19,18 @@ from app.coder.schemas import (
     CoderEvent,
     WorkflowErrorEvent,
     WorkflowLogEvent,
+    ToolCallEvent,
+    ToolCallResultEvent,
     LogLevel,
     UsageMetricsUpdatedEvent,
+    AgentStateEvent,
 )
 from app.context.services import WorkspaceService
 from app.agents.services import WorkflowService
 from app.history.enums import HistoryEventType
 from app.usage.services import UsagePageService
-from app.usage.schemas import SessionMetrics
+from app.usage.event_handlers import UsageCollector
 from app.prompts.enums import PromptEventType
-from app.projects.exceptions import ActiveProjectRequiredException
-from app.history.exceptions import ChatSessionNotFoundException
 
 
 logger = logging.getLogger(__name__)
@@ -51,11 +50,20 @@ class CoderService:
         self.agent_factory = agent_factory
         self.workflow_service_factory = workflow_service_factory
         self.usage_service_factory = usage_service_factory
+        self.handlers: dict[type, Callable[[Any], AsyncGenerator[CoderEvent, None]]] = {
+            AgentStream: self._handle_agent_stream_event,
+            ToolCall: self._handle_tool_call_event,
+            ToolCallResult: self._handle_tool_call_result_event,
+            AgentInput: self._handle_agent_input_event,
+            AgentOutput: self._handle_agent_output_event,
+        }
 
     async def handle_user_message(
         self, *, user_message: str, session_id: int
     ) -> AsyncGenerator[CoderEvent, None]:
-        try:
+        yield AgentStateEvent(status="Thinking...")
+
+        async with UsageCollector() as event_collector:
             async with self.db.session() as session:
                 workflow = await self.agent_factory(session, session_id)
 
@@ -69,70 +77,100 @@ class CoderService:
                     ChatMessage(role=msg.role, content=msg.content) for msg in db_messages
                 ]
 
-            handler = workflow.run(
-                user_msg=user_message, chat_history=chat_history, ctx=ctx
-            )
+            try:
+                handler = workflow.run(
+                    user_msg=user_message, chat_history=chat_history, ctx=ctx, max_iterations=settings.AGENT_MAX_ITERATIONS
+                )
 
-            async for event in handler.stream_events():
-                if coder_event := await self._process_workflow_event(event):
-                    yield coder_event
-                else:
-                    logger.debug(f"Skipped processing for event type: {type(event)}")
+                async for event in handler.stream_events():
+                    async for coder_event in self._dispatch_event(event):
+                        yield coder_event
+                     
+                    async for usage_event in self._process_new_usage(session_id, event_collector):
+                        yield usage_event
 
-            logger.info(f"Workflow stream finished for session {session_id}.")
+                logger.info(f"Workflow stream finished for session {session_id}.")
 
-            # Await the handler to get the final result and ensure completion.
-            llm_full_response = await handler
-            final_content = str(llm_full_response)
+                # Await the handler to get the final result and ensure completion.
+                llm_full_response = await handler
+                final_content = str(llm_full_response)
 
-            # session here is the db session
-            # session_id is the 'history', the one user can delete, not db
-            async with self.db.session() as session:
-                chat_service = await self.chat_service_factory(session)
-                await chat_service.add_user_message(session_id=session_id, content=user_message)
-                await chat_service.add_ai_message(session_id=session_id, content=final_content)
+                # session here is the db session
+                # session_id is the 'history', the one user can delete, not db
+                async with self.db.session() as session:
+                    chat_service = await self.chat_service_factory(session)
+                    await chat_service.add_user_message(session_id=session_id, content=user_message)
+                    await chat_service.add_ai_message(
+                        session_id=session_id,
+                        content=final_content,
+                        tool_calls=None,
+                        diff_patches=None
+                    )
 
-                # Persist Context State
-                workflow_service = await self.workflow_service_factory(session)
-                await workflow_service.save_context(session_id, ctx)
+                    # Persist Context State
+                    workflow_service = await self.workflow_service_factory(session)
+                    await workflow_service.save_context(session_id, ctx)
+                    
+                    # Process remaining usage events
+                    async for usage_event in self._process_new_usage(session_id, event_collector):
+                        yield usage_event
 
-                # Process Usage and get Event
-                usage_service = await self.usage_service_factory(session)
-                metrics = await usage_service.process_workflow_usage(session_id, llm_full_response)
+                yield AIMessageCompletedEvent(
+                    message=final_content
+                )
+            except Exception as e:
+                yield await self._handle_workflow_exception(e, original_message=user_message)
+            finally:
+                # Safety check: Log if any events were left behind (e.g., due to a crash before final save)
+                unprocessed_count = event_collector.unprocessed_count
+                if unprocessed_count > 0:
+                    logger.warning(f"Session {session_id}: {unprocessed_count} usage events were not processed/persisted.")
 
-            # Emit Usage Event
-            yield UsageMetricsUpdatedEvent(
-                session_cost=metrics.session_cost,
-                monthly_cost=metrics.monthly_cost,
-                input_tokens=metrics.input_tokens,
-                output_tokens=metrics.output_tokens,
-                cached_tokens=metrics.cached_tokens
-            )
+    async def _dispatch_event(self, event: Any) -> AsyncGenerator[CoderEvent, None]:
+        if not (handler := self.handlers.get(type(event))):
+            logger.warning(f"No handler for event type: {type(event)}")
+            return
 
-            yield AIMessageCompletedEvent(
-                message=final_content
-            )
-        except Exception as e:
-            yield await self._handle_workflow_exception(e, original_message=user_message)
+        async for coder_event in handler(event):
+            yield coder_event
 
-    async def _process_workflow_event(self, event: Event) -> CoderEvent | None:
-        logger.debug(f"Processing workflow event: {type(event)}")
-        
-        if isinstance(event, AgentStream):
-            return await self._handle_agent_stream(event)
-        elif isinstance(event, ToolCall):
-            return await self._handle_tool_call(event)
-        elif isinstance(event, ToolCallResult):
-            return await self._handle_tool_call_result(event)
-        elif isinstance(event, AgentInput):
-            return await self._handle_agent_input(event)
-        elif isinstance(event, AgentOutput):
-            return await self._handle_agent_output(event)
-        elif isinstance(event, StopEvent):
-            return None
+    async def _handle_agent_stream_event(self, event: AgentStream) -> AsyncGenerator[CoderEvent, None]:
+        if event.delta:
+            yield await self._handle_agent_stream_delta(event)
+        if event.tool_calls:
+            yield await self._handle_agent_stream_tool_calls(event)
 
-        logger.warning(f"Unknown event type from workflow: {type(event)}")
-        return None
+    async def _handle_tool_call_event(self, event: ToolCall) -> AsyncGenerator[CoderEvent, None]:
+        yield await self._handle_tool_call_status(event)
+        yield await self._handle_tool_call(event)
+
+    async def _handle_tool_call_result_event(self, event: ToolCallResult) -> AsyncGenerator[CoderEvent, None]:
+        yield await self._handle_tool_call_result(event)
+
+    async def _handle_agent_input_event(self, event: AgentInput) -> AsyncGenerator[CoderEvent, None]:
+        yield await self._handle_agent_input(event)
+
+    async def _handle_agent_output_event(self, event: AgentOutput) -> AsyncGenerator[CoderEvent, None]:
+        yield await self._handle_agent_output_log(event)
+        yield await self._handle_agent_output_status(event)
+
+    async def _process_new_usage(self, session_id: int, collector: UsageCollector) -> AsyncGenerator[CoderEvent, None]:
+        """Helper to consume new events from collector and yield metrics updates."""
+        new_events = collector.consume()
+        if not new_events:
+            return
+
+        async with self.db.session() as session:
+            usage_service = await self.usage_service_factory(session)
+            metrics = await usage_service.process_batch(session_id, new_events)
+
+        yield UsageMetricsUpdatedEvent(
+            session_cost=metrics.session_cost,
+            monthly_cost=metrics.monthly_cost,
+            input_tokens=metrics.input_tokens,
+            output_tokens=metrics.output_tokens,
+            cached_tokens=metrics.cached_tokens
+        )
 
     @staticmethod
     async def _handle_workflow_exception(e: Exception, original_message: str) -> WorkflowErrorEvent:
@@ -145,38 +183,61 @@ class CoderService:
         )
 
     @staticmethod
-    async def _handle_agent_stream(event: AgentStream) -> AIMessageChunkEvent | None:
-        logger.debug(f"Handling AgentStream. Delta: '{event.delta}'")
-        if event.delta:
-            return AIMessageChunkEvent(delta=event.delta)
-        else:
-            logger.debug("AgentStream event received but delta was empty.")
-        return None
+    async def _handle_agent_stream_delta(event: AgentStream) -> AIMessageChunkEvent:
+        return AIMessageChunkEvent(delta=event.delta)
 
     @staticmethod
-    async def _handle_agent_input(event: AgentInput) -> WorkflowLogEvent: # noqa
-        return WorkflowLogEvent(message="Agent is planning next steps...", level=LogLevel.INFO)
+    async def _handle_agent_stream_tool_calls(event: AgentStream) -> AgentStateEvent:
+        return AgentStateEvent(status=f"Calling {len(event.tool_calls)} tools...")
 
     @staticmethod
-    async def _handle_agent_output(event: AgentOutput) -> WorkflowLogEvent:
+    async def _handle_tool_call_status(event: ToolCall) -> AgentStateEvent:
+        return AgentStateEvent(status=f"Calling tool `{event.tool_name}`...")
+
+    async def _handle_tool_call(self, event: ToolCall) -> ToolCallEvent:
+        unique_id = self._get_run_id(event.tool_kwargs, event.tool_name)
+        return ToolCallEvent(
+            tool_name=event.tool_name,
+            tool_kwargs=event.tool_kwargs,
+            tool_id=event.tool_id,
+            tool_run_id=unique_id,
+        )
+
+    async def _handle_tool_call_result(
+        self,
+        event: ToolCallResult,
+    ) -> ToolCallResultEvent:
+        content = str(event.tool_output.content) if event.tool_output else ""
+        unique_id = self._get_run_id(event.tool_kwargs, event.tool_name)
+
+        return ToolCallResultEvent(
+            tool_name=event.tool_name,
+            tool_output=content,
+            tool_id=event.tool_id,
+            tool_run_id=unique_id,
+        )
+
+
+    @staticmethod
+    async def _handle_agent_input(event: AgentInput) -> AgentStateEvent: # noqa
+        return AgentStateEvent(status="Agent is planning next steps...")
+
+    @staticmethod
+    async def _handle_agent_output_log(event: AgentOutput) -> WorkflowLogEvent:
         content = ""
         if event.response and event.response.content:
             content = f" Output: {event.response.content[:50]}..."
         return WorkflowLogEvent(message=f"Agent step completed.{content}", level=LogLevel.INFO)
 
     @staticmethod
-    async def _handle_tool_call(event: ToolCall) -> WorkflowLogEvent:
-        message = f"Calling tool `{event.tool_name}` with arguments: {event.tool_kwargs}"
-        return WorkflowLogEvent(message=f"Workflow Log: {message}", level=LogLevel.INFO)
+    async def _handle_agent_output_status(event: AgentOutput) -> AgentStateEvent: # noqa
+        return AgentStateEvent(status="")
 
     @staticmethod
-    async def _handle_tool_call_result(
-        event: ToolCallResult,
-    ) -> WorkflowLogEvent:
-        message = f"Tool `{event.tool_name}` returned: {event.tool_output.content}"
-        return WorkflowLogEvent(
-            message=f"Workflow Log: {message}", level=LogLevel.INFO
-        )
+    def _get_run_id(tool_kwargs: dict[str, Any], tool_name: str) -> str:
+        if not (unique_id := tool_kwargs.get("_run_id")):
+            raise ValueError(f"Run ID not found for tool {tool_name}")
+        return unique_id
 
 
 class CoderPageService:
@@ -219,14 +280,9 @@ class CoderPageService:
 
     async def _get_empty_session_data(self) -> dict:
         active_project = await self.chat_service.project_service.get_active_project()
+        usage_data = await self.usage_page_service.get_empty_metrics_page_data()
         return {
-            "metrics": SessionMetrics(
-                session_cost=0,
-                monthly_cost=0,
-                input_tokens=0,
-                output_tokens=0,
-                cached_tokens=0,
-            ),
+            **usage_data,
             "session": None,
             "messages": [],
             "files": [],

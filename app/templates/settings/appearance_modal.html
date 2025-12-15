@@ -1,14 +1,14 @@
 {% from "components/modals/base_modal.html" import modal_shell %}
 
 {% call modal_shell(modal_id='appearance-modal', title='Appearance') %}
-    <div class="p-6 overflow-y-auto flex-1 modal-scroll-content">
+    <div class="p-6 overflow-y-auto flex-1 modal-scroll-content min-h-0">
         <div class="space-y-8" x-data>
             <!-- Colors -->
-            <div class="space-y-4">
-                <h4 class="text-sm font-medium text-gray-400 uppercase tracking-wider">Colors</h4>
+            <div>
+                <h4 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Colors</h4>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs text-gray-400 mb-1">Sidebar Background</label>
+                        <label class="block text-xs text-gray-400 mb-1">Right Sidebar (Logs)</label>
                         <div class="flex items-center space-x-2">
                             <input type="color" :value="$store.appearance.bgDarkerColor"
                                    @input="$store.appearance.updateSetting('bgDarkerColor', $event.target.value)"
@@ -30,7 +30,7 @@
                         </div>
                     </div>
                     <div>
-                        <label class="block text-xs text-gray-400 mb-1">Panel Background</label>
+                        <label class="block text-xs text-gray-400 mb-1">Left Sidebar / Secondary</label>
                         <div class="flex items-center space-x-2">
                             <input type="color" :value="$store.appearance.bgSecondaryColor"
                                    @input="$store.appearance.updateSetting('bgSecondaryColor', $event.target.value)"
@@ -70,17 +70,6 @@
                                    class="h-8 w-12 bg-transparent border-0 p-0 cursor-pointer">
                             <input type="text" :value="$store.appearance.bgCardColor"
                                    @input="$store.appearance.updateSetting('bgCardColor', $event.target.value)"
-                                   class="flex-1 bg-dark-lighter border border-dark-light rounded px-2 py-1 text-xs">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-xs text-gray-400 mb-1">Light Background</label>
-                        <div class="flex items-center space-x-2">
-                            <input type="color" :value="$store.appearance.bgLightColor"
-                                   @input="$store.appearance.updateSetting('bgLightColor', $event.target.value)"
-                                   class="h-8 w-12 bg-transparent border-0 p-0 cursor-pointer">
-                            <input type="text" :value="$store.appearance.bgLightColor"
-                                   @input="$store.appearance.updateSetting('bgLightColor', $event.target.value)"
                                    class="flex-1 bg-dark-lighter border border-dark-light rounded px-2 py-1 text-xs">
                         </div>
                     </div>
@@ -152,32 +141,40 @@
             </div>
 
             <!-- Font Sizes -->
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-400 uppercase tracking-wider mb-2">UI Font Size
-                        (px)</label>
-                    <input type="number" min="12" max="18" :value="$store.appearance.uiFontSize"
-                           @input="$store.appearance.updateSetting('uiFontSize', $event.target.value)"
-                           onkeydown="return false"
-                           class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-400 uppercase tracking-wider mb-2">Editor Font
-                        Size (px)</label>
-                    <input type="number" min="10" max="23" :value="$store.appearance.editorFontSize"
-                           @input="$store.appearance.updateSetting('editorFontSize', $event.target.value)"
-                           onkeydown="return false"
-                           class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm">
+            <div>
+                <h4 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Typography</h4>
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">UI Font Size (px)</label>
+                        <input type="number" min="12" max="18" :value="$store.appearance.uiFontSize"
+                               @input="$store.appearance.updateSetting('uiFontSize', $event.target.value)"
+                               onkeydown="return false"
+                               class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Editor Font Size (px)</label>
+                        <input type="number" min="10" max="23" :value="$store.appearance.editorFontSize"
+                               @input="$store.appearance.updateSetting('editorFontSize', $event.target.value)"
+                               onkeydown="return false"
+                               class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Code Scale (em)</label>
+                        <input type="number" step="0.025" min="0.5" max="1.5" :value="$store.appearance.codeFontScale"
+                               @input="$store.appearance.updateSetting('codeFontScale', $event.target.value)"
+                               class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm">
+                    </div>
                 </div>
             </div>
 
             <!-- Editor Font -->
-            <div class="space-y-4">
-                <h4 class="text-sm font-medium text-gray-400 uppercase tracking-wider">Editor Font</h4>
+            <div>
+                <h4 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Editor Font</h4>
                 <select 
                     class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm"
                     @change="$store.appearance.updateSetting('editorFontFamily', $event.target.value)">
                     <option value="system_default" :selected="$store.appearance.editorFontFamily === 'system_default'">System Default</option>
+                    <option value="system_mono" :selected="$store.appearance.editorFontFamily === 'system_mono'">System Mono</option>
                     <option value="fira_code" :selected="$store.appearance.editorFontFamily === 'fira_code'">Fira Code</option>
                     <option value="jetbrains_mono" :selected="$store.appearance.editorFontFamily === 'jetbrains_mono'">JetBrains Mono</option>
                     <option value="consolas" :selected="$store.appearance.editorFontFamily === 'consolas'">Consolas</option>
@@ -186,8 +183,8 @@
             </div>
 
             <!-- Highlight Theme -->
-            <div class="space-y-4">
-                <h4 class="text-sm font-medium text-gray-400 uppercase tracking-wider">Syntax Highlighting</h4>
+            <div>
+                <h4 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Syntax Highlighting</h4>
                 <select 
                     class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm"
                     @change="$store.appearance.updateSetting('highlightTheme', $event.target.value)">

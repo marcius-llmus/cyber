@@ -8,9 +8,10 @@
         hx-ext="form-json"
         hx-swap="innerHTML"
         data-close-modal
+        class="flex flex-col flex-1 min-h-0"
     >
         <div id="settings-form-container"
-             class="min-h-[200px]"
+             class="flex-1 flex flex-col min-h-0 modal-scroll-content"
              hx-get="/settings/form"
              hx-trigger="intersect, settingsSaved from:body"
              hx-swap="innerHTML">

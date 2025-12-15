@@ -1,6 +1,6 @@
 {% macro modal_shell(modal_id, title, attributes="") %}
 <div id="{{ modal_id }}" class="modal-overlay fixed inset-0 items-start justify-center z-50 pt-20">
-    <div class="bg-dark-card rounded-lg w-full max-w-2xl border border-dark-light max-h-[90vh] flex flex-col" {{ attributes|safe }}>
+    <div class="bg-dark-card rounded-lg w-full max-w-2xl border border-dark-light max-h-[65vh] flex flex-col" {{ attributes|safe }}>
         <div class="px-6 py-4 border-b border-dark-light flex items-center justify-between">
             <h2 class="text-xl font-bold text-gray-200">{{ title }}</h2>
             <button data-modal-close class="text-gray-400 hover:text-white">

@@ -1,7 +1,7 @@
 from enum import StrEnum
 
 from pydantic import BaseModel
-from typing import Union
+from typing import Union, Any
 
 
 class LogLevel(StrEnum):
@@ -39,10 +39,31 @@ class UsageMetricsUpdatedEvent(BaseModel):
     cached_tokens: int
 
 
+class ToolCallEvent(BaseModel):
+    tool_name: str
+    tool_kwargs: dict[str, Any]
+    tool_id: str
+    tool_run_id: str
+
+
+class ToolCallResultEvent(BaseModel):
+    tool_name: str
+    tool_output: str
+    tool_id: str
+    tool_run_id: str
+
+
+class AgentStateEvent(BaseModel):
+    status: str
+
+
 CoderEvent = Union[
     AIMessageChunkEvent,
     AIMessageCompletedEvent,
     WorkflowErrorEvent,
     WorkflowLogEvent,
     UsageMetricsUpdatedEvent,
+    ToolCallEvent,
+    ToolCallResultEvent,
+    AgentStateEvent,
 ]

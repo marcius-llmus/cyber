@@ -38,6 +38,50 @@
                     <!-- Initial content will be rendered by JS on load -->
                 </div>
                 
+                {% if message.tool_calls %}
+                <div class="mt-4 border-t border-gray-700 pt-2">
+                    <details class="group">
+                        <summary class="cursor-pointer text-xs font-mono text-gray-500 hover:text-gray-300 flex items-center gap-2 select-none">
+                            <i class="fas fa-terminal"></i>
+                            <span>Tool Calls ({{ message.tool_calls|length }})</span>
+                            <span class="ml-auto group-open:rotate-180 transition-transform duration-200">
+                                <i class="fas fa-chevron-down"></i>
+                            </span>
+                        </summary>
+                        <div class="mt-2 space-y-2 pl-2 border-l-2 border-gray-700">
+                            {% for tool in message.tool_calls %}
+                                {% if tool.name != 'apply_diff' %}
+                                    {% with tool_name=tool.name, tool_kwargs=tool.kwargs, tool_id=tool.id|default(''), tool_run_id=(message.id|string + '-' + loop.index|string) %}
+                                        {% include "chat/partials/tool_call_item.html" %}
+                                    {% endwith %}
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </details>
+                </div>
+                {% endif %}
+
+                {% if message.diff_patches %}
+                <div class="mt-2 border-t border-gray-700 pt-2">
+                    <details class="group">
+                        <summary class="cursor-pointer text-xs font-mono text-gray-500 hover:text-gray-300 flex items-center gap-2 select-none">
+                            <i class="fas fa-code-branch"></i>
+                            <span>Applied Patches ({{ message.diff_patches|length }})</span>
+                            <span class="ml-auto group-open:rotate-180 transition-transform duration-200">
+                                <i class="fas fa-chevron-down"></i>
+                            </span>
+                        </summary>
+                        <div class="mt-2 space-y-2 pl-2 border-l-2 border-gray-700">
+                            {% for patch in message.diff_patches %}
+                                {% with file_path=patch.file_path, diff=patch.diff, tool_run_id=(message.id|string + '-diff-' + loop.index|string), additions=0, deletions=0 %}
+                                    {% include "chat/partials/diff_patch_item.html" %}
+                                {% endwith %}
+                            {% endfor %}
+                        </div>
+                    </details>
+                </div>
+                {% endif %}
+
                 <div class="flex items-center justify-end {% if message.cost %}pt-2 mt-2{% endif %}" id="controls-{{ message.id }}">
                     <div class="flex space-x-2 text-xs text-gray-500">
                         {% if message.cost %}

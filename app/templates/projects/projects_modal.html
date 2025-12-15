@@ -1,7 +1,7 @@
 {% from "components/modals/base_modal.html" import modal_shell %}
 
 {% call modal_shell(modal_id='project-modal', title='Select Project') %}
-    <div class="p-6 overflow-y-auto flex-1 modal-scroll-content" style="max-height: calc(75vh - 70px);">
+    <div class="p-6 overflow-y-auto flex-1 modal-scroll-content min-h-0">
         <div class="space-y-2" id="project-list-container"
              hx-get="/projects/"
              hx-trigger="intersect"

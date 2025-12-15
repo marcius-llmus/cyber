@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     BLUEPRINTS_ROOT_DIR: str = "workspace/blueprints"
     LOG_LEVEL: LogLevel = LogLevel.INFO
     OBSERVABILITY_ENABLED: bool = False
+    AGENT_MAX_ITERATIONS: int = 111
 
     @property
     def queries_dir(self) -> str:

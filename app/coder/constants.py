@@ -47,7 +47,7 @@ Read the `DIFF PATCH`. For each change ("hunk") described in the patch:
     line3
     ```
 *   `DIFF PATCH`:
-    ```diff
+    ```
     --- a/file.txt
     +++ b/file.txt
     @@ -1,3 +1,3 @@
@@ -70,7 +70,7 @@ Read the `DIFF PATCH`. For each change ("hunk") described in the patch:
     ```
     *(empty string)*
 *   `DIFF PATCH`:
-    ```diff
+    ```
     --- /dev/null
     +++ b/new_file.txt
     @@ -0,0 +1,2 @@
@@ -96,7 +96,7 @@ Read the `DIFF PATCH`. For each change ("hunk") described in the patch:
     eta
     ```
 *   `DIFF PATCH`:
-    ```diff
+    ```
     --- a/multi.txt
     +++ b/multi.txt
     @@ -1,4 +1,4 @@
@@ -127,10 +127,9 @@ Read the `DIFF PATCH`. For each change ("hunk") described in the patch:
 """
 
 PATCHER_TOOL_DESCRIPTION = """The changes to apply in Unified Diff format.
-You MUST format this string exactly as a standard `diff -u` output.
-Enclose the diff in a markdown block ```diff ... ```.
+You MUST format this string exactly as a standard `diff -u` output without triple brackets. raw diff patch only.
 Example:
-```diff
+```
 --- file.py
 +++ file.py
 @@ -1,2 +1,2 @@

@@ -36,3 +36,7 @@ on project change, reload for a new session
 add slash commands
 lock message box while workflow is happening
 allow workflow stop
+on reset, color is weird...
+load tool calls and messages
+check diff showing in inline / tool output? should should we do that? always format tool from diff tools and cut off diff markdown?
+agent thinking on user message taking too long

@@ -16,7 +16,7 @@
         </div>
     </div>
 
-    <div class="p-6 overflow-y-auto flex-1 modal-scroll-content" style="max-height: calc(75vh - 180px);">
+    <div class="p-6 overflow-y-auto flex-1 modal-scroll-content min-h-0">
         <div id="global-prompts" x-show="currentTab === 'global'"
              hx-get="/prompts/global/list"
              hx-trigger="intersect"
