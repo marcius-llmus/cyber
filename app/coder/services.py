@@ -10,10 +10,7 @@ from llama_index.core.agent.workflow.workflow_events import (
     ToolCallResult,
 )
 from llama_index.core.llms import ChatMessage
-from workflows.events import Event
-
 from app.core.config import settings
-from app.usage.exceptions import UsageTrackingException
 from app.core.db import DatabaseSessionManager
 from app.chat.services import ChatService
 from app.coder.schemas import (
@@ -80,9 +77,6 @@ class CoderService:
                 chat_history = [
                     ChatMessage(role=msg.role, content=msg.content) for msg in db_messages
                 ]
-                
-                # Track how many events we have already processed to avoid double-counting
-                processed_events_count = 0
 
             try:
                 handler = workflow.run(
@@ -93,8 +87,7 @@ class CoderService:
                     async for coder_event in self._dispatch_event(event):
                         yield coder_event
                      
-                    new_events, processed_events_count = self._slice_new_events(event_collector, processed_events_count)
-                    async for usage_event in self._track_and_yield_usage(session_id, new_events):
+                    async for usage_event in self._process_new_usage(session_id, event_collector):
                         yield usage_event
 
                 logger.info(f"Workflow stream finished for session {session_id}.")
@@ -118,11 +111,9 @@ class CoderService:
                     # Persist Context State
                     workflow_service = await self.workflow_service_factory(session)
                     await workflow_service.save_context(session_id, ctx)
-
-                    # Process any REMAINING usage events (e.g. from the final response generation)
-                    # The loop might finish before the final events are caught if they happen in the final return
-                    new_events, processed_events_count = self._slice_new_events(event_collector, processed_events_count)
-                    async for usage_event in self._track_and_yield_usage(session_id, new_events):
+                    
+                    # Process remaining usage events
+                    async for usage_event in self._process_new_usage(session_id, event_collector):
                         yield usage_event
 
                 yield AIMessageCompletedEvent(
@@ -132,7 +123,7 @@ class CoderService:
                 yield await self._handle_workflow_exception(e, original_message=user_message)
             finally:
                 # Safety check: Log if any events were left behind (e.g., due to a crash before final save)
-                unprocessed_count = len(event_collector) - processed_events_count
+                unprocessed_count = event_collector.unprocessed_count
                 if unprocessed_count > 0:
                     logger.warning(f"Session {session_id}: {unprocessed_count} usage events were not processed/persisted.")
 
@@ -164,25 +155,15 @@ class CoderService:
         yield await self._handle_agent_output_log(event)
         yield await self._handle_agent_output_status(event)
 
-    @staticmethod
-    def _slice_new_events(collector: list, processed_count: int) -> tuple[list, int]:
-        current_count = len(collector)
-        if current_count > processed_count:
-            return collector[processed_count:], current_count
-        return [], processed_count
-
-    async def _track_and_yield_usage(self, session_id: int, events: list) -> AsyncGenerator[CoderEvent, None]:
-        """Helper to process a batch of usage events and yield updates/errors."""
+    async def _process_new_usage(self, session_id: int, collector: UsageCollector) -> AsyncGenerator[CoderEvent, None]:
+        """Helper to consume new events from collector and yield metrics updates."""
+        new_events = collector.consume()
+        if not new_events:
+            return
 
         async with self.db.session() as session:
             usage_service = await self.usage_service_factory(session)
-            for event in events:
-                try:
-                    await usage_service.track_event(session_id, event)
-                except UsageTrackingException as e:
-                    yield WorkflowLogEvent(message=str(e), level=LogLevel.ERROR)
-            
-            metrics = await usage_service.get_session_metrics(session_id)
+            metrics = await usage_service.process_batch(session_id, new_events)
 
         yield UsageMetricsUpdatedEvent(
             session_cost=metrics.session_cost,

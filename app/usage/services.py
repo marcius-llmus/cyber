@@ -1,5 +1,5 @@
 import logging
-from typing import Any
+from typing import Any, List
 from decimal import Decimal
 
 from pydantic import BaseModel
@@ -54,6 +54,20 @@ class UsageService:
             )
         except Exception as e:
             raise UsageTrackingException(f"Failed to track usage event: {str(e)}") from e
+
+    async def process_batch(self, session_id: int, events: List[BaseEvent]) -> SessionMetrics:
+        """
+        Processes a batch of raw instrumentation events.
+        Updates costs and returns the final calculated metrics for the session.
+        """
+        if events:
+            for event in events:
+                try:
+                    await self.track_event(session_id, event)
+                except UsageTrackingException as e:
+                    logger.error(f"Usage tracking failed for event {type(event)}: {e}")
+
+        return await self.get_session_metrics(session_id)
 
     async def _update_usage_repositories(
         self,

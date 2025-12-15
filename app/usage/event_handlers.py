@@ -40,15 +40,33 @@ class UsageCollector:
     def __init__(self):
         self.events: List[BaseEvent] = []
         self._token = None
+        self._processed_count = 0
 
-    async def __aenter__(self) -> List[BaseEvent]:
+    async def __aenter__(self) -> "UsageCollector":
         # Start capturing for this async context
         self._token = _usage_events_ctx.set(self.events)
-        return self.events
+        return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         # Stop capturing and cleanup
         _usage_events_ctx.reset(self._token)
+
+    def consume(self) -> List[BaseEvent]:
+        """
+        Returns only the events added since the last consume call.
+        Moves the internal cursor forward.
+        """
+        total_events = len(self.events)
+        if self._processed_count >= total_events:
+            return []
+        
+        batch = self.events[self._processed_count:]
+        self._processed_count = total_events
+        return batch
+
+    @property
+    def unprocessed_count(self) -> int:
+        return len(self.events) - self._processed_count
 
 
 # Register the global handler once at module import time.
