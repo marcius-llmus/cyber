@@ -9,7 +9,7 @@ from llama_index.core.agent.workflow.workflow_events import (
     ToolCallResult,
 )
 
-from app.chat.state import MessageStateAccumulator
+from app.chat.services import MessageStateAccumulator
 from app.coder.schemas import (
     AIMessageBlockStartEvent,
     AIMessageChunkEvent,

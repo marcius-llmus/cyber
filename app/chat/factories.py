@@ -1,10 +1,9 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.chat.repositories import MessageRepository
-from app.chat.services import ChatService
+from app.chat.services import ChatService, MessageStateAccumulator
 from app.history.factories import build_history_service
 from app.projects.factories import build_project_service
-from app.chat.state import MessageStateAccumulator
 
 
 async def build_chat_service(db: AsyncSession) -> ChatService:
