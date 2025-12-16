@@ -39,16 +39,16 @@
                 </div>
                 
                 {% if message.tool_calls %}
-                <div class="mt-4 border-t border-gray-700 pt-2">
+                <div id="tool-calls-container-{{ message.id }}" class="mt-4 border-t border-gray-700 pt-2">
                     <details class="group">
-                        <summary class="cursor-pointer text-xs font-mono text-gray-500 hover:text-gray-300 flex items-center gap-2 select-none">
+                        <summary class="cursor-pointer text-xs font-mono text-gray-500 hover:text-gray-300 flex items-center gap-2 select-none outline-none py-1">
                             <i class="fas fa-terminal"></i>
-                            <span>Tool Calls ({{ message.tool_calls|length }})</span>
+                            <span>Tool Calls</span>
                             <span class="ml-auto group-open:rotate-180 transition-transform duration-200">
                                 <i class="fas fa-chevron-down"></i>
                             </span>
                         </summary>
-                        <div class="mt-2 space-y-2 pl-2 border-l-2 border-gray-700">
+                        <div id="tool-calls-list-{{ message.id }}" class="mt-2">
                             {% for tool in message.tool_calls %}
                                 {% with tool_name=tool.name, tool_kwargs=tool.kwargs, tool_id=tool.id|default(''), tool_run_id=(message.id|string + '-' + loop.index|string) %}
                                     {% include "chat/partials/tool_call_item.html" %}

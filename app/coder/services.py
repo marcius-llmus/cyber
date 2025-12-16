@@ -45,6 +45,7 @@ class CoderService:
         agent_factory: Callable[[AsyncSession, int], Coroutine[Any, Any, Any]],
         usage_service_factory: Callable[[AsyncSession], Awaitable[Any]],
     ):
+        self.tool_calls: dict[str, dict[str, Any]] = {}
         self.db = db
         self.chat_service_factory = chat_service_factory
         self.agent_factory = agent_factory
@@ -61,6 +62,7 @@ class CoderService:
     async def handle_user_message(
         self, *, user_message: str, session_id: int
     ) -> AsyncGenerator[CoderEvent, None]:
+        self.tool_calls = {}
         yield AgentStateEvent(status="Thinking...")
 
         async with UsageCollector() as event_collector:
@@ -103,7 +105,7 @@ class CoderService:
                     await chat_service.add_ai_message(
                         session_id=session_id,
                         content=final_content,
-                        tool_calls=None,
+                        tool_calls=list(self.tool_calls.values()),
                         diff_patches=None
                     )
 
@@ -142,10 +144,15 @@ class CoderService:
 
     async def _handle_tool_call_event(self, event: ToolCall) -> AsyncGenerator[CoderEvent, None]:
         yield await self._handle_tool_call_status(event)
-        yield await self._handle_tool_call(event)
+        tool_event = await self._build_tool_call_event(event)
+        self._record_tool_call(tool_event)
+        yield tool_event
 
+    # ToolCallEvent is our own event
     async def _handle_tool_call_result_event(self, event: ToolCallResult) -> AsyncGenerator[CoderEvent, None]:
-        yield await self._handle_tool_call_result(event)
+        result_event = await self._build_tool_call_result_event(event)
+        self._record_tool_result(result_event)
+        yield result_event
 
     async def _handle_agent_input_event(self, event: AgentInput) -> AsyncGenerator[CoderEvent, None]:
         yield await self._handle_agent_input(event)
@@ -194,7 +201,7 @@ class CoderService:
     async def _handle_tool_call_status(event: ToolCall) -> AgentStateEvent:
         return AgentStateEvent(status=f"Calling tool `{event.tool_name}`...")
 
-    async def _handle_tool_call(self, event: ToolCall) -> ToolCallEvent:
+    async def _build_tool_call_event(self, event: ToolCall) -> ToolCallEvent:
         unique_id = self._get_run_id(event.tool_kwargs, event.tool_name)
         return ToolCallEvent(
             tool_name=event.tool_name,
@@ -203,11 +210,11 @@ class CoderService:
             tool_run_id=unique_id,
         )
 
-    async def _handle_tool_call_result(
+    async def _build_tool_call_result_event(
         self,
         event: ToolCallResult,
     ) -> ToolCallResultEvent:
-        content = str(event.tool_output.content) if event.tool_output else ""
+        content = str(event.tool_output.content)
         unique_id = self._get_run_id(event.tool_kwargs, event.tool_name)
 
         return ToolCallResultEvent(
@@ -238,6 +245,20 @@ class CoderService:
         if not (unique_id := tool_kwargs.get("_run_id")):
             raise ValueError(f"Run ID not found for tool {tool_name}")
         return unique_id
+
+    def _record_tool_call(self, event: ToolCallEvent):
+        self.tool_calls[event.tool_run_id] = {
+            "id": event.tool_id,
+            "name": event.tool_name,
+            "kwargs": event.tool_kwargs,
+            "run_id": event.tool_run_id,
+            "output": None,
+        }
+
+    def _record_tool_result(self, event: ToolCallResultEvent):
+        if event.tool_run_id in self.tool_calls:
+            self.tool_calls[event.tool_run_id]["output"] = event.tool_output
+        raise ValueError(f"Trying to record a tool result for a non existent tool call for event: {event}")
 
 
 class CoderPageService:
