@@ -13,7 +13,7 @@ from app.agents.factories import build_workflow_service
 from app.context.dependencies import get_context_service
 from app.context.services import WorkspaceService
 from app.usage.factories import build_usage_service
-from app.coder.factories import build_turn_event_handler
+from app.coder.factories import build_messaging_turn_event_handler
 
 
 async def get_coder_page_service(
@@ -32,5 +32,5 @@ async def get_coder_service() -> CoderService:
         workflow_service_factory=build_workflow_service,
         usage_service_factory=build_usage_service,
         agent_factory=build_agent,
-        turn_handler_factory=build_turn_event_handler,
+        turn_handler_factory=build_messaging_turn_event_handler,
     )

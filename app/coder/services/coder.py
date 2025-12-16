@@ -2,8 +2,6 @@ import logging
 from typing import Any, AsyncGenerator, Callable, Coroutine, Awaitable
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from llama_index.core.llms import ChatMessage
-
 from app.core.config import settings
 from app.core.db import DatabaseSessionManager
 from app.chat.services import ChatService
@@ -16,7 +14,7 @@ from app.coder.schemas import (
 )
 from app.agents.services import WorkflowService
 from app.usage.event_handlers import UsageCollector
-from app.coder.services.events import TurnEventHandler
+from app.coder.services.messaging import MessagingTurnEventHandler
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +27,7 @@ class CoderService:
         workflow_service_factory: Callable[[AsyncSession], Awaitable[WorkflowService]],
         agent_factory: Callable[[AsyncSession, int], Coroutine[Any, Any, Any]],
         usage_service_factory: Callable[[AsyncSession], Awaitable[Any]],
-        turn_handler_factory: Callable[[], TurnEventHandler],
+        turn_handler_factory: Callable[[], Awaitable[MessagingTurnEventHandler]],
     ):
         self.db = db
         self.chat_service_factory = chat_service_factory
@@ -42,7 +40,7 @@ class CoderService:
         self, *, user_message: str, session_id: int
     ) -> AsyncGenerator[CoderEvent, None]:
         # 1. Init Event Handler (Stateful for this turn, includes Accumulator)
-        event_handler = self.turn_handler_factory()
+        messaging_turn_handler = await self.turn_handler_factory()
         
         yield AgentStateEvent(status="Thinking...")
 
@@ -55,10 +53,7 @@ class CoderService:
                 ctx = await workflow_service.get_context(session_id, workflow)
 
                 chat_service = await self.chat_service_factory(session)
-                db_messages = await chat_service.list_messages_by_session(session_id=session_id)
-                chat_history = [
-                    ChatMessage(role=msg.role, content=msg.content) for msg in db_messages
-                ]
+                chat_history = await chat_service.get_chat_history(session_id)
 
             try:
                 handler = workflow.run(
@@ -66,7 +61,7 @@ class CoderService:
                 )
 
                 async for event in handler.stream_events():
-                    async for coder_event in event_handler.handle(event):
+                    async for coder_event in messaging_turn_handler.handle(event):
                         yield coder_event
                      
                     async for usage_event in self._process_new_usage(session_id, event_collector):
@@ -79,7 +74,7 @@ class CoderService:
                 final_content = str(llm_full_response)
                 
                 # Convert accumulator state to a clean DTO for persistence
-                ai_result = event_handler.accumulator.to_result(final_content)
+                ai_result = messaging_turn_handler.accumulator.to_result(final_content)
 
                 # session here is the db session
                 # session_id is the 'history', the one user can delete, not db

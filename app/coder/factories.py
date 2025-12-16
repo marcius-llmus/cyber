@@ -1,11 +1,10 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.coder.patcher import PatcherService
-from app.coder.services import TurnEventHandler
+from app.coder.services.messaging import MessagingTurnEventHandler
 from app.llms.factories import build_llm_service
 from app.context.factories import build_codebase_service
 from app.projects.factories import build_project_service
-from app.chat.factories import build_message_accumulator
 
 
 async def build_patcher_service(db: AsyncSession) -> PatcherService:
@@ -19,6 +18,5 @@ async def build_patcher_service(db: AsyncSession) -> PatcherService:
     )
 
 
-def build_turn_event_handler() -> TurnEventHandler:
-    accumulator = build_message_accumulator()
-    return TurnEventHandler(accumulator=accumulator)
+async def build_messaging_turn_event_handler() -> MessagingTurnEventHandler:
+    return MessagingTurnEventHandler()
