@@ -14,3 +14,9 @@ class MessageCreate(BaseModel):
 
 class MessageForm(BaseModel):
     message: str
+
+
+class AIGenerationResult(BaseModel):
+    content: str
+    tool_calls: list[dict[str, Any]]
+    blocks: list[dict[str, Any]]

@@ -2,7 +2,7 @@ from typing import Any
 
 from app.chat.enums import MessageRole
 from app.chat.repositories import MessageRepository
-from app.chat.schemas import MessageCreate
+from app.chat.schemas import MessageCreate, AIGenerationResult
 from app.history.models import ChatSession
 from app.chat.models import Message
 from app.history.schemas import ChatSessionCreate
@@ -65,3 +65,21 @@ class ChatService:
 
     async def list_messages_by_session(self, *, session_id: int) -> list[Message]:
         return await self.message_repo.list_by_session_id(session_id=session_id)
+
+    async def save_turn(
+        self,
+        *,
+        session_id: int,
+        user_content: str,
+        ai_result: AIGenerationResult,
+    ) -> None:
+        """
+        Atomically saves the user message and the AI message constructed from the result DTO.
+        """
+        await self.add_user_message(session_id=session_id, content=user_content)
+        await self.add_ai_message(
+            session_id=session_id,
+            content=ai_result.content,
+            tool_calls=ai_result.tool_calls,
+            blocks=ai_result.blocks,
+        )
