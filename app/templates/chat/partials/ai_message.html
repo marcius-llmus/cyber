@@ -1,0 +1,58 @@
+<div class="flex items-start gap-3" id="ai-message-{{ message.id }}">
+    <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
+        {% include "components/icons/ai_avatar.html" %}
+    </div>
+    <div class="bg-dark-card rounded-lg p-4 flex-1 min-w-0">
+        <!-- Stream Container (Interleaved Text & Diffs) -->
+        <div id="stream-container-{{ message.id }}" class="flex flex-col gap-2 min-h-[20px]">
+            {% for block in message.blocks %}
+                
+                {% if block.type == "text" %}
+                    <div class="markdown-source hidden" id="raw-{{ block.block_id }}">{{ block.content }}</div>
+                    <div id="rendered-{{ block.block_id }}" class="prose prose-invert text-gray-300 w-full max-w-none break-words"></div>
+                
+                {% elif block.type == "tool" %}
+                    {% set tool = message.tool_calls | selectattr("run_id", "equalto", block.tool_run_id) | first %}
+                    
+                    {% if tool and tool.name == "apply_diff" %}
+                        {% with file_path=tool.kwargs.file_path, diff=tool.kwargs.diff, tool_id=tool.id, tool_run_id=block.tool_run_id, tool_output=tool.output %}
+                            {% include "chat/partials/diff_patch_item.html" %}
+                        {% endwith %}
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        <!-- Tool Calls Container -->
+        {% if message.tool_calls %}
+        <div id="tool-calls-container-{{ message.id }}" class="mt-4 border-t border-gray-700 pt-2">
+            <details class="group">
+                <summary class="cursor-pointer text-xs font-mono text-gray-500 hover:text-gray-300 flex items-center gap-2 select-none outline-none py-1">
+                    <i class="fas fa-terminal"></i>
+                    <span>Tool Calls</span>
+                    <span class="ml-auto group-open:rotate-180 transition-transform duration-200">
+                        <i class="fas fa-chevron-down"></i>
+                    </span>
+                </summary>
+                <div id="tool-calls-list-{{ message.id }}" class="mt-2">
+                    {% for tool in message.tool_calls %}
+                        {% with tool_name=tool.name, tool_id=tool.id, tool_run_id=tool.run_id, tool_output=tool.output, tool_kwargs=tool.kwargs %}
+                            {% include "chat/partials/tool_call_item.html" with context %}
+                        {% endwith %}
+                    {% endfor %}
+                </div>
+            </details>
+        </div>
+        {% endif %}
+
+        <div class="flex items-center justify-end {% if message.cost %}pt-2 mt-2{% endif %}" id="controls-{{ message.id }}">
+            <div class="flex space-x-2 text-xs text-gray-500">
+                {% if message.cost %}
+                <span class="cost-badge text-primary" title="Output tokens: {{ message.output_tokens }}">
+                    <i class="fas fa-dollar-sign"></i> {{ "%.4f"|format(message.cost) }}
+                </span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>

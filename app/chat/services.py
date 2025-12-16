@@ -48,14 +48,14 @@ class ChatService:
         content: str,
         session_id: int,
         tool_calls: list[dict[str, Any]] | None = None,
-        diff_patches: list[dict[str, Any]] | None = None,
+        blocks: list[dict[str, Any]] | None = None,
     ) -> Message:
         message_in = MessageCreate(
             session_id=session_id,
             role=MessageRole.AI,
             content=content,
             tool_calls=tool_calls,
-            diff_patches=diff_patches,
+            blocks=blocks,
         )
         return await self.message_repo.create(obj_in=message_in)
 

@@ -14,7 +14,12 @@ class WebSocketMessage(BaseModel):
 
 
 class AIMessageChunkEvent(BaseModel):
+    block_id: str
     delta: str
+
+
+class AIMessageBlockStartEvent(BaseModel):
+    block_id: str
 
 
 class AIMessageCompletedEvent(BaseModel):
@@ -59,6 +64,7 @@ class AgentStateEvent(BaseModel):
 
 CoderEvent = Union[
     AIMessageChunkEvent,
+    AIMessageBlockStartEvent,
     AIMessageCompletedEvent,
     WorkflowErrorEvent,
     WorkflowLogEvent,

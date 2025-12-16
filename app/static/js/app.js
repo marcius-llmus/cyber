@@ -22,6 +22,7 @@ class ChatApp {
         // Initial scan for existing markdown content
         document.addEventListener('DOMContentLoaded', () => {
             this.scanAndRenderMarkdown();
+            this.highlightExistingCodeBlocks();
         });
     }
 
@@ -96,7 +97,7 @@ class ChatApp {
                 uiFontSize: '15',
                 editorFontSize: '15',
                 codeFontScale: '0.925',
-                editorFontFamily: 'system_default',
+                editorFontFamily: 'system_mono',
                 codeBgColor: '#1E1E1E',
                 highlightTheme: 'atom-one-dark',
                 themes: availableThemes
@@ -276,6 +277,12 @@ class ChatApp {
                 if (targetId.startsWith('tool-calls-list-') || targetId.startsWith('tool-calls-container-')) {
                     const container = document.getElementById(targetId.replace('list', 'container'));
                     if (container) container.classList.remove('hidden');
+                    
+                    mutation.addedNodes.forEach(node => {
+                        if (node.nodeType === 1 && window.hljs) {
+                            node.querySelectorAll('code.language-json').forEach(block => hljs.highlightElement(block));
+                        }
+                    });
                 }
 
                 // Diffs: Apply Syntax Highlighting to new patches
@@ -359,6 +366,13 @@ class ChatApp {
     static scanAndRenderMarkdown() {
         document.querySelectorAll('.markdown-source').forEach(el => {
             this.renderMarkdown(el.id);
+        });
+    }
+
+    static highlightExistingCodeBlocks() {
+        document.querySelectorAll('code[class*="language-"]').forEach(block => {
+            if (block.classList.contains('hljs')) return;
+            if (window.hljs) hljs.highlightElement(block);
         });
     }
 

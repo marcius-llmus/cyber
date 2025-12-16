@@ -1,4 +1,5 @@
 import logging
+import uuid
 from typing import Any, AsyncGenerator, Callable, Coroutine, Awaitable
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,6 +15,7 @@ from app.core.config import settings
 from app.core.db import DatabaseSessionManager
 from app.chat.services import ChatService
 from app.coder.schemas import (
+    AIMessageBlockStartEvent,
     AIMessageChunkEvent,
     AIMessageCompletedEvent,
     CoderEvent,
@@ -46,6 +48,8 @@ class CoderService:
         usage_service_factory: Callable[[AsyncSession], Awaitable[Any]],
     ):
         self.tool_calls: dict[str, dict[str, Any]] = {}
+        self.ordered_blocks: list[dict[str, Any]] = []
+        self.current_text_block_id: str | None = None
         self.db = db
         self.chat_service_factory = chat_service_factory
         self.agent_factory = agent_factory
@@ -63,6 +67,8 @@ class CoderService:
         self, *, user_message: str, session_id: int
     ) -> AsyncGenerator[CoderEvent, None]:
         self.tool_calls = {}
+        self.ordered_blocks = []
+        self.current_text_block_id = None
         yield AgentStateEvent(status="Thinking...")
 
         async with UsageCollector() as event_collector:
@@ -106,7 +112,7 @@ class CoderService:
                         session_id=session_id,
                         content=final_content,
                         tool_calls=list(self.tool_calls.values()),
-                        diff_patches=None
+                        blocks=self.ordered_blocks,
                     )
 
                     # Persist Context State
@@ -138,17 +144,19 @@ class CoderService:
 
     async def _handle_agent_stream_event(self, event: AgentStream) -> AsyncGenerator[CoderEvent, None]:
         if event.delta:
-            yield await self._handle_agent_stream_delta(event)
+            async for chunk_event in self._handle_agent_stream_delta(event):
+                yield chunk_event
         if event.tool_calls:
             yield await self._handle_agent_stream_tool_calls(event)
 
     async def _handle_tool_call_event(self, event: ToolCall) -> AsyncGenerator[CoderEvent, None]:
+        self.current_text_block_id = None
         yield await self._handle_tool_call_status(event)
         tool_event = await self._build_tool_call_event(event)
         self._record_tool_call(tool_event)
         yield tool_event
 
-    # ToolCallEvent is our own event
+    # ToolCallResultEvent is our own event
     async def _handle_tool_call_result_event(self, event: ToolCallResult) -> AsyncGenerator[CoderEvent, None]:
         result_event = await self._build_tool_call_result_event(event)
         self._record_tool_result(result_event)
@@ -189,9 +197,25 @@ class CoderService:
             original_message=original_message,
         )
 
-    @staticmethod
-    async def _handle_agent_stream_delta(event: AgentStream) -> AIMessageChunkEvent:
-        return AIMessageChunkEvent(delta=event.delta)
+    async def _handle_agent_stream_delta(self, event: AgentStream) -> AsyncGenerator[CoderEvent, None]:
+        if self.current_text_block_id is None:
+            self.current_text_block_id = str(uuid.uuid4())
+            
+            # Start a new text block in our ordered history
+            self.ordered_blocks.append({
+                "type": "text",
+                "block_id": self.current_text_block_id,
+                "content": ""
+            })
+            
+            yield AIMessageBlockStartEvent(block_id=self.current_text_block_id)
+
+        # Append content to the current text block
+        # (We assume the last block is the active one because ID matches)
+        if self.ordered_blocks and self.ordered_blocks[-1].get("block_id") == self.current_text_block_id:
+            self.ordered_blocks[-1]["content"] += event.delta
+
+        yield AIMessageChunkEvent(delta=event.delta, block_id=self.current_text_block_id)
 
     @staticmethod
     async def _handle_agent_stream_tool_calls(event: AgentStream) -> AgentStateEvent:
@@ -254,6 +278,13 @@ class CoderService:
             "run_id": event.tool_run_id,
             "output": None,
         }
+        
+        # Record the tool block in our ordered history
+        self.ordered_blocks.append({
+            "type": "tool",
+            "tool_run_id": event.tool_run_id,
+            "tool_name": event.tool_name,
+        })
 
     def _record_tool_result(self, event: ToolCallResultEvent):
         if event.tool_run_id in self.tool_calls:
