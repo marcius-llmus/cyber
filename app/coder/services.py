@@ -258,6 +258,7 @@ class CoderService:
     def _record_tool_result(self, event: ToolCallResultEvent):
         if event.tool_run_id in self.tool_calls:
             self.tool_calls[event.tool_run_id]["output"] = event.tool_output
+            return
         raise ValueError(f"Trying to record a tool result for a non existent tool call for event: {event}")
 
 
