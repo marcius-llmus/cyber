@@ -64,6 +64,6 @@ class Message(Base):
     output_tokens = Column(Integer, nullable=True)
     cost = Column(Float, nullable=True)
     tool_calls = Column(JSON, nullable=True)
-    blocks = Column(JSON, nullable=True)
+    blocks = Column(JSON, nullable=False, default=list, server_default='[]')
 
     session = relationship("ChatSession", back_populates="messages", lazy="joined")
