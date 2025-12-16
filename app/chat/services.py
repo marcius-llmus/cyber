@@ -3,7 +3,8 @@ from typing import Any
 from app.chat.enums import MessageRole
 from app.chat.repositories import MessageRepository
 from app.chat.schemas import MessageCreate
-from app.history.models import ChatSession, Message
+from app.history.models import ChatSession
+from app.chat.models import Message
 from app.history.schemas import ChatSessionCreate
 from app.history.services import HistoryService
 from app.projects.exceptions import ActiveProjectRequiredException
@@ -62,5 +63,5 @@ class ChatService:
     async def get_session_by_id(self, session_id: int) -> ChatSession:
         return await self.history_service.get_session(session_id=session_id)
 
-    async def get_messages_for_session(self, *, session_id: int) -> list[Message]:
-        return await self.history_service.get_messages_by_session(session_id=session_id)
+    async def list_messages_by_session(self, *, session_id: int) -> list[Message]:
+        return await self.message_repo.list_by_session_id(session_id=session_id)

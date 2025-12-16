@@ -80,7 +80,7 @@ class CoderService:
                 ctx = await workflow_service.get_context(session_id, workflow)
 
                 chat_service = await self.chat_service_factory(session)
-                db_messages = await chat_service.get_messages_for_session(session_id=session_id)
+                db_messages = await chat_service.list_messages_by_session(session_id=session_id)
                 chat_history = [
                     ChatMessage(role=msg.role, content=msg.content) for msg in db_messages
                 ]

@@ -1,8 +1,14 @@
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from app.commons.repositories import BaseRepository
-from app.history.models import Message
+from app.chat.models import Message
 
 
 class MessageRepository(BaseRepository[Message]):
     model = Message
+
+    async def list_by_session_id(self, session_id: int) -> list[Message]:
+        stmt = select(self.model).where(self.model.session_id == session_id).order_by(self.model.id)
+        result = await self.db.execute(stmt)
+        return list(result.scalars().all())
