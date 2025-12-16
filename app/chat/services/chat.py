@@ -1,5 +1,7 @@
 from typing import Any
 
+from llama_index.core.llms import ChatMessage
+
 from app.chat.enums import MessageRole
 from app.chat.repositories import MessageRepository
 from app.chat.schemas import MessageCreate, AIGenerationResult
@@ -65,6 +67,12 @@ class ChatService:
 
     async def list_messages_by_session(self, *, session_id: int) -> list[Message]:
         return await self.message_repo.list_by_session_id(session_id=session_id)
+
+    async def get_chat_history(self, session_id: int) -> list[ChatMessage]:
+        db_messages = await self.list_messages_by_session(session_id=session_id)
+        return [
+            ChatMessage(role=msg.role, content=msg.content) for msg in db_messages
+        ]
 
     async def save_turn(
         self,
