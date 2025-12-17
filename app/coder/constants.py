@@ -16,7 +16,7 @@ Read the `DIFF PATCH`. For each change ("hunk") described in the patch:
     *   Keep lines marked with ` ` (space) or without a leading `+`/`-` in the change block.
 3.  Produce the **FINAL, FULL** text content after **ALL** changes from the patch are applied.
 
-**CRITICAL RULES (MUST FOLLOW):**
+**RULES:**
 
 1.  **OUTPUT CODE ONLY:**
     *   Your response MUST contain **ONLY** the final, patched code/text.
