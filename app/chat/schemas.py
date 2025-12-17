@@ -7,16 +7,8 @@ from app.chat.enums import MessageRole
 class MessageCreate(BaseModel):
     session_id: int
     role: MessageRole
-    content: str
-    tool_calls: list[dict[str, Any]] | None = None
-    blocks: list[dict[str, Any]] | None = None
+    blocks: list[dict[str, Any]]
 
 
 class MessageForm(BaseModel):
     message: str
-
-
-class AIGenerationResult(BaseModel):
-    content: str
-    tool_calls: list[dict[str, Any]]
-    blocks: list[dict[str, Any]]

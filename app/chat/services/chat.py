@@ -1,10 +1,11 @@
+import uuid
 from typing import Any
 
 from llama_index.core.llms import ChatMessage
 
 from app.chat.enums import MessageRole
 from app.chat.repositories import MessageRepository
-from app.chat.schemas import MessageCreate, AIGenerationResult
+from app.chat.schemas import MessageCreate
 from app.history.models import ChatSession
 from app.chat.models import Message
 from app.history.schemas import ChatSessionCreate
@@ -38,26 +39,28 @@ class ChatService:
         return await self.history_service.create_session(session_in=session_in)
 
     async def add_user_message(self, *, content: str, session_id: int) -> Message:
+        # Convert raw content to a text block
+        blocks = [{
+            "type": "text",
+            "block_id": str(uuid.uuid4()),
+            "content": content
+        }]
         message_in = MessageCreate(
             session_id=session_id,
             role=MessageRole.USER,
-            content=content,
+            blocks=blocks,
         )
         return await self.message_repo.create(obj_in=message_in)
 
     async def add_ai_message(
         self,
         *,
-        content: str,
         session_id: int,
-        tool_calls: list[dict[str, Any]] | None = None,
-        blocks: list[dict[str, Any]] | None = None,
+        blocks: list[dict[str, Any]],
     ) -> Message:
         message_in = MessageCreate(
             session_id=session_id,
             role=MessageRole.AI,
-            content=content,
-            tool_calls=tool_calls,
             blocks=blocks,
         )
         return await self.message_repo.create(obj_in=message_in)
@@ -79,7 +82,7 @@ class ChatService:
         *,
         session_id: int,
         user_content: str,
-        ai_result: AIGenerationResult,
+        blocks: list[dict[str, Any]],
     ) -> None:
         """
         Atomically saves the user message and the AI message constructed from the result DTO.
@@ -87,7 +90,5 @@ class ChatService:
         await self.add_user_message(session_id=session_id, content=user_content)
         await self.add_ai_message(
             session_id=session_id,
-            content=ai_result.content,
-            tool_calls=ai_result.tool_calls,
-            blocks=ai_result.blocks,
+            blocks=blocks,
         )

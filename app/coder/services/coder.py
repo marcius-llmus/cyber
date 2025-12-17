@@ -73,9 +73,6 @@ class CoderService:
                 llm_full_response = await handler
                 final_content = str(llm_full_response)
                 
-                # Convert accumulator state to a clean DTO for persistence
-                ai_result = messaging_turn_handler.accumulator.to_result(final_content)
-
                 # session here is the db session
                 # session_id is the 'history', the one user can delete, not db
                 async with self.db.session() as session:
@@ -84,7 +81,7 @@ class CoderService:
                     await chat_service.save_turn(
                         session_id=session_id,
                         user_content=user_message,
-                        ai_result=ai_result
+                        blocks=messaging_turn_handler.accumulator.get_blocks(),
                     )
 
                     # Persist Context State
