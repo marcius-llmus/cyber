@@ -6,7 +6,6 @@ from app.core.config import settings
 from app.core.db import DatabaseSessionManager
 from app.chat.services import ChatService
 from app.coder.schemas import (
-    AIMessageCompletedEvent,
     CoderEvent,
     WorkflowErrorEvent,
     UsageMetricsUpdatedEvent,
@@ -69,9 +68,8 @@ class CoderService:
 
                 logger.info(f"Workflow stream finished for session {session_id}.")
 
-                # Await the handler to get the final result and ensure completion.
-                llm_full_response = await handler
-                final_content = str(llm_full_response)
+                # this workflow awaits the agent to finish
+                await handler
                 
                 # session here is the db session
                 # session_id is the 'history', the one user can delete, not db
@@ -81,7 +79,7 @@ class CoderService:
                     await chat_service.save_turn(
                         session_id=session_id,
                         user_content=user_message,
-                        blocks=messaging_turn_handler.accumulator.get_blocks(),
+                        blocks=messaging_turn_handler.get_blocks(),
                     )
 
                     # Persist Context State
@@ -92,9 +90,6 @@ class CoderService:
                     async for usage_event in self._process_new_usage(session_id, event_collector):
                         yield usage_event
 
-                yield AIMessageCompletedEvent(
-                    message=final_content
-                )
             except Exception as e:
                 yield await self._handle_workflow_exception(e, original_message=user_message)
             finally:

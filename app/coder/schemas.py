@@ -22,10 +22,6 @@ class AIMessageBlockStartEvent(BaseModel):
     block_id: str
 
 
-class AIMessageCompletedEvent(BaseModel):
-    message: str
-
-
 class WorkflowErrorEvent(BaseModel):
     message: str
     original_message: str | None = None
@@ -65,7 +61,6 @@ class AgentStateEvent(BaseModel):
 CoderEvent = Union[
     AIMessageChunkEvent,
     AIMessageBlockStartEvent,
-    AIMessageCompletedEvent,
     WorkflowErrorEvent,
     WorkflowLogEvent,
     UsageMetricsUpdatedEvent,

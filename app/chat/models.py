@@ -35,11 +35,11 @@ class Message(Base):
         """Derives text content from blocks."""
         if not self.blocks:
             return ""
-        return "".join([b.get("content", "") for b in self.blocks if b.get("type") == "text"])
+        return "".join(b["content"] for b in self.blocks if b.get("type") == "text")
 
     @property
     def tool_calls(self) -> list[dict[str, Any]]:
         """Extracts tool calls from blocks."""
         if not self.blocks:
             return []
-        return [b.get("tool_call_data") for b in self.blocks if b.get("type") == "tool" and "tool_call_data" in b]
+        return [b["tool_call_data"] for b in self.blocks if b.get("type") == "tool"]

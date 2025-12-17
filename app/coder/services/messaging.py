@@ -73,7 +73,6 @@ class _MessageStateAccumulator:
                 break
 
     def get_blocks(self) -> list[dict[str, Any]]:
-        """Returns the full block history including tool data."""
         return self.blocks
 
 
@@ -83,7 +82,7 @@ class MessagingTurnEventHandler:
     Holds the state (accumulator) for the duration of the stream.
     """
     def __init__(self):
-        self.accumulator = _MessageStateAccumulator()
+        self._accumulator = _MessageStateAccumulator()
         self.handlers: dict[type, Callable[[Any], AsyncGenerator[CoderEvent, None]]] = {
             AgentStream: self._handle_agent_stream_event,
             ToolCall: self._handle_tool_call_event,
@@ -91,6 +90,9 @@ class MessagingTurnEventHandler:
             AgentInput: self._handle_agent_input_event,
             AgentOutput: self._handle_agent_output_event,
         }
+
+    def get_blocks(self) -> list[dict[str, Any]]:
+        return self._accumulator.get_blocks()
 
     async def handle(self, event: Any) -> AsyncGenerator[CoderEvent, None]:
         if not (handler := self.handlers.get(type(event))):
@@ -102,8 +104,8 @@ class MessagingTurnEventHandler:
 
     async def _handle_agent_stream_event(self, event: AgentStream) -> AsyncGenerator[CoderEvent, None]:
         if event.delta:
-            prev_block_id = self.accumulator.current_text_block_id
-            block_id = self.accumulator.append_text(event.delta)
+            prev_block_id = self._accumulator.current_text_block_id
+            block_id = self._accumulator.append_text(event.delta)
 
             if prev_block_id != block_id:
                 yield AIMessageBlockStartEvent(block_id=block_id)
@@ -117,7 +119,7 @@ class MessagingTurnEventHandler:
         yield AgentStateEvent(status=f"Calling tool `{event.tool_name}`...")
         
         tool_event = await self._build_tool_call_event(event)
-        self.accumulator.add_tool_call(
+        self._accumulator.add_tool_call(
             run_id=tool_event.tool_run_id,
             tool_id=tool_event.tool_id,
             name=tool_event.tool_name,
@@ -127,7 +129,7 @@ class MessagingTurnEventHandler:
 
     async def _handle_tool_call_result_event(self, event: ToolCallResult) -> AsyncGenerator[CoderEvent, None]:
         result_event = await self._build_tool_call_result_event(event)
-        self.accumulator.add_tool_result(run_id=result_event.tool_run_id, output=result_event.tool_output)
+        self._accumulator.add_tool_result(run_id=result_event.tool_run_id, output=result_event.tool_output)
         yield result_event
 
     async def _handle_agent_input_event(self, event: AgentInput) -> AsyncGenerator[CoderEvent, None]: # noqa

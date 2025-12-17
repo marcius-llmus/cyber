@@ -8,7 +8,6 @@ from pydantic import ValidationError
 from app.coder.services import CoderService
 from app.coder.schemas import (
     AIMessageChunkEvent,
-    AIMessageCompletedEvent,
     AIMessageBlockStartEvent,
     CoderEvent,
     AgentStateEvent,
@@ -42,7 +41,6 @@ class WebSocketOrchestrator:
         self.event_handlers: dict[type, Handler] = {
             AIMessageBlockStartEvent: self._render_text_block_start,
             AIMessageChunkEvent: self._render_ai_message_chunk,
-            AIMessageCompletedEvent: self._render_ai_message_controls,
             AgentStateEvent: self._render_agent_state,
             WorkflowErrorEvent: self._render_workflow_error,
             UsageMetricsUpdatedEvent: self._render_usage_metrics,
@@ -137,12 +135,6 @@ class WebSocketOrchestrator:
             {"turn_id": turn_id, "block_id": block_id}
         )
         await self.ws_manager.send_html(template)
-
-    async def _render_ai_message_controls(self, event: AIMessageCompletedEvent, turn_id: str):
-        context = {"message": event.message, "turn_id": turn_id}
-        template = templates.get_template("chat/partials/ai_message_controls.html").render(context)
-        await self.ws_manager.send_html(template)
-        await self._render_agent_state(AgentStateEvent(status=""), turn_id)
 
     async def _render_agent_state(self, event: AgentStateEvent, turn_id: str):
         # Update status in UI
