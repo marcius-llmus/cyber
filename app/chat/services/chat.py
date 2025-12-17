@@ -1,9 +1,13 @@
+import uuid
 from typing import Any
+
+from llama_index.core.llms import ChatMessage
 
 from app.chat.enums import MessageRole
 from app.chat.repositories import MessageRepository
 from app.chat.schemas import MessageCreate
-from app.history.models import ChatSession, Message
+from app.history.models import ChatSession
+from app.chat.models import Message
 from app.history.schemas import ChatSessionCreate
 from app.history.services import HistoryService
 from app.projects.exceptions import ActiveProjectRequiredException
@@ -35,32 +39,56 @@ class ChatService:
         return await self.history_service.create_session(session_in=session_in)
 
     async def add_user_message(self, *, content: str, session_id: int) -> Message:
+        # Convert raw content to a text block
+        blocks = [{
+            "type": "text",
+            "block_id": str(uuid.uuid4()),
+            "content": content
+        }]
         message_in = MessageCreate(
             session_id=session_id,
             role=MessageRole.USER,
-            content=content,
+            blocks=blocks,
         )
         return await self.message_repo.create(obj_in=message_in)
 
     async def add_ai_message(
         self,
         *,
-        content: str,
         session_id: int,
-        tool_calls: list[dict[str, Any]] | None = None,
-        diff_patches: list[dict[str, Any]] | None = None,
+        blocks: list[dict[str, Any]],
     ) -> Message:
         message_in = MessageCreate(
             session_id=session_id,
             role=MessageRole.AI,
-            content=content,
-            tool_calls=tool_calls,
-            diff_patches=diff_patches,
+            blocks=blocks,
         )
         return await self.message_repo.create(obj_in=message_in)
 
     async def get_session_by_id(self, session_id: int) -> ChatSession:
         return await self.history_service.get_session(session_id=session_id)
 
-    async def get_messages_for_session(self, *, session_id: int) -> list[Message]:
-        return await self.history_service.get_messages_by_session(session_id=session_id)
+    async def list_messages_by_session(self, *, session_id: int) -> list[Message]:
+        return await self.message_repo.list_by_session_id(session_id=session_id)
+
+    async def get_chat_history(self, session_id: int) -> list[ChatMessage]:
+        db_messages = await self.list_messages_by_session(session_id=session_id)
+        return [
+            ChatMessage(role=msg.role, content=msg.content) for msg in db_messages
+        ]
+
+    async def save_turn(
+        self,
+        *,
+        session_id: int,
+        user_content: str,
+        blocks: list[dict[str, Any]],
+    ) -> None:
+        """
+        Atomically saves the user message and the AI message constructed from the result DTO.
+        """
+        await self.add_user_message(session_id=session_id, content=user_content)
+        await self.add_ai_message(
+            session_id=session_id,
+            blocks=blocks,
+        )

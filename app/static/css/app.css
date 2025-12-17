@@ -24,7 +24,7 @@
     --fs-ui: 15px;
     --fs-editor: 15px;
     --font-ui: ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;
-    --font-editor: ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;
+    --font-editor: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     --fs-code-scale: 0.925em;
     --code-bg-override: transparent;
 }
@@ -459,6 +459,6 @@ code.language-diff {
 }
 
 /* Font Override */
-#message-list, #message-list pre code, textarea.font-mono {
+#message-list pre code, textarea.font-mono {
     font-family: var(--font-editor) !important;
 }

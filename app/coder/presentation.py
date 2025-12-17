@@ -8,7 +8,7 @@ from pydantic import ValidationError
 from app.coder.services import CoderService
 from app.coder.schemas import (
     AIMessageChunkEvent,
-    AIMessageCompletedEvent,
+    AIMessageBlockStartEvent,
     CoderEvent,
     AgentStateEvent,
     UsageMetricsUpdatedEvent,
@@ -38,10 +38,9 @@ class WebSocketOrchestrator:
         self.ws_manager = ws_manager
         self.session_id = session_id
         self.coder_service = coder_service
-        self.active_text_block_id: str | None = None
         self.event_handlers: dict[type, Handler] = {
+            AIMessageBlockStartEvent: self._render_text_block_start,
             AIMessageChunkEvent: self._render_ai_message_chunk,
-            AIMessageCompletedEvent: self._render_ai_message_controls,
             AgentStateEvent: self._render_agent_state,
             WorkflowErrorEvent: self._render_workflow_error,
             UsageMetricsUpdatedEvent: self._render_usage_metrics,
@@ -59,16 +58,12 @@ class WebSocketOrchestrator:
 
     async def _prepare_ui_for_new_turn(self, message_content: str) -> str:
         turn_id = str(uuid.uuid4())
-        self._close_active_text_block()
         await self._render_user_message(message_content, turn_id)
         await self._render_ai_bubble_placeholder(turn_id)
-        await self._ensure_active_text_block(turn_id)
         return turn_id
 
     async def _prepare_ui_for_retry_turn(self, turn_id: str) -> str:
-        self._close_active_text_block()
         await self._render_ai_bubble_placeholder(turn_id)
-        await self._ensure_active_text_block(turn_id)
         await self._remove_user_message_controls(turn_id)
         return turn_id
 
@@ -124,27 +119,14 @@ class WebSocketOrchestrator:
         )
         await self.ws_manager.send_html(template)
 
-    async def _ensure_active_text_block(self, turn_id: str):
+    async def _render_text_block_start(self, event: AIMessageBlockStartEvent, turn_id: str):
         """
-        Ensures there is an active text container in the DOM to receive streaming chunks.
-        If the stream was interrupted (e.g. by a Tool or at start), this mounts a new container.
+        Mounts a new text block container when explicitly instructed by the service.
         """
-        if not self.active_text_block_id:
-            self.active_text_block_id = str(uuid.uuid4())
-            await self._mount_text_block_container(turn_id, self.active_text_block_id)
+        await self._mount_text_block_container(turn_id, event.block_id)
 
-    def _close_active_text_block(self):
-        """
-        Marks the current text block as finished.
-        The next text chunk will be forced to mount a new container
-        within the current turn's stream (same turn_id).
-        """
-        self.active_text_block_id = None
-
-    async def _render_ai_message_chunk(self, event: AIMessageChunkEvent, turn_id: str):
-        await self._ensure_active_text_block(turn_id)
-
-        context = {"delta": event.delta, "block_id": self.active_text_block_id}
+    async def _render_ai_message_chunk(self, event: AIMessageChunkEvent, turn_id: str): # noqa
+        context = {"delta": event.delta, "block_id": event.block_id}
         template = templates.get_template("chat/partials/ai_message_chunk.html").render(context)
         await self.ws_manager.send_html(template)
 
@@ -153,12 +135,6 @@ class WebSocketOrchestrator:
             {"turn_id": turn_id, "block_id": block_id}
         )
         await self.ws_manager.send_html(template)
-
-    async def _render_ai_message_controls(self, event: AIMessageCompletedEvent, turn_id: str):
-        context = {"message": event.message, "turn_id": turn_id}
-        template = templates.get_template("chat/partials/ai_message_controls.html").render(context)
-        await self.ws_manager.send_html(template)
-        await self._render_agent_state(AgentStateEvent(status=""), turn_id)
 
     async def _render_agent_state(self, event: AgentStateEvent, turn_id: str):
         # Update status in UI
@@ -184,9 +160,6 @@ class WebSocketOrchestrator:
         await self.ws_manager.send_html(template)
 
     async def _render_tool_call(self, event: ToolCallEvent, turn_id: str):
-        # Close the current text block so the next text chunk starts a new one AFTER any tool call
-        self._close_active_text_block()
-
         # 1. ALWAYS Render the Tool Call Log Item (Footer)
         tool_context = {
             "tool_id": event.tool_id,

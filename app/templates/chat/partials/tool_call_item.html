@@ -4,7 +4,11 @@
             <i class="fas fa-terminal text-primary text-xs"></i>
             <span class="text-xs font-mono text-gray-300">{{ tool_name }} <span class="text-gray-600">({{ tool_id }})</span></span>
             <div id="tool-status-{{ tool_run_id }}" class="text-xs text-gray-500 flex-shrink-0 flex items-center gap-1 ml-2">
-                <!-- Status will be swapped here -->
+                {% if tool_output %}
+                <div class="text-green-500 text-xs font-bold flex items-center gap-1"><i class="fas fa-check text-[10px]"></i> <span class="text-[10px]">Done</span></div>
+                {% else %}
+                <div class="text-primary text-xs flex items-center gap-1"><i class="fas fa-circle-notch fa-spin text-[10px]"></i></div>
+                {% endif %}
             </div>
         </div>
         <i class="fas fa-chevron-down text-gray-500 text-[10px] transition-transform duration-200 pointer-events-none"></i>
@@ -14,5 +18,11 @@
             <div class="text-[10px] text-gray-500 mb-1.5 uppercase tracking-wider font-semibold">Arguments</div>
             <pre class="text-xs font-mono text-gray-400 whitespace-pre-wrap break-all max-h-[15vh] !overflow-y-auto"><code class="language-json bg-transparent p-0">{{ tool_kwargs|tojson(indent=2) }}</code></pre>
         </div>
+        {% if tool_output %}
+        <div class="p-3 border-t border-dark-lighter bg-dark-lighter">
+            <div class="text-[10px] text-gray-500 mb-2 uppercase tracking-wider font-semibold flex items-center gap-2"><i class="fas fa-arrow-right text-gray-600"></i> Result</div>
+            <pre class="text-gray-400 whitespace-pre-wrap max-h-[30vh] !overflow-y-auto text-xs font-mono leading-relaxed pl-1">{{ tool_output }}</pre>
+        </div>
+        {% endif %}
     </div>
 </div>

@@ -1,7 +1,7 @@
 from app.projects.exceptions import ActiveProjectRequiredException
 from app.projects.services import ProjectService
 from app.history.exceptions import ChatSessionNotFoundException
-from app.history.models import ChatSession, Message
+from app.history.models import ChatSession
 from app.history.repositories import ChatSessionRepository
 from app.history.schemas import ChatSessionCreate
 
@@ -60,10 +60,6 @@ class HistoryService:
         if not session:
             raise ChatSessionNotFoundException(f"Session with id {session_id} not found.")
         return session
-
-    async def get_messages_by_session(self, *, session_id: int) -> list[Message]:
-        session = await self.get_session(session_id=session_id)
-        return session.messages
 
 
 class HistoryPageService:

@@ -9,9 +9,15 @@
                 <span class="text-red-400">-{{ deletions }}</span>
             </div>
             {% endif %}
-            <div id="diff-status-{{ tool_run_id }}" class="ml-3">
-                <!-- Status will be swapped here -->
-            </div>
+            {% if tool_output %}
+                <div id="diff-status-{{ tool_run_id }}" class="ml-2 text-green-500">
+                    <i class="fas fa-check text-xs"></i>
+                </div>
+            {% else %}
+                <div id="diff-status-{{ tool_run_id }}" class="ml-3 text-primary">
+                    <i class="fas fa-circle-notch fa-spin text-xs"></i>
+                </div>
+            {% endif %}
         </div>
         <i class="fas fa-chevron-down text-gray-500 text-xs transition-transform duration-200 pointer-events-none"></i>
     </div>

@@ -1,19 +1,15 @@
 from sqlalchemy import (
     Column,
     DateTime,
-    Enum,
-    Float,
     Boolean,
     ForeignKey,
     Integer,
     String,
-    Text,
-    JSON,
+
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from app.chat.enums import MessageRole
 from app.core.db import Base
 
 
@@ -50,20 +46,3 @@ class ChatSession(Base):
         uselist=False,
         lazy="selectin",
     )
-
-
-class Message(Base):
-    __tablename__ = "messages"
-
-    id = Column(Integer, primary_key=True)
-    session_id = Column(Integer, ForeignKey("chat_sessions.id"), nullable=False)
-    role = Column(Enum(MessageRole), nullable=False)
-    content = Column(Text, nullable=False)
-    timestamp = Column(DateTime, nullable=False, server_default=func.now())
-    input_tokens = Column(Integer, nullable=True)
-    output_tokens = Column(Integer, nullable=True)
-    cost = Column(Float, nullable=True)
-    tool_calls = Column(JSON, nullable=True)
-    diff_patches = Column(JSON, nullable=True)
-
-    session = relationship("ChatSession", back_populates="messages", lazy="joined")

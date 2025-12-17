@@ -1,9 +1,8 @@
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.commons.repositories import BaseRepository
-from app.history.models import ChatSession, Message
+from app.history.models import ChatSession
 
 
 class ChatSessionRepository(BaseRepository[ChatSession]):
