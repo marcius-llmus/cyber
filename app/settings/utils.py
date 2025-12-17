@@ -15,23 +15,13 @@ async def initialize_application_settings(db: AsyncSession) -> None:
     Checks if application settings exist. If not, creates default settings.
     This should be called once at application startup.
     """
-    settings_repo = SettingsRepository(db)
-    existing_settings = await settings_repo.get(pk=1)
-
-    if existing_settings:
-        logger.info("Application settings already initialized.")
-        return
-
-    logger.info("Initializing application settings...")
-
-    # Use repository directly for seeding to avoid service-layer exceptions on not-found.
-    # todo check later (validate if we can use service instead)
-    # We use the service here because it is already built and cleaner
+    logger.info("Checking and initializing LLM settings...")
     llm_service = await build_llm_service(db)
     all_llms = await llm_service.get_all_models()
     for llm in all_llms:
         existing_llm_setting = await llm_service.llm_settings_repo.get_by_model_name(llm.model_name)
         if not existing_llm_setting:
+            logger.info(f"Seeding new LLM: {llm.model_name}")
             await llm_service.llm_settings_repo.create(
                 LLMSettingsCreate(
                     model_name=llm.model_name,
@@ -40,6 +30,15 @@ async def initialize_application_settings(db: AsyncSession) -> None:
                     api_key=None,
                 )
             )
+
+    settings_repo = SettingsRepository(db)
+    existing_settings = await settings_repo.get(pk=1)
+
+    if existing_settings:
+        logger.info("Application settings already initialized.")
+        return
+
+    logger.info("Initializing application settings...")
 
     # Set the default coding LLM for the main settings
     default_llm = await llm_service.llm_settings_repo.get_by_model_name(LLMModel.GPT_4_1_MINI)
