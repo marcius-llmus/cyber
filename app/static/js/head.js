@@ -1,4 +1,4 @@
-/**
+/****
  * Critical Rendering Path Logic
  * This script must run in the <head> before the body is rendered
  * to prevent Flash of Unstyled Content (FOUC).
@@ -32,16 +32,15 @@
     
     // Font Family
     const fontMap = {
-        'system_default': 'ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji',
-        'system_mono': 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-        'fira_code': '"Fira Code", monospace',
-        'jetbrains_mono': '"JetBrains Mono", monospace',
-        'consolas': '"Consolas", monospace',
-        'courier_new': '"Courier New", monospace'
+        'sans_serif': 'ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji',
+        'system_mono': 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
     };
     const edFont = localStorage.getItem('editorFontFamily');
     if (edFont && fontMap[edFont]) root.style.setProperty('--font-editor', fontMap[edFont]);
 
+    const uiFont = localStorage.getItem('uiFontFamily');
+    if (uiFont && fontMap[uiFont]) root.style.setProperty('--font-ui', fontMap[uiFont]);
+    
     // Code Background Override
     const codeBg = localStorage.getItem('codeBgColor');
     if (codeBg && codeBg.trim() !== '') {
