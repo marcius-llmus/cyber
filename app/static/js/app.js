@@ -1,4 +1,4 @@
-/**
+/****
  * Llama Coding - Main Application Logic
 **/
 const Action = {
@@ -97,7 +97,8 @@ class ChatApp {
                 uiFontSize: '15',
                 editorFontSize: '15',
                 codeFontScale: '0.925',
-                editorFontFamily: 'system_mono',
+                editorFontFamily: 'sans_serif',
+                uiFontFamily: 'sans_serif',
                 codeBgColor: '#1E1E1E',
                 highlightTheme: 'atom-one-dark',
                 themes: availableThemes
@@ -105,12 +106,8 @@ class ChatApp {
 
             // Font mappings: Key -> CSS Font Stack
             const fontFamilies = {
-                'system_default': 'ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji',
-                'system_mono': 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-                'fira_code': '"Fira Code", monospace',
-                'jetbrains_mono': '"JetBrains Mono", monospace',
-                'consolas': '"Consolas", monospace',
-                'courier_new': '"Courier New", monospace'
+                'sans_serif': 'ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji',
+                'system_mono': 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
             };
 
             Alpine.store('appearance', {
@@ -130,6 +127,10 @@ class ChatApp {
                 editorFontFamily: (() => {
                     const f = localStorage.getItem('editorFontFamily');
                     return fontFamilies[f] ? f : defaults.editorFontFamily;
+                })(),
+                uiFontFamily: (() => {
+                    const f = localStorage.getItem('uiFontFamily');
+                    return fontFamilies[f] ? f : defaults.uiFontFamily;
                 })(),
                 codeBgColor: localStorage.getItem('codeBgColor') || defaults.codeBgColor,
                 highlightTheme: (() => {
@@ -166,7 +167,8 @@ class ChatApp {
                     if (key === 'uiFontSize') return this.updateFontSize('--fs-ui', val);
                     if (key === 'editorFontSize') return this.updateFontSize('--fs-editor', val);
                     if (key === 'codeFontScale') return this.updateFontSize('--fs-code-scale', val, 'em');
-                    if (key === 'editorFontFamily') return this.updateFontFamily(val);
+                    if (key === 'editorFontFamily') return this.updateFontFamily('--font-editor', val);
+                    if (key === 'uiFontFamily') return this.updateFontFamily('--font-ui', val);
                     if (key === 'codeBgColor') return this.updateCodeBg(val);
                     if (key === 'highlightTheme') return this.updateTheme(val);
                 },
@@ -179,9 +181,9 @@ class ChatApp {
                     document.documentElement.style.setProperty(varName, val + unit);
                 },
 
-                updateFontFamily(val) {
-                    const stack = fontFamilies[val] || fontFamilies['system_default'];
-                    document.documentElement.style.setProperty('--font-editor', stack);
+                updateFontFamily(varName, val) {
+                    const stack = fontFamilies[val] || fontFamilies['system_mono'];
+                    document.documentElement.style.setProperty(varName, stack);
                 },
 
                 updateCodeBg(val) {
@@ -204,7 +206,7 @@ class ChatApp {
                 },
 
                 reset() {
-                    const excludedKeys = ['highlightTheme'];
+                    const excludedKeys = ['highlightTheme', 'themes', 'cssVarMap'];
 
                     Object.keys(defaults).forEach(key => {
                         if (excludedKeys.includes(key)) return;

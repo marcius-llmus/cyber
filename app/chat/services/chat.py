@@ -92,3 +92,7 @@ class ChatService:
             session_id=session_id,
             blocks=blocks,
         )
+
+    async def clear_session_messages(self, session_id: int) -> None:
+        """Deletes all messages for a given session."""
+        await self.message_repo.delete_by_session_id(session_id=session_id)

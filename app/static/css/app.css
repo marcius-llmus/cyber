@@ -99,6 +99,7 @@
     overflow-x: hidden; /* Prevent horizontal scrollbar on the list itself */
     min-width: 0;       /* Critical for flex containers to shrink correctly */
     flex: 1 1 0;       /* Enforce flex basis 0 to prevent overflow */
+    font-family: var(--font-editor) !important;
 }
 
 .file-tree-container {
@@ -125,6 +126,7 @@ textarea {
     overflow-y: hidden; /* Hide by default, JS toggles to 'auto' when max-height is hit */
     scrollbar-width: auto; /* Fix: Make scrollbar visible and graspable */
     scrollbar-color: var(--color-scroll-thumb) var(--color-dark-lighter);
+    font-family: var(--font-ui) !important;
 }
 
 /* Consistent hover/focus styles */
@@ -334,11 +336,6 @@ html.custom-code-bg #message-list code.language-diff {
     /* Background and Color are set by the loaded Highlight.js theme CSS */
 }
 
-/* Ensure diffs always track the editor font size preference */
-code.language-diff {
-    font-size: var(--fs-code-scale) !important;
-}
-
 /* Inline code styling (when not in pre) */
 .prose :not(pre) > code {
     color: var(--color-primary-light);
@@ -459,6 +456,14 @@ code.language-diff {
 }
 
 /* Font Override */
-#message-list pre code, textarea.font-mono {
+#message-list pre code:not(.language-diff), 
+textarea.font-mono {
     font-family: var(--font-editor) !important;
+}
+
+/* Hard-lock Diffs to Monospace and apply font size scaling */
+#message-list pre code.language-diff,
+code.language-diff {
+    font-size: var(--fs-code-scale) !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
 }

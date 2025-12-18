@@ -167,18 +167,25 @@
                 </div>
             </div>
 
+            <!-- UI Font -->
+            <div>
+                <h4 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">UI Font</h4>
+                <select 
+                    class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm"
+                    @change="$store.appearance.updateSetting('uiFontFamily', $event.target.value)">
+                    <option value="sans_serif" :selected="$store.appearance.uiFontFamily === 'sans_serif'">Sans Serif</option>
+                    <option value="system_mono" :selected="$store.appearance.uiFontFamily === 'system_mono'">System Mono</option>
+                </select>
+            </div>
+
             <!-- Editor Font -->
             <div>
                 <h4 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Editor Font</h4>
                 <select 
                     class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm"
                     @change="$store.appearance.updateSetting('editorFontFamily', $event.target.value)">
-                    <option value="system_default" :selected="$store.appearance.editorFontFamily === 'system_default'">System Default</option>
+                    <option value="sans_serif" :selected="$store.appearance.editorFontFamily === 'sans_serif'">Sans Serif</option>
                     <option value="system_mono" :selected="$store.appearance.editorFontFamily === 'system_mono'">System Mono</option>
-                    <option value="fira_code" :selected="$store.appearance.editorFontFamily === 'fira_code'">Fira Code</option>
-                    <option value="jetbrains_mono" :selected="$store.appearance.editorFontFamily === 'jetbrains_mono'">JetBrains Mono</option>
-                    <option value="consolas" :selected="$store.appearance.editorFontFamily === 'consolas'">Consolas</option>
-                    <option value="courier_new" :selected="$store.appearance.editorFontFamily === 'courier_new'">Courier New</option>
                 </select>
             </div>
 

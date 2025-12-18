@@ -1,42 +1,17 @@
-MUST NOT SEND MESSAGE IF LAST FAILED. CAN ONLY RETRY
+Fix:
+- Message retry or remove. don't allow two user messages at once.
+- Fix auto scrolling
+- Add single shot (no tool call, process diffs directly with regex, non agentic)
+- Fix grep search, prompts for token efficiency
+- Add tool results (diff only) to chat history
+- Check multi turn caching
+- Lock message input on workflow run and add connected websocket status
 
-reduzir espaço icone e lateral
-add message should not be in presentation
-taking too long for first message
-fix presentation structure
-check missing async functions (convert to coroutine)
-context: networkx with semtools. agent: can I access the whole project? (in case user question is for whole project) case not, llm refuses to act
-loading in button needs spacing from text
 --------
-remove files / messages from metrics
-fix cache and improve prompt with xml tags and correct positioning for CACHE
-monthly usage
-clear chat should clear ind db
-styles model height
-check if repomap is really accurate
-expand usage per provider
-check default fonts
-check if log is worth saving / rerendering
-check auto scrolling
-single shot?
-verify tools
-improve agent streaming feedback like loading, thinks, too calling etc etc..
-cap max messages
-
-ROADMAP
---
-change prompt individually based on existing prompts and current conversation (versioning)
-add comprehensive planning system
-add image processing and multi modal detector
-check if tool is in conversation
-how will we cache prompts? what is the order?
-does the workflow outputs only final round usage or the sum up of everything? (can see at phoenix)
-verify if all tool rounds are bein passed in the whole conversation by ctx when it loads current conversation (chat history helps?)
-on project change, reload for a new session
-add slash commands
-lock message box while workflow is happening
-allow workflow stop
-on reset, color is weird...
-load tool calls and messages
-check diff showing in inline / tool output? should should we do that? always format tool from diff tools and cut off diff markdown?
-agent thinking on user message taking too long
+Roadmap
+- Add monthly usage per model and provider
+- Add prompt improvement and versioning based on conversation
+- Add comprehensive planning with feature based
+- Add multimodality
+- Add slash commands
+- Add stop run button (stop workflow and reset to previous message state)

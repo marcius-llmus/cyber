@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     LOG_LEVEL: LogLevel = LogLevel.INFO
     OBSERVABILITY_ENABLED: bool = False
     AGENT_MAX_ITERATIONS: int = 111
+    LLM_TIMEOUT: float = 600.0
 
     @property
     def queries_dir(self) -> str:

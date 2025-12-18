@@ -8,6 +8,7 @@ from llama_index.llms.openai import OpenAI
 from llama_index_instrumentation.dispatcher import instrument_tags
 
 from app.llms.schemas import LLM
+from app.core.config import settings
 from app.llms.enums import LLMModel, LLMProvider, LLMRole
 from app.llms.registry import LLMFactory
 from app.llms.repositories import LLMSettingsRepository
@@ -151,10 +152,25 @@ class LLMService:
         provider = llm_metadata.provider
 
         if provider == LLMProvider.OPENAI:
-            return InstrumentedOpenAI(model=model_name, temperature=temperature, api_key=api_key)
+            return InstrumentedOpenAI(
+                model=model_name,
+                temperature=temperature,
+                api_key=api_key,
+                timeout=settings.LLM_TIMEOUT
+            )
         elif provider == LLMProvider.ANTHROPIC:
-            return InstrumentedAnthropic(model=model_name, temperature=temperature, api_key=api_key)
+            return InstrumentedAnthropic(
+                model=model_name,
+                temperature=temperature,
+                api_key=api_key,
+                timeout=settings.LLM_TIMEOUT
+            )
         elif provider == LLMProvider.GOOGLE:
-            return InstrumentedGoogleGenAI(model=model_name, temperature=temperature, api_key=api_key)
+            return InstrumentedGoogleGenAI(
+                model=model_name,
+                temperature=temperature,
+                api_key=api_key,
+                timeout=settings.LLM_TIMEOUT
+            )
         else:
             raise ValueError(f"Unsupported LLM provider: {provider}")

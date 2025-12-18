@@ -86,6 +86,8 @@
     <div class="p-6 mt-auto bg-dark-lighter">
         <button
             hx-post="/chat/clear"
+            hx-target="#message-list"
+            hx-swap="outerHTML"
             hx-on:click="document.getElementById('message-list').innerHTML = ''"
             class="w-full text-left px-4 py-3 rounded-lg bg-dark-lighter hover:bg-dark-light border border-dark-light text-sm flex items-center text-red-400"
         >
