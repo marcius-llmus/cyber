@@ -1,11 +1,25 @@
-from fastapi import APIRouter, Request
-from fastapi.responses import PlainTextResponse
+from fastapi import APIRouter, Request, Depends, HTTPException, status
+from fastapi.responses import HTMLResponse
+from app.chat.dependencies import get_chat_service
+from app.chat.services import ChatService
+from app.projects.exceptions import ActiveProjectRequiredException
+from app.commons.fastapi_htmx import htmx
 
 router = APIRouter()
 
+@router.post("/clear", response_class=HTMLResponse)
+@htmx("chat/partials/message_list")
+async def clear_chat(
+    request: Request,
+    chat_service: ChatService = Depends(get_chat_service),
+):
+    try:
+        session = await chat_service.get_or_create_active_session()
+        await chat_service.clear_session_messages(session_id=session.id)
 
-@router.post("/clear", response_class=PlainTextResponse)
-async def clear_chat(request: Request):  # noqa
-    # This will later clear the session history and return the initial state
-    # For now, it returns an empty response as the list is cleared on the frontend.
-    return ""
+        return {
+            "messages": [],
+            "session_id": session.id,
+        }
+    except ActiveProjectRequiredException as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
