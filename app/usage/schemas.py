@@ -7,5 +7,3 @@ class SessionMetrics(BaseModel):
     input_tokens: int = 0
     output_tokens: int = 0
     cached_tokens: int = 0
-    message_count: int = 0
-    files_count: int = 0
