@@ -125,15 +125,3 @@ Read the `DIFF PATCH`. For each change ("hunk") described in the patch:
 
 **FINAL INSTRUCTION:** Generate **ONLY** the patched code content based on the inputs.
 """
-
-PATCHER_TOOL_DESCRIPTION = """The changes to apply in Unified Diff format.
-You MUST format this string exactly as a standard `diff -u` output without triple brackets. raw diff patch only.
-Example:
-```
---- file.py
-+++ file.py
-@@ -1,2 +1,2 @@
--old_line
-+new_line
-```
-"""

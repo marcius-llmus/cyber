@@ -10,6 +10,30 @@ from app.context.schemas import FileStatus
 
 logger = logging.getLogger(__name__)
 
+FILE_PATTERNS_DESCRIPTION = """
+List of specific file paths or glob patterns (e.g., 'src/**/*.py', 'tests/*.ts') to target.
+
+USAGE GUIDELINES:
+1. Specificity: Provide specific paths or narrow globs to limit scope and noise.
+2. Multiple Patterns: Supports multiple patterns to target different areas simultaneously.
+3. Exclusion: Do not include files that are already in the active context.
+"""
+
+GREP_PATTERN_DESCRIPTION = """
+The regular expression pattern to search for.
+
+USAGE GUIDELINES:
+1. Specificity: Must be specific (e.g., 'class .*Service', 'def my_func'). Avoid broad patterns like '.*' or single common words.
+2. Syntax: Supports standard Python regular expressions.
+3. Context: The tool returns the AST context (surrounding code), so you don't need to match the whole block.
+"""
+
+GREP_IGNORE_CASE_DESCRIPTION = "Set to True to perform a case-insensitive search. Defaults to True."
+
+LIST_FILES_PATH_DESCRIPTION = """
+The relative path of the directory to list. Defaults to '.' (root).
+"""
+
 
 class FileTools(BaseToolSet):
     """Tools for reading files from the codebase."""
@@ -20,14 +44,16 @@ class FileTools(BaseToolSet):
         file_patterns: Annotated[
             list[str],
             Field(
-                description="List of specific file paths or narrow glob patterns to read (e.g., ['src/auth/service.py', 'tests/unit/*.py']). "
-                "DO NOT read the entire repository ('.') or broad patterns ('**') unless absolutely necessary. "
-                "Use the Repository Map or grep to locate specific files first."
+                description=FILE_PATTERNS_DESCRIPTION
             ),
         ],
     ) -> str:
         """
         Reads the full content of files matching the provided patterns.
+
+        USAGE:
+        - Batching: Read ALL relevant files in a single tool call. Inefficiency is the enemy.
+        - Context: Do NOT read files that are already in active context.
         """
         try:
             if not self.session_id:
@@ -58,14 +84,16 @@ class FileTools(BaseToolSet):
         dir_path: Annotated[
             str,
             Field(
-                description="The relative path of the directory to list (e.g., 'src', '.'). "
-                "Use this ONLY if you need to explore the directory structure and the Repository Map is insufficient or missing. "
-                "Do not use this to search for code; use grep instead."
+                description=LIST_FILES_PATH_DESCRIPTION
             ),
         ] = ".",
     ) -> str:
         """
         Lists files and directories in the given path.
+
+        USAGE:
+        - Purpose: Use this ONLY to explore directory structure when the Repository Map is insufficient.
+        - Search: Do NOT use this to search for code. Use the `grep` tool for code discovery.
         """
         try:
             if not self.session_id:
@@ -98,29 +126,34 @@ class SearchTools(BaseToolSet):
         search_pattern: Annotated[
             str,
             Field(
-                description="The regular expression pattern to search for. Use it to explore the file. "
-                "Be specific. Avoid generic terms that match thousands of lines. "
-                "Use this to find definitions, references, or specific code structures (e.g., 'class .*Service')."
+                description=GREP_PATTERN_DESCRIPTION
             ),
         ],
         file_patterns: Annotated[
             list[str],
             Field(
-                description="Optional list of glob patterns (e.g., 'src/**/*.py', 'tests/*.ts') to limit the search scope. "
-                "You MUST provide specific file patterns or directories if known. "
-                "Only leave empty if you truly need to search the ENTIRE project, which is slow."
+                description=FILE_PATTERNS_DESCRIPTION
             ),
         ] = None,
         ignore_case: Annotated[
             bool,
             Field(
-                description="Set to True to perform a case-insensitive search. Defaults to True."
+                description=GREP_IGNORE_CASE_DESCRIPTION
             ),
         ] = True,
     ) -> str:
         """
         Searches for a pattern in the specified files and returns the AST context 
         (surrounding classes/functions) for matches.
+
+        EXPLORATION TOOL:
+        Use this tool to locate code definitions (classes, functions) across the project.
+        It provides AST-aware context, showing you the structure around matches.
+        
+        WORKFLOW:
+        1. Search: Use `grep` to find where a symbol is defined or used.
+        2. Locate: Identify the relevant file paths from the results.
+        3. Read: Use `read_files` to examine the full content of those files.
         """
         try:
             async with self.db.session() as session:

@@ -16,3 +16,5 @@ Roadmap
 - Add multimodality
 - Add slash commands
 - Add stop run button (stop workflow and reset to previous message state)
+- Add MCP Integration
+- Add Possibility of rag through semantic search with codeblock chunks similarly to cursor
