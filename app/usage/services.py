@@ -33,8 +33,8 @@ class UsageService:
     async def track_event(self, session_id: int, event: BaseEvent) -> None:
         """Process a single usage event and update repositories."""
         try:
-            if not hasattr(event, "response"):
-                raise ValueError(f"Event {type(event)} does not have a response attribute.")
+            if getattr(event, "response", None) is None:
+                raise ValueError(f"Event {type(event)} response is None or missing.")
 
             # 1. Extract Identity from Event Tags (Injected by InstrumentedLLMMixin)
             if not (tags := event.tags):
@@ -60,14 +60,18 @@ class UsageService:
         Processes a batch of raw instrumentation events.
         Updates costs and returns the final calculated metrics for the session.
         """
+        errors = []
         if events:
             for event in events:
                 try:
                     await self.track_event(session_id, event)
                 except UsageTrackingException as e:
                     logger.error(f"Usage tracking failed for event {type(event)}: {e}")
+                    errors.append(str(e))
 
-        return await self.get_session_metrics(session_id)
+        metrics = await self.get_session_metrics(session_id)
+        metrics.errors = errors
+        return metrics
 
     async def _update_usage_repositories(
         self,

@@ -6,6 +6,8 @@ Fix:
 - Add tool results (diff only) to chat history
 - Check multi turn caching
 - Lock message input on workflow run and add connected websocket status
+- Operational mode check
+- Allow multiple tabs open for multiple sessions
 
 --------
 Roadmap
@@ -15,3 +17,6 @@ Roadmap
 - Add multimodality
 - Add slash commands
 - Add stop run button (stop workflow and reset to previous message state)
+- Add MCP Integration
+- Add Possibility of rag through semantic search with codeblock chunks similarly to cursor
+- Add sub folder project (currently, only top level are projects)

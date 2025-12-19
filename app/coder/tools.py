@@ -3,12 +3,34 @@ from typing import Annotated
 
 from pydantic import Field
 
-from app.coder.constants import PATCHER_TOOL_DESCRIPTION
 from app.coder.factories import build_patcher_service
 from app.commons.tools import BaseToolSet
 
 logger = logging.getLogger(__name__)
 
+APPLY_DIFF_DESCRIPTION = """
+The changes to apply in Unified Diff format.
+
+STRICT FORMAT RULES:
+1. Format: Standard `diff -u` format.
+   - Header: `--- source_file` and `+++ target_file`
+   - Hunks: `@@ -start,count +start,count @@`
+   - Context: MUST include 3-5 lines of UNCHANGED context before and after changes.
+2. File Creation: Use `--- /dev/null` and `+++ path/to/new_file`.
+3. File Deletion: Use `--- path/to/file` and `+++ /dev/null`.
+4. No Markdown: Do NOT wrap the diff in markdown code blocks (```).
+
+EXAMPLE:
+--- app/main.py
++++ app/main.py
+@@ -10,4 +10,4 @@
+ def main():
+-    print("Old")
++    print("New")
+     return True
+"""
+
+FILE_PATH_DESCRIPTION = "The relative path of the file to modify (e.g., 'src/main.py')."
 
 class PatcherTools(BaseToolSet):
     """Tools for applying code changes via Unified Diffs."""
@@ -18,9 +40,9 @@ class PatcherTools(BaseToolSet):
     async def apply_diff(
         self,
         file_path: Annotated[
-            str, Field(description="The relative path of the file to modify (e.g., 'src/main.py').")
+            str, Field(description=FILE_PATH_DESCRIPTION)
         ],
-        diff: Annotated[str, Field(description=PATCHER_TOOL_DESCRIPTION)],
+        diff: Annotated[str, Field(description=APPLY_DIFF_DESCRIPTION)],
     ) -> str:
         """
         Applies a unified diff patch to a specific file.

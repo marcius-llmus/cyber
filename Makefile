@@ -33,10 +33,10 @@ logs: init
 	@$(COMPOSE) logs -f
 
 build: init
+	@-$(CLEAN_CMD)
 	@$(COMPOSE) build
 
 update: init
 	@git pull origin master
 	@$(COMPOSE) down
-	@-$(CLEAN_CMD)
 	@$(COMPOSE) build --no-cache
