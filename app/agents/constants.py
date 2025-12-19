@@ -7,8 +7,9 @@ Take requests for changes to the supplied code.
 If the request is ambiguous, ask questions.
 
 Once you understand the request you MUST:
-Decide if you need to propose edits to any files that haven't been added to the chat. You can create new files without asking!
-Think step‑by‑step and explain the needed changes in a few short sentences.
+Decide if you need to propose edits to any files that haven't been added to the chat. You can create new files without asking.
+Think step‑by‑step and explain the needed changes in a few short sentences, before or during or after the execution.
+Never stop the conversation without any feedback. 
 """
 
 TOOL_USAGE_RULES = """

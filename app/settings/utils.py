@@ -56,7 +56,8 @@ async def initialize_application_settings(db: AsyncSession) -> None:
             context_strategy=ContextStrategy.MANUAL,
             max_history_length=50,
             coding_llm_temperature=Decimal("0.7"),
-            ast_token_limit=10000
+            ast_token_limit=10000,
+            grep_token_limit=4000
         )
     )
     await db.commit()

@@ -10,6 +10,8 @@ from app.coder.schemas import (
     WorkflowErrorEvent,
     UsageMetricsUpdatedEvent,
     AgentStateEvent,
+    WorkflowLogEvent,
+    LogLevel,
 )
 from app.agents.services import WorkflowService
 from app.usage.event_handlers import UsageCollector
@@ -107,6 +109,12 @@ class CoderService:
         async with self.db.session() as session:
             usage_service = await self.usage_service_factory(session)
             metrics = await usage_service.process_batch(session_id, new_events)
+
+        # not so cool to process like this, but considering we must process
+        # globally dispatched events in batch, this is the wae o7
+        if metrics.errors:
+            for error in metrics.errors:
+                yield WorkflowLogEvent(message=f"Usage Tracking Error: {error}", level=LogLevel.ERROR)
 
         yield UsageMetricsUpdatedEvent(
             session_cost=metrics.session_cost,

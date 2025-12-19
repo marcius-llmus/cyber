@@ -26,6 +26,7 @@ USAGE GUIDELINES:
 1. Specificity: Must be specific (e.g., 'class .*Service', 'def my_func'). Avoid broad patterns like '.*' or single common words.
 2. Syntax: Supports standard Python regular expressions.
 3. Context: The tool returns the AST context (surrounding code), so you don't need to match the whole block.
+4. Format: Can be a single string or a list of strings (which will be joined with OR).
 """
 
 GREP_IGNORE_CASE_DESCRIPTION = "Set to True to perform a case-insensitive search. Defaults to True."
@@ -124,7 +125,7 @@ class SearchTools(BaseToolSet):
     async def grep(
         self,
         search_pattern: Annotated[
-            str,
+            str | list[str],
             Field(
                 description=GREP_PATTERN_DESCRIPTION
             ),

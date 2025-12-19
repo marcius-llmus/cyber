@@ -19,3 +19,4 @@ class Settings(Base):
     max_history_length = Column(Integer, nullable=False)
     coding_llm_temperature = Column(Float, nullable=False) # todo: shall be in llm models later
     ast_token_limit = Column(Integer, nullable=False)
+    grep_token_limit = Column(Integer, nullable=False, default=4000)
