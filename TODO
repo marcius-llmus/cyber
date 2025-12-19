@@ -6,6 +6,7 @@ Fix:
 - Add tool results (diff only) to chat history
 - Check multi turn caching
 - Lock message input on workflow run and add connected websocket status
+- Operational mode check
 
 --------
 Roadmap
