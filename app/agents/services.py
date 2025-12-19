@@ -9,7 +9,6 @@ from app.context.schemas import FileStatus
 from app.agents.constants import (
     AGENT_IDENTITY,
     TOOL_USAGE_RULES,
-    OPERATING_PROTOCOL,
     REPO_MAP_DESCRIPTION,
     ACTIVE_CONTEXT_DESCRIPTION,
     CODER_BEHAVIOR,
@@ -73,7 +72,7 @@ class AgentContextService:
 
         parts = [
             f"<identity>\n{AGENT_IDENTITY}\n</identity>",
-            f"<rules>\n{TOOL_USAGE_RULES}\n{OPERATING_PROTOCOL}\n</rules>",
+            f"<rules>\n{TOOL_USAGE_RULES}\n</rules>",
             f"<guidelines>\n{CODER_BEHAVIOR}\n</guidelines>",
             f"<custom_instructions>\n{custom_prompts_xml}\n</custom_instructions>",
             f"<repository_map>\n<!-- {REPO_MAP_DESCRIPTION} -->\n{repo_map}\n</repository_map>",
