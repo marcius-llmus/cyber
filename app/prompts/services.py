@@ -7,6 +7,7 @@ from app.prompts.repositories import PromptRepository
 from app.prompts.schemas import (
     PromptCreate,
     PromptInternalCreate,
+    PromptRead,
     PromptsPageContext,
     PromptUpdate,
 )
@@ -207,7 +208,21 @@ class PromptPageService:
             "active_project": active_project,
         }
 
+    @staticmethod
+    def _truncate_prompt_content(prompt: Prompt, truncate_length: int = 200) -> PromptRead:
+        prompt_read = PromptRead.model_validate(prompt)
+        if len(prompt_read.content) > truncate_length:
+            prompt_read.content = prompt_read.content[:truncate_length] + "..."
+        return prompt_read
+
     async def get_blueprint_prompts_list_data(self) -> dict:
         blueprints = await self.blueprint_service.list_blueprints()
-        current_prompt = await self.prompt_service.get_project_blueprint_prompt()
+        if current_prompt := await self.prompt_service.get_project_blueprint_prompt():
+            current_prompt = self._truncate_prompt_content(current_prompt, truncate_length=3000)
         return {"blueprints": blueprints, "prompt": current_prompt}
+
+    def get_prompt_item_data(self, prompt: Prompt, is_attached: bool) -> dict:
+        return {
+            "prompt": self._truncate_prompt_content(prompt),
+            "is_attached": is_attached,
+        }

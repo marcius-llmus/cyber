@@ -32,10 +32,7 @@ class BlueprintService:
 
     async def get_blueprint_content(self, path: str) -> str:
         try:
-            blueprint_root = await self.codebase_service.validate_file_path(settings.BLUEPRINTS_ROOT_DIR, path)
-            
-            if not await aiofiles.os.path.isdir(blueprint_root):
-                raise NotADirectoryError(f"Blueprint path '{path}' is not a directory. Blueprints must be folders.")
+            blueprint_root = await self.codebase_service.validate_directory_path(settings.BLUEPRINTS_ROOT_DIR, path)
 
             # we treat the blueprint directory as a "project root" for the CodebaseService.
             blueprint_root_str = str(blueprint_root)
