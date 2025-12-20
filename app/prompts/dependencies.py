@@ -17,8 +17,13 @@ async def get_prompt_repository(db: AsyncSession = Depends(get_db)) -> PromptRep
 async def get_prompt_service(
     repo: PromptRepository = Depends(get_prompt_repository),
     project_service: ProjectService = Depends(get_project_service),
+    blueprint_service: BlueprintService = Depends(get_blueprint_service),
 ) -> PromptService:
-    return PromptService(prompt_repo=repo, project_service=project_service)
+    return PromptService(
+        prompt_repo=repo,
+        project_service=project_service,
+        blueprint_service=blueprint_service,
+    )
 
 
 async def get_prompt_page_service(

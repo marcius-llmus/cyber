@@ -15,9 +15,15 @@ from app.prompts.models import Prompt
 
 
 class PromptService:
-    def __init__(self, prompt_repo: PromptRepository, project_service: ProjectService):
+    def __init__(
+        self,
+        prompt_repo: PromptRepository,
+        project_service: ProjectService,
+        blueprint_service: BlueprintService,
+    ):
         self.prompt_repo = prompt_repo
         self.project_service = project_service
+        self.blueprint_service = blueprint_service
 
     async def get_prompt(self, prompt_id: int) -> Prompt:
         prompt = await self.prompt_repo.get(pk=prompt_id)
@@ -61,16 +67,12 @@ class PromptService:
 
     async def get_active_prompts(self, project_id: int) -> list[Prompt]:
         """Returns prompts explicitly attached to the project (Tier 1 Context)."""
-        return await self.get_attached_prompts(project_id)
+        prompts = await self.get_attached_prompts(project_id)
 
-    @staticmethod
-    async def _generate_blueprint_content(path: str) -> str:
-        """
-        MOCKED: Generates a blueprint from the given path.
-        This will be replaced by a call to a dedicated BlueprintService.
-        """
-        # This is a placeholder. The real implementation would scan the filesystem.
-        return f"Blueprint for: {path}\n\n.gitignore\nREADME.md\napp/\n  __init__.py\n  main.py"
+        if blueprint_prompt := await self.prompt_repo.find_project_blueprint_prompt(project_id):
+            prompts.append(blueprint_prompt)
+
+        return prompts
 
     async def create_or_update_project_blueprint_prompt(self, path: str) -> tuple[Prompt, bool]:
         """
@@ -84,7 +86,7 @@ class PromptService:
 
         existing_prompt = await self.prompt_repo.find_project_blueprint_prompt(project_id=active_project.id)
 
-        content = await self._generate_blueprint_content(path)
+        content = await self.blueprint_service.get_blueprint_content(path)
         name = f"Blueprint: {active_project.name}"
 
         if existing_prompt:

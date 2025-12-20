@@ -8,6 +8,7 @@ Fix:
 - Lock message input on workflow run and add connected websocket status
 - Operational mode check
 - Allow multiple tabs open for multiple sessions
+- Must focus on last message
 
 --------
 Roadmap
@@ -20,3 +21,7 @@ Roadmap
 - Add MCP Integration
 - Add Possibility of rag through semantic search with codeblock chunks similarly to cursor
 - Add sub folder project (currently, only top level are projects)
+
+
+Error processing app/agents/constants.py: missing ), unterminated subpattern at position 16
+f
