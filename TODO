@@ -9,6 +9,7 @@ Fix:
 - Operational mode check
 - Allow multiple tabs open for multiple sessions
 - Must focus on last message
+- Check partial file truncation and full per file file cut on context size checking
 
 --------
 Roadmap
@@ -23,5 +24,8 @@ Roadmap
 - Add sub folder project (currently, only top level are projects)
 
 
+--------
+Bugs
+
 Error processing app/agents/constants.py: missing ), unterminated subpattern at position 16
-f
+still calling tools to read files already loaded
