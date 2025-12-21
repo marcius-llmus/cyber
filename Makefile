@@ -12,7 +12,7 @@ else
 endif
 
 # Command to prune only dangling images with our specific label
-CLEAN_CMD := $(ENGINE) image prune -a -f --filter label=com.llama-coding.project="true"
+CLEAN_CMD := $(ENGINE) image prune -a -f --filter label=com.cyber.project="true"
 
 .PHONY: install up update down logs build
 
@@ -22,9 +22,8 @@ init:
 	@command -v $(ENGINE) >/dev/null 2>&1 || { echo >&2 "Error: $(ENGINE) is not installed."; exit 1; }
 
 up: init
-	@echo "Starting Llama Coding using $(ENGINE)..."
+	@echo "Starting Cyber using $(ENGINE)..."
 	@$(COMPOSE) up -d
-	@echo "Llama Coding is running at http://localhost:8000"
 
 down: init
 	@$(COMPOSE) down

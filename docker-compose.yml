@@ -1,12 +1,12 @@
 services:
   app:
     build: .
-    container_name: llama_coding
+    container_name: cyber
     ports:
       - "8000:8000"
     volumes:
       # Only persist data, not code. Code lives in the image.
-      - ${HOME}/llama-coding:/app/workspace
+      - ${HOME}/cyber:/app/workspace
     # Enable Podman's keep-id mode to map container UID to host UID
     userns_mode: keep-id
     environment:

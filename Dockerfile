@@ -1,7 +1,7 @@
 FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim
 
 # Label ensures we can identify and prune only this project's images
-LABEL com.llama-coding.project="true"
+LABEL com.cyber.project="true"
 
 # Enable bytecode compilation
 ENV UV_COMPILE_BYTECODE=1

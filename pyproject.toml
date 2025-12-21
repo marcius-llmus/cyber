@@ -1,5 +1,5 @@
 [project]
-name = "llama-coding"
+name = "cyber"
 version = "0.1.0"
 description = "A simplistic coding editor"
 readme = "README.md"
