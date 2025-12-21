@@ -1,6 +1,3 @@
-/****
- * Llama Coding - Main Application Logic
-**/
 const Action = {
     CLEAR_LOGS: 'clear-logs',
     CLEAR_HISTORY: 'clear-history',
