@@ -98,7 +98,7 @@ class WorkspaceService:
         active_abs_paths = []
         
         for item in active_context_db:
-            if not await self.codebase_service.is_file_ignored(project_root, item.file_path):
+            if not await self.codebase_service.is_ignored(project_root, item.file_path):
                 active_abs_paths.append(os.path.join(project_root, item.file_path))
                 
         return active_abs_paths

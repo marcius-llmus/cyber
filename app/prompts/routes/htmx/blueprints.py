@@ -30,15 +30,16 @@ async def delete_blueprint_prompt(  # noqa: ARG001
 
 
 @router.post("/from-blueprint", response_class=HTMLResponse)
-@htmx("prompts/partials/blueprint_prompt_item")
+@htmx("prompts/partials/blueprint_list")
 async def create_prompt_from_blueprint(
     request: Request,
     blueprint_in: BlueprintRequest,
     service: PromptService = Depends(get_prompt_service),
+    page_service: PromptPageService = Depends(get_prompt_page_service),
 ):
     try:
-        prompt, _ = await service.create_or_update_project_blueprint_prompt(path=blueprint_in.path)
-        return {"prompt": prompt}
+        await service.create_or_update_project_blueprint_prompt(path=blueprint_in.path)
+        return await page_service.get_blueprint_prompts_list_data()
     except ActiveProjectRequiredException as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 

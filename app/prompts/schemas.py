@@ -31,6 +31,8 @@ class PromptUpdate(PromptBase):
 
 class PromptRead(PromptBase):
     id: int
+    type: PromptType
+    source_path: str | None = None
     project_id: int | None = None
     model_config = ConfigDict(from_attributes=True)
 

@@ -50,47 +50,79 @@ class CodebaseService:
         """Checks if path is a subpath of root."""
         return path.resolve().is_relative_to(root.resolve())
 
+    async def _resolve_safe_path(self, project_root: str, path_str: str) -> tuple[Path, Path]:
+        """
+        Resolves the path and ensures it is within the project root.
+        Returns (project_root_path, absolute_target_path).
+        """
+        root = Path(project_root).resolve()
+        path = Path(path_str)
+        
+        # Handle absolute paths that might be outside or inside
+        if path.is_absolute():
+            abs_path = path.resolve()
+        else:
+            abs_path = (root / path).resolve()
+
+        if not self._is_subpath(root, abs_path):
+            raise ValueError(f"Access denied: '{path_str}' is outside project root.")
+            
+        return root, abs_path
+
+    async def is_ignored(self, project_root: str | Path, path: str | Path, is_dir: bool = False) -> bool:
+        """
+        Checks if a path is ignored by gitignore patterns.
+        Accepts both strings and Path objects.
+        """
+        root = Path(project_root).resolve()
+        target = Path(path)
+        
+        if target.is_absolute():
+            abs_path = target.resolve()
+        else:
+            abs_path = (root / target).resolve()
+            
+        try:
+            rel_path = abs_path.relative_to(root)
+        except ValueError:
+            return False
+
+        spec = await self.matcher.get_spec(str(root))
+        return self.matcher.matches(spec, str(rel_path), is_dir=is_dir)
+
     async def validate_file_path(self, project_root: str, file_path: str, must_exist: bool = True) -> Path:
         """
         Validates that a file is safe to access (inside root) and not ignored.
         STRICT MODE: Raises ValueError if invalid.
         Returns the absolute Path object.
         """
-        root = Path(project_root).resolve()
-        path = Path(file_path)
+        root, abs_path = await self._resolve_safe_path(project_root, file_path)
 
-        # 1. Security: Resolve and ensure inside root
-        abs_path = path.resolve() if path.is_absolute() else (root / path).resolve()
+        if must_exist:
+            if not abs_path.exists():
+                raise ValueError(f"File not found or invalid: '{file_path}'")
+            if not abs_path.is_file():
+                raise ValueError(f"Path is not a file: '{file_path}'")
 
-        if not self._is_subpath(root, abs_path):
-            raise ValueError(f"Access denied: '{file_path}' is outside project root.")
-
-        # Calculate canonical relative path for correct gitignore matching
-        rel_path = abs_path.relative_to(root)
-
-        # 2. Existence Check
-        if must_exist and (not abs_path.exists() or not abs_path.is_file()):
-            raise ValueError(f"File not found or invalid: '{file_path}'")
-
-        # 3. Ignore Check
-        if await self.is_file_ignored(project_root, str(rel_path)):
-            raise ValueError(f"Access denied: '{file_path}' is ignored by project configuration.")
-
+        if await self.is_ignored(root, abs_path, is_dir=False):
+            raise ValueError(f"Access denied: '{abs_path.relative_to(root)}' is ignored by project configuration.")
         return abs_path
 
-    async def is_file_ignored(self, project_root: str, file_path: str) -> bool:
-        """Checks if a file matches gitignore rules."""
-        root = Path(project_root).resolve()
-        spec = await self.matcher.get_spec(project_root)
-        
-        path = Path(file_path)
-        if path.is_absolute():
-            try:
-                path = path.resolve().relative_to(root)
-            except ValueError:
-                return False
-                
-        return self.matcher.matches(spec, str(path), is_dir=False)
+    async def validate_directory_path(self, project_root: str, dir_path: str, must_exist: bool = True) -> Path:
+        """
+        Validates that a directory is safe to access (inside root) and not ignored.
+        """
+        root, abs_path = await self._resolve_safe_path(project_root, dir_path)
+
+        if must_exist:
+            if not abs_path.exists():
+                raise ValueError(f"Directory not found or invalid: '{dir_path}'")
+            if not abs_path.is_dir():
+                raise ValueError(f"Path is not a directory: '{dir_path}'")
+
+        if await self.is_ignored(root, abs_path, is_dir=True):
+            raise ValueError(f"Access denied: '{abs_path.relative_to(root)}' is ignored by project configuration.")
+        return abs_path
 
     async def _collect_files(self, project_root: Path, path: Path, spec: PathSpec) -> set[str]:
         """
