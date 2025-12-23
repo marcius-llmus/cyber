@@ -12,7 +12,6 @@ dependencies = [
     "alembic>=1.13.2",
     "llama-index-workflows>=2.8.3",
     "llama-index-core>=0.14.5",
-    "llama-index-llms-google-genai>=0.6.2",
     "llama-index-llms-anthropic>=0.10.0",
     "llama-index-llms-openai>=0.6.6",
     "async-lru>=2.0.5",
@@ -25,6 +24,7 @@ dependencies = [
     "arize-phoenix>=12.18.0",
     "genai-prices>=0.0.47",
     "aiofiles>=25.1.0",
+    "llama-index-llms-google-genai>=0.8.2",
 ]
 
 [dependency-groups]
@@ -41,9 +41,6 @@ dev = [
 
 [tool.uv]
 default-groups = ["dev"]
-
-[tool.uv.sources]
-llama-index-llms-google-genai = { path = "../../../PycharmProjects/llama_index/llama-index-integrations/llms/llama-index-llms-google-genai", editable = true }
 
 [build-system]
 requires = ["hatchling"]
