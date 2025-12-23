@@ -10,6 +10,7 @@ Fix:
 - Allow multiple tabs open for multiple sessions
 - Must focus on last message
 - Check partial file truncation and full per file file cut on context size checking
+- By some reason, Readme (markdowns dif patching) are not working
 
 --------
 Roadmap
