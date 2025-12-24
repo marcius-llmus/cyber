@@ -47,30 +47,12 @@ class LLMFactory:
         LLMModel.GPT_5_CHAT_LATEST: LLM(
             model_name=LLMModel.GPT_5_CHAT_LATEST, provider=LLMProvider.OPENAI, default_context_window=256000
         ),
-        LLMModel.GPT_5_CODEX: LLM(
-            model_name=LLMModel.GPT_5_CODEX, provider=LLMProvider.OPENAI, default_context_window=256000
-        ),
         LLMModel.GPT_5_PRO: LLM(model_name=LLMModel.GPT_5_PRO, provider=LLMProvider.OPENAI, default_context_window=256000),
         LLMModel.GPT_5_1: LLM(model_name=LLMModel.GPT_5_1, provider=LLMProvider.OPENAI, default_context_window=256000),
         LLMModel.GPT_5_1_CHAT_LATEST: LLM(
             model_name=LLMModel.GPT_5_1_CHAT_LATEST, provider=LLMProvider.OPENAI, default_context_window=256000
         ),
-        LLMModel.GPT_5_1_CODEX: LLM(
-            model_name=LLMModel.GPT_5_1_CODEX, provider=LLMProvider.OPENAI, default_context_window=256000
-        ),
-        LLMModel.GPT_5_1_CODEX_MAX: LLM(
-            model_name=LLMModel.GPT_5_1_CODEX_MAX, provider=LLMProvider.OPENAI, default_context_window=256000
-        ),
-        LLMModel.GPT_5_1_CODEX_MINI: LLM(
-            model_name=LLMModel.GPT_5_1_CODEX_MINI, provider=LLMProvider.OPENAI, default_context_window=256000
-        ),
         LLMModel.GPT_5_2: LLM(model_name=LLMModel.GPT_5_2, provider=LLMProvider.OPENAI, default_context_window=256000),
-        LLMModel.GPT_5_2_CHAT_LATEST: LLM(
-            model_name=LLMModel.GPT_5_2_CHAT_LATEST, provider=LLMProvider.OPENAI, default_context_window=256000
-        ),
-        LLMModel.GPT_5_2_PRO: LLM(
-            model_name=LLMModel.GPT_5_2_PRO, provider=LLMProvider.OPENAI, default_context_window=256000
-        ),
         LLMModel.O1: LLM(model_name=LLMModel.O1, provider=LLMProvider.OPENAI, default_context_window=256000),
         LLMModel.O1_PRO: LLM(model_name=LLMModel.O1_PRO, provider=LLMProvider.OPENAI, default_context_window=256000),
         LLMModel.O3: LLM(model_name=LLMModel.O3, provider=LLMProvider.OPENAI, default_context_window=256000),
