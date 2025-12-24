@@ -12,14 +12,14 @@ class LLMFactory:
             model_name=LLMModel.CLAUDE_OPUS_4_1, provider=LLMProvider.ANTHROPIC, default_context_window=200000
         ),
         # Google
-        LLMModel.GEMINI_2_5_PRO: LLM(
-            model_name=LLMModel.GEMINI_2_5_PRO, provider=LLMProvider.GOOGLE, default_context_window=1000000
-        ),
         LLMModel.GEMINI_3_PRO: LLM(
             model_name=LLMModel.GEMINI_3_PRO, provider=LLMProvider.GOOGLE, default_context_window=1000000
         ),
         LLMModel.GEMINI_3_FLASH: LLM(
             model_name=LLMModel.GEMINI_3_FLASH, provider=LLMProvider.GOOGLE, default_context_window=1000000
+        ),
+        LLMModel.GEMINI_2_5_PRO: LLM(
+            model_name=LLMModel.GEMINI_2_5_PRO, provider=LLMProvider.GOOGLE, default_context_window=1000000
         ),
         LLMModel.GEMINI_2_5_FLASH: LLM(
             model_name=LLMModel.GEMINI_2_5_FLASH, provider=LLMProvider.GOOGLE, default_context_window=1000000
@@ -27,26 +27,64 @@ class LLMFactory:
         LLMModel.GEMINI_2_5_FLASH_LITE: LLM(
             model_name=LLMModel.GEMINI_2_5_FLASH_LITE, provider=LLMProvider.GOOGLE, default_context_window=128000
         ),
+
         # OpenAI
-        LLMModel.GPT_5: LLM(model_name=LLMModel.GPT_5, provider=LLMProvider.OPENAI, default_context_window=400000),
-        LLMModel.GPT_5_MINI: LLM(model_name=LLMModel.GPT_5_MINI, provider=LLMProvider.OPENAI,
-                                 default_context_window=400000),
-        LLMModel.GPT_5_NANO: LLM(model_name=LLMModel.GPT_5_NANO, provider=LLMProvider.OPENAI,
-                                 default_context_window=400000),
+        LLMModel.GPT_4: LLM(model_name=LLMModel.GPT_4, provider=LLMProvider.OPENAI, default_context_window=8192),
+        LLMModel.GPT_4_TURBO: LLM(
+            model_name=LLMModel.GPT_4_TURBO, provider=LLMProvider.OPENAI, default_context_window=128000
+        ),
+        LLMModel.GPT_4O: LLM(model_name=LLMModel.GPT_4O, provider=LLMProvider.OPENAI, default_context_window=128000),
+        LLMModel.GPT_4O_MINI: LLM(
+            model_name=LLMModel.GPT_4O_MINI, provider=LLMProvider.OPENAI, default_context_window=128000
+        ),
+        LLMModel.GPT_3_5_TURBO: LLM(
+            model_name=LLMModel.GPT_3_5_TURBO, provider=LLMProvider.OPENAI, default_context_window=16385
+        ),
+        LLMModel.GPT_5: LLM(model_name=LLMModel.GPT_5, provider=LLMProvider.OPENAI, default_context_window=256000),
+        LLMModel.GPT_5_MINI: LLM(
+            model_name=LLMModel.GPT_5_MINI, provider=LLMProvider.OPENAI, default_context_window=256000
+        ),
         LLMModel.GPT_5_CHAT_LATEST: LLM(
-            model_name=LLMModel.GPT_5_CHAT_LATEST, provider=LLMProvider.OPENAI, default_context_window=400000
+            model_name=LLMModel.GPT_5_CHAT_LATEST, provider=LLMProvider.OPENAI, default_context_window=256000
         ),
         LLMModel.GPT_5_CODEX: LLM(
-            model_name=LLMModel.GPT_5_CODEX, provider=LLMProvider.OPENAI, default_context_window=400000
+            model_name=LLMModel.GPT_5_CODEX, provider=LLMProvider.OPENAI, default_context_window=256000
         ),
-        LLMModel.GPT_5_PRO: LLM(model_name=LLMModel.GPT_5_PRO, provider=LLMProvider.OPENAI,
-                                default_context_window=400000),
-        LLMModel.GPT_4_1: LLM(model_name=LLMModel.GPT_4_1, provider=LLMProvider.OPENAI, default_context_window=128000),
+        LLMModel.GPT_5_PRO: LLM(model_name=LLMModel.GPT_5_PRO, provider=LLMProvider.OPENAI, default_context_window=256000),
+        LLMModel.GPT_5_1: LLM(model_name=LLMModel.GPT_5_1, provider=LLMProvider.OPENAI, default_context_window=256000),
+        LLMModel.GPT_5_1_CHAT_LATEST: LLM(
+            model_name=LLMModel.GPT_5_1_CHAT_LATEST, provider=LLMProvider.OPENAI, default_context_window=256000
+        ),
+        LLMModel.GPT_5_1_CODEX: LLM(
+            model_name=LLMModel.GPT_5_1_CODEX, provider=LLMProvider.OPENAI, default_context_window=256000
+        ),
+        LLMModel.GPT_5_1_CODEX_MAX: LLM(
+            model_name=LLMModel.GPT_5_1_CODEX_MAX, provider=LLMProvider.OPENAI, default_context_window=256000
+        ),
+        LLMModel.GPT_5_1_CODEX_MINI: LLM(
+            model_name=LLMModel.GPT_5_1_CODEX_MINI, provider=LLMProvider.OPENAI, default_context_window=256000
+        ),
+        LLMModel.GPT_5_2: LLM(model_name=LLMModel.GPT_5_2, provider=LLMProvider.OPENAI, default_context_window=256000),
+        LLMModel.GPT_5_2_CHAT_LATEST: LLM(
+            model_name=LLMModel.GPT_5_2_CHAT_LATEST, provider=LLMProvider.OPENAI, default_context_window=256000
+        ),
+        LLMModel.GPT_5_2_PRO: LLM(
+            model_name=LLMModel.GPT_5_2_PRO, provider=LLMProvider.OPENAI, default_context_window=256000
+        ),
+        LLMModel.O1: LLM(model_name=LLMModel.O1, provider=LLMProvider.OPENAI, default_context_window=256000),
+        LLMModel.O1_PRO: LLM(model_name=LLMModel.O1_PRO, provider=LLMProvider.OPENAI, default_context_window=256000),
+        LLMModel.O3: LLM(model_name=LLMModel.O3, provider=LLMProvider.OPENAI, default_context_window=256000),
+        LLMModel.O3_MINI: LLM(model_name=LLMModel.O3_MINI, provider=LLMProvider.OPENAI, default_context_window=256000),
+        LLMModel.O4_MINI: LLM(model_name=LLMModel.O4_MINI, provider=LLMProvider.OPENAI, default_context_window=256000),
+        LLMModel.GPT_5_NANO: LLM(
+            model_name=LLMModel.GPT_5_NANO, provider=LLMProvider.OPENAI, default_context_window=256000
+        ),
+        LLMModel.GPT_4_1: LLM(model_name=LLMModel.GPT_4_1, provider=LLMProvider.OPENAI, default_context_window=256000),
         LLMModel.GPT_4_1_MINI: LLM(
-            model_name=LLMModel.GPT_4_1_MINI, provider=LLMProvider.OPENAI, default_context_window=128000
+            model_name=LLMModel.GPT_4_1_MINI, provider=LLMProvider.OPENAI, default_context_window=256000
         ),
         LLMModel.GPT_4_1_NANO: LLM(
-            model_name=LLMModel.GPT_4_1_NANO, provider=LLMProvider.OPENAI, default_context_window=128000
+            model_name=LLMModel.GPT_4_1_NANO, provider=LLMProvider.OPENAI, default_context_window=256000
         ),
     }
 
