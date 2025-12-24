@@ -9,7 +9,8 @@ const Action = {
 
 class ChatApp {
     static init() {
-        this.filesCount = 0;
+        this.autoScrollEnabled = true;
+        this.ignoreScrollEvents = false;
         this.setupAlpine();
         this.setupMarkdownRenderer();
         this.setupObservers();
@@ -18,6 +19,7 @@ class ChatApp {
         
         // Initial scan for existing markdown content
         document.addEventListener('DOMContentLoaded', () => {
+            this.setupScrollHandler();
             this.scanAndRenderMarkdown();
             this.highlightExistingCodeBlocks();
         });
@@ -330,6 +332,7 @@ class ChatApp {
                 observer.observe(document.getElementById('message-list'), { 
                     subtree: true, childList: true, characterData: true 
                 });
+                this.setupScrollHandler();
                 this.scanAndRenderMarkdown();
             }
         });
@@ -375,13 +378,69 @@ class ChatApp {
         });
     }
 
+    static setupScrollHandler() {
+        const messageList = document.getElementById('message-list');
+        const scrollBtn = document.getElementById('scroll-to-bottom-btn');
+        
+        if (!messageList) return;
+
+        const checkPosition = () => {
+            if (this.ignoreScrollEvents) return;
+ 
+            const threshold = 10;
+            const position = Math.ceil(messageList.scrollTop + messageList.clientHeight);
+            const height = messageList.scrollHeight;
+
+            if (height - position <= threshold) {
+                this.autoScrollEnabled = true;
+                if (scrollBtn) scrollBtn.classList.add('hidden');
+            } else {
+                this.autoScrollEnabled = false;
+                if (scrollBtn) scrollBtn.classList.remove('hidden');
+            }
+        };
+
+        // Initial check
+        checkPosition();
+
+        messageList.onscroll = checkPosition;
+    }
+
     static scrollToBottom() {
+        if (!this.autoScrollEnabled) return;
         const messageList = document.getElementById('message-list');
         if (messageList) {
-            requestAnimationFrame(() => {
-                messageList.scrollTop = messageList.scrollHeight;
-            });
+            messageList.scrollTo({ top: messageList.scrollHeight, behavior: 'instant' });
         }
+    }
+
+    static forceScrollToBottom() {
+        const messageList = document.getElementById('message-list');
+        const scrollBtn = document.getElementById('scroll-to-bottom-btn');
+        if (!messageList) return;
+
+        this.autoScrollEnabled = true;
+        this.ignoreScrollEvents = true;
+        if (scrollBtn) scrollBtn.classList.add('hidden');
+        
+        messageList.scrollTo({ top: messageList.scrollHeight, behavior: 'smooth' });
+
+        // Check arrival to release lock
+        const checkArrival = setInterval(() => {
+            const threshold = 20;
+            const position = Math.ceil(messageList.scrollTop + messageList.clientHeight);
+            const height = messageList.scrollHeight;
+
+            if (height - position <= threshold) {
+                this.ignoreScrollEvents = false;
+                clearInterval(checkArrival);
+            }
+        }, 100);
+
+        setTimeout(() => {
+            clearInterval(checkArrival);
+            this.ignoreScrollEvents = false;
+        }, 2000);
     }
 
     static setupEventListeners() {
