@@ -1,8 +1,18 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="flex-1 flex flex-col overflow-hidden border-r border-dark-light">
+<div class="relative flex-1 flex flex-col overflow-hidden border-r border-dark-light">
     {% include "chat/partials/message_list.html" %}
+
+    <!-- Scroll to Bottom Button -->
+    <button id="scroll-to-bottom-btn" 
+            class="hidden absolute bottom-20 left-1/2 transform -translate-x-1/2 bg-dark-card border border-dark-light text-gray-400 hover:text-white hover:border-primary rounded-full p-2 shadow-lg z-20 transition-all duration-200 opacity-80 hover:opacity-100"
+            onclick="ChatApp.forceScrollToBottom()"
+            title="Scroll to bottom">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+        </svg>
+    </button>
 
     {% include "chat/partials/message_form.html" %}
 </div>

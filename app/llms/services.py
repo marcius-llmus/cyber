@@ -156,7 +156,12 @@ class LLMService:
                 model=model_name,
                 temperature=temperature,
                 api_key=api_key,
-                timeout=settings.LLM_TIMEOUT
+                timeout=settings.LLM_TIMEOUT,
+                additional_kwargs={
+                    "stream_options": {
+                        "include_usage": True
+                    }
+                }
             )
         elif provider == LLMProvider.ANTHROPIC:
             return InstrumentedAnthropic(

@@ -23,10 +23,9 @@ Roadmap
 - Add MCP Integration
 - Add Possibility of rag through semantic search with codeblock chunks similarly to cursor
 - Add sub folder project (currently, only top level are projects)
+- Order llm's by provider
 
 
 --------
 Bugs
-
-Error processing app/agents/constants.py: missing ), unterminated subpattern at position 16
 still calling tools to read files already loaded
