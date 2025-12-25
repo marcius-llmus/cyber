@@ -2,9 +2,11 @@ from enum import StrEnum
 
 
 class OperationalMode(StrEnum):
-    CODE = "code"
-    PLAN = "plan"
-    READ_ONLY = "read_only"
+    CODING = "coding"
+    ASK = "ask"
+    CHAT = "chat"
+    PLANNER = "planner"
+    SINGLE_SHOT = "single_shot"
 
 
 class CodingMode(StrEnum):
