@@ -6,6 +6,8 @@ from app.sessions.enums import SessionEventType
 from app.sessions.dependencies import get_session_page_service, get_session_service
 from app.sessions.exceptions import ChatSessionNotFoundException
 from app.sessions.services import SessionPageService, SessionService
+from app.sessions.schemas import UpdateSessionModeRequest
+
 
 router = APIRouter()
 
@@ -18,6 +20,23 @@ async def get_session_list(
 ):
     page_data = await service.get_sessions_page_data()
     return {**page_data, "SessionEventType": SessionEventType}
+
+
+@router.post("/session/{session_id}/mode", status_code=status.HTTP_204_NO_CONTENT)
+async def update_session_mode(
+    request: Request,
+    session_id: int,
+    payload: UpdateSessionModeRequest,
+    service: SessionService = Depends(get_session_service),
+):
+    try:
+        await service.set_operational_mode(session_id=session_id, mode=payload.operational_mode)
+    except ChatSessionNotFoundException as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ActiveProjectRequiredException as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.delete("/{session_id}", status_code=status.HTTP_204_NO_CONTENT)

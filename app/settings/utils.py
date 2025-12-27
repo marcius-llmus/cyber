@@ -1,7 +1,7 @@
 import logging
 from decimal import Decimal
 
-from app.core.enums import CodingMode, ContextStrategy, OperationalMode
+from app.core.enums import CodingMode, ContextStrategy
 from app.llms.enums import LLMModel, LLMRole
 from app.llms.factories import build_llm_service
 from app.settings.repositories import SettingsRepository
@@ -52,7 +52,6 @@ async def initialize_application_settings(db: AsyncSession) -> None:
     # todo need to fix it later, call by services. coding_llm_settings_id should not be needed here
     await settings_repo.create(
         SettingsCreate(
-            operational_mode=OperationalMode.CODING,
             coding_mode=CodingMode.AGENT,
             context_strategy=ContextStrategy.MANUAL,
             max_history_length=50,

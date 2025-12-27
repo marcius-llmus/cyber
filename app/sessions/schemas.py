@@ -14,9 +14,15 @@ class ChatSessionCreate(ChatSessionBase):
 
 class ChatSessionUpdate(BaseModel):
     operational_mode: OperationalMode | None = None
+    name: str | None = None
+
+
+class UpdateSessionModeRequest(BaseModel):
+    operational_mode: OperationalMode
 
 
 class ChatSessionRead(ChatSessionBase):
     id: int
     created_at: datetime
     is_active: bool
+    operational_mode: OperationalMode

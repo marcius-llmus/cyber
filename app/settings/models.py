@@ -1,20 +1,18 @@
 from sqlalchemy import (
     Column,
     Boolean,
-    Enum,
     Float,
     Integer
 )
 
 from app.core.db import Base
-from app.core.enums import CodingMode, ContextStrategy, OperationalMode
+from app.core.enums import CodingMode, ContextStrategy
 
 
 class Settings(Base):
     __tablename__ = "settings"
 
     id = Column(Integer, primary_key=True, default=1)
-    operational_mode = Column(Enum(OperationalMode, name="operationalmode"), nullable=False)
     coding_mode = Column(Enum(CodingMode, name="codingmode"), nullable=False)
     context_strategy = Column(Enum(ContextStrategy, name="contextstrategy"), nullable=False)
     max_history_length = Column(Integer, nullable=False)
