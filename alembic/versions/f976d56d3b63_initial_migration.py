@@ -59,7 +59,7 @@ def upgrade() -> None:
     )
     op.create_table('settings',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('operational_mode', sa.Enum('CODE', 'PLAN', 'READ_ONLY', name='operationalmode'), nullable=False),
+    sa.Column('operational_mode', sa.Enum('CODING', 'ASK', 'CHAT', 'PLANNER', 'SINGLE_SHOT', name='operationalmode'), nullable=False),
     sa.Column('coding_mode', sa.Enum('AGENT', 'SINGLE_SHOT', name='codingmode'), nullable=False),
     sa.Column('context_strategy', sa.Enum('MANUAL', 'AUTO_GATHER', 'RAG', name='contextstrategy'), nullable=False),
     sa.Column('max_history_length', sa.Integer(), nullable=False),
