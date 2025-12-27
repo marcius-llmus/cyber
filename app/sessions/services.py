@@ -3,7 +3,8 @@ from app.projects.services import ProjectService
 from app.sessions.exceptions import ChatSessionNotFoundException
 from app.sessions.models import ChatSession
 from app.sessions.repositories import ChatSessionRepository
-from app.sessions.schemas import ChatSessionCreate
+from app.sessions.schemas import ChatSessionCreate, ChatSessionUpdate
+from app.core.enums import OperationalMode
 
 
 class SessionService:
@@ -60,6 +61,11 @@ class SessionService:
         if not session:
             raise ChatSessionNotFoundException(f"Session with id {session_id} not found.")
         return session
+
+    async def update_session_mode(self, session_id: int, mode: OperationalMode) -> ChatSession:
+        session = await self.get_session(session_id=session_id)
+        obj_in = ChatSessionUpdate(operational_mode=mode)
+        return await self.session_repo.update(db_obj=session, obj_in=obj_in)
 
 
 class SessionPageService:

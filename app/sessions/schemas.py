@@ -1,5 +1,6 @@
 from datetime import datetime
 from pydantic import BaseModel
+from app.core.enums import OperationalMode
 
 
 class ChatSessionBase(BaseModel):
@@ -9,6 +10,10 @@ class ChatSessionBase(BaseModel):
 
 class ChatSessionCreate(ChatSessionBase):
     pass
+
+
+class ChatSessionUpdate(BaseModel):
+    operational_mode: OperationalMode | None = None
 
 
 class ChatSessionRead(ChatSessionBase):
