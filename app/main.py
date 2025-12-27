@@ -12,7 +12,7 @@ from app.chat.routes.htmx import router as chat_htmx_router
 from app.core.templating import templates
 from app.projects.routes.htmx import router as projects_htmx_router
 from app.context.routes.htmx import router as context_htmx_router
-from app.history.routes.htmx import router as history_htmx_router
+from app.sessions.routes.htmx import router as sessions_htmx_router
 from app.prompts.routes.htmx import router as prompts_htmx_router
 from app.settings.routes.htmx import router as settings_htmx_router
 from app.settings.utils import initialize_application_settings
@@ -64,7 +64,7 @@ app.include_router(settings_htmx_router, prefix="/settings", tags=["settings"])
 app.include_router(projects_htmx_router, prefix="/projects", tags=["projects"])
 app.include_router(prompts_htmx_router, prefix="/prompts", tags=["prompts"])
 app.include_router(context_htmx_router, prefix="/context", tags=["context"])
-app.include_router(history_htmx_router, prefix="/history", tags=["history"])
+app.include_router(sessions_htmx_router, prefix="/sessions", tags=["sessions"])
 app.include_router(chat_htmx_router, prefix="/chat", tags=["chat"])
 
 

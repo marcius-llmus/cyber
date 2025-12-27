@@ -1,12 +1,12 @@
 from app.projects.exceptions import ActiveProjectRequiredException
 from app.projects.services import ProjectService
-from app.history.exceptions import ChatSessionNotFoundException
-from app.history.models import ChatSession
-from app.history.repositories import ChatSessionRepository
-from app.history.schemas import ChatSessionCreate
+from app.sessions.exceptions import ChatSessionNotFoundException
+from app.sessions.models import ChatSession
+from app.sessions.repositories import ChatSessionRepository
+from app.sessions.schemas import ChatSessionCreate
 
 
-class HistoryService:
+class SessionService:
     def __init__(self, session_repo: ChatSessionRepository, project_service: ProjectService):
         self.session_repo = session_repo
         self.project_service = project_service
@@ -62,12 +62,12 @@ class HistoryService:
         return session
 
 
-class HistoryPageService:
-    def __init__(self, history_service: HistoryService, project_service: ProjectService):
-        self.history_service = history_service
+class SessionPageService:
+    def __init__(self, session_service: SessionService, project_service: ProjectService):
+        self.session_service = session_service
         self.project_service = project_service
 
-    async def get_history_page_data(self) -> dict:
+    async def get_sessions_page_data(self) -> dict:
         active_project = await self.project_service.project_repo.get_active()
-        sessions = await self.history_service.get_sessions_by_project(project_id=active_project.id) if active_project else []
+        sessions = await self.session_service.get_sessions_by_project(project_id=active_project.id) if active_project else []
         return {"sessions": sessions}

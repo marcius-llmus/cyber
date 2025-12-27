@@ -6,10 +6,10 @@ from llama_index.core.llms import ChatMessage
 from app.chat.enums import MessageRole
 from app.chat.repositories import MessageRepository
 from app.chat.schemas import MessageCreate
-from app.history.models import ChatSession
+from app.sessions.models import ChatSession
 from app.chat.models import Message
-from app.history.schemas import ChatSessionCreate
-from app.history.services import HistoryService
+from app.sessions.schemas import ChatSessionCreate
+from app.sessions.services import SessionService
 from app.projects.exceptions import ActiveProjectRequiredException
 from app.projects.services import ProjectService
 
@@ -18,7 +18,7 @@ class ChatService:
     def __init__(
         self,
         message_repo: MessageRepository,
-        history_service: HistoryService,
+        history_service: SessionService,
         project_service: ProjectService,
     ):
         self.message_repo = message_repo

@@ -1,7 +1,7 @@
 from app.chat.services import ChatService
 from app.context.services import WorkspaceService
 from app.usage.services import UsagePageService
-from app.history.enums import HistoryEventType
+from app.sessions.enums import SessionEventType
 from app.prompts.enums import PromptEventType
 
 
@@ -40,7 +40,7 @@ class CoderPageService:
         return {
             **page_data,
             "PromptEventType": PromptEventType,
-            "HistoryEventType": HistoryEventType,
+            "SessionEventType": SessionEventType,
         }
 
     async def _get_empty_session_data(self) -> dict:

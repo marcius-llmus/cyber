@@ -2,7 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
 from app.commons.repositories import BaseRepository
-from app.history.models import ChatSession
+from app.sessions.models import ChatSession
 
 
 class ChatSessionRepository(BaseRepository[ChatSession]):

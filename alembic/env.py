@@ -7,7 +7,7 @@ from sqlalchemy import pool
 
 from app.core.config import settings
 from app.core.db import Base  # noqa
-from app.history.models import *  # noqa
+from app.sessions.models import *  # noqa
 from app.projects.models import *  # noqa
 from app.prompts.models import *  # noqa
 from app.settings.models import *  # noqa

@@ -74,7 +74,7 @@ class CoderService:
                 await handler
                 
                 # session here is the db session
-                # session_id is the 'history', the one user can delete, not db
+                # session_id is the 'ChatSession', the one user can delete, not db
                 async with self.db.session() as session:
                     chat_service = await self.chat_service_factory(session)
                     

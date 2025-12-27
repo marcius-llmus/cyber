@@ -1,6 +1,6 @@
 const Action = {
     CLEAR_LOGS: 'clear-logs',
-    CLEAR_HISTORY: 'clear-history',
+    CLEAR_SESSIONS: 'clear-sessions',
     EXPAND_FOLDERS: 'expand-all-folders',
     COLLAPSE_FOLDERS: 'collapse-all-folders',
     TOGGLE_FOLDER: 'toggle-folder',
@@ -522,9 +522,9 @@ class ChatApp {
             [Action.CLEAR_LOGS]: () => {
                 document.getElementById('logs-container').innerHTML = '<div class="text-xs text-gray-500 text-center py-6">No logs yet</div>';
             },
-            [Action.CLEAR_HISTORY]: () => {
-                ChatApp.addLog('History cleared', 'blue');
-                document.getElementById('history-modal').classList.remove('active');
+            [Action.CLEAR_SESSIONS]: () => {
+                ChatApp.addLog('Sessions cleared', 'blue');
+                document.getElementById('sessions-modal').classList.remove('active');
             },
             [Action.EXPAND_FOLDERS]: () => {
                 document.querySelectorAll('.tree-children').forEach(el => el.classList.remove('hidden'));

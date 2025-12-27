@@ -1,0 +1,15 @@
+<div
+    id="session-list-wrapper"
+    hx-get="/sessions/"
+    hx-trigger="{{ SessionEventType.SESSIONS_CHANGED }} from:body"
+    hx-swap="outerHTML"
+>
+
+    {% if sessions %}
+        {% for session in sessions %}
+            {% include "sessions/partials/session_item.html" with context %}
+        {% endfor %}
+    {% else %}
+        <div class="text-xs text-gray-500 text-center py-6">No sessions for this project</div>
+    {% endif %}
+</div>
