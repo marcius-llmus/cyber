@@ -12,7 +12,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.core.db import Base
-from app.settings.enums import OperationalMode
+from app.core.enums import OperationalMode
 
 
 class ChatSession(Base):

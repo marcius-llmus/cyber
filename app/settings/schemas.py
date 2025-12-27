@@ -1,8 +1,8 @@
 from decimal import Decimal
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.core.enums import CodingMode, ContextStrategy, OperationalMode
 from app.llms.enums import LLMModel, LLMProvider
-from app.settings.enums import CodingMode, ContextStrategy, OperationalMode
 
 
 class LLMSettingsBase(BaseModel):

@@ -1,8 +1,9 @@
 import logging
 from decimal import Decimal
+
+from app.core.enums import CodingMode, ContextStrategy, OperationalMode
 from app.llms.enums import LLMModel, LLMRole
 from app.llms.factories import build_llm_service
-from app.settings.enums import CodingMode, ContextStrategy, OperationalMode
 from app.settings.repositories import SettingsRepository
 from app.settings.schemas import LLMSettingsCreate, SettingsCreate
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -59,6 +60,7 @@ async def initialize_application_settings(db: AsyncSession) -> None:
             ast_token_limit=10000,
             grep_token_limit=4000,
             diff_patches_auto_open=True,
+            diff_patches_auto_apply=False,
         )
     )
     await db.commit()

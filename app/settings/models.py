@@ -7,7 +7,7 @@ from sqlalchemy import (
 )
 
 from app.core.db import Base
-from app.settings.enums import CodingMode, ContextStrategy, OperationalMode
+from app.core.enums import CodingMode, ContextStrategy, OperationalMode
 
 
 class Settings(Base):
