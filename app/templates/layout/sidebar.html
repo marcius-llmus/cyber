@@ -7,12 +7,19 @@
         <div class="space-y-4">
             <div>
                 <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Operational Mode</label>
-                <select class="w-full bg-dark-card border border-dark-light rounded-lg px-3 py-2 text-sm">
-                    <option>Coding</option>
-                    <option>Ask</option>
-                    <option>Chat</option>
-                    <option>Planner</option>
-                    <option>Single-shot</option>
+                <select
+                    name="mode"
+                    hx-post="/history/session/{{ session.id }}/mode"
+                    hx-trigger="change"
+                    hx-swap="none"
+                    hx-ext="form-json"
+                    class="w-full bg-dark-card border border-dark-light rounded-lg px-3 py-2 text-sm"
+                >
+                    <option value="CODING" {% if session and session.operational_mode == 'CODING' %}selected{% endif %}>Coding</option>
+                    <option value="ASK" {% if session and session.operational_mode == 'ASK' %}selected{% endif %}>Ask</option>
+                    <option value="CHAT" {% if session and session.operational_mode == 'CHAT' %}selected{% endif %}>Chat</option>
+                    <option value="PLANNER" {% if session and session.operational_mode == 'PLANNER' %}selected{% endif %}>Planner</option>
+                    <option value="SINGLE_SHOT" {% if session and session.operational_mode == 'SINGLE_SHOT' %}selected{% endif %}>Single-shot</option>
                 </select>
             </div>
 
