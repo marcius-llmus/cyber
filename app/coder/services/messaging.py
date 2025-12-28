@@ -112,9 +112,6 @@ class MessagingTurnEventHandler:
 
             yield AIMessageChunkEvent(delta=event.delta, block_id=block_id)
 
-        if event.tool_calls:
-            yield AgentStateEvent(status=f"Calling {len(event.tool_calls)} tools...")
-
     async def _handle_tool_call_event(self, event: ToolCall) -> AsyncGenerator[CoderEvent, None]:
         yield AgentStateEvent(status=f"Calling tool `{event.tool_name}`...")
         
