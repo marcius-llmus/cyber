@@ -9,15 +9,11 @@ class LogLevel(StrEnum):
     DEBUG = "DEBUG"
 
 
-class CodingMode(StrEnum):
-    AGENT = "AGENT"
-    SINGLE_SHOT = "SINGLE_SHOT"
-
-
 class ContextStrategy(StrEnum):
     MANUAL = "MANUAL"
-    AUTO_GATHER = "AUTO_GATHER"
+    GREP = "GREP"
     RAG = "RAG"
+    GREP_RAG = "GREP_RAG"
 
 
 class OperationalMode(StrEnum):

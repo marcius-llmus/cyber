@@ -1,7 +1,6 @@
 from decimal import Decimal
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.core.enums import CodingMode, ContextStrategy
 from app.llms.enums import LLMModel, LLMProvider
 
 
@@ -27,8 +26,6 @@ class LLMSettingsUpdate(BaseModel):
 
 
 class SettingsBase(BaseModel):
-    coding_mode: CodingMode
-    context_strategy: ContextStrategy
     max_history_length: int
     ast_token_limit: int
     grep_token_limit: int

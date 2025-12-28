@@ -1,4 +1,4 @@
-"""Add session Operational Modes and diff ui setting
+"""Add session Operational Mode and diff ui setting
 
 Revision ID: c2d757907f05
 Revises: fe9dafedda8f
@@ -50,6 +50,14 @@ def upgrade() -> None:
                 nullable=False,
             )
         )
+        batch_op.add_column(
+            sa.Column(
+                'context_strategy',
+                sa.Enum('MANUAL', 'GREP', 'RAG', 'GREP_RAG', name='contextstrategy'),
+                server_default='GREP',
+                nullable=False,
+            )
+        )
 
     with op.batch_alter_table('settings', schema=None) as batch_op:
         batch_op.add_column(sa.Column('diff_patches_auto_open', sa.Boolean(), server_default='t', nullable=False))
@@ -63,6 +71,7 @@ def downgrade() -> None:
         batch_op.drop_column('diff_patches_auto_open')
 
     with op.batch_alter_table('chat_sessions', schema=None) as batch_op:
+        batch_op.drop_column('context_strategy')
         batch_op.drop_column('operational_mode')
 
     op.drop_index(op.f('ix_diff_patches_session_id'), table_name='diff_patches')

@@ -6,15 +6,12 @@ from sqlalchemy import (
 )
 
 from app.core.db import Base
-from app.core.enums import CodingMode, ContextStrategy
 
 
 class Settings(Base):
     __tablename__ = "settings"
 
     id = Column(Integer, primary_key=True, default=1)
-    coding_mode = Column(Enum(CodingMode, name="codingmode"), nullable=False)
-    context_strategy = Column(Enum(ContextStrategy, name="contextstrategy"), nullable=False)
     max_history_length = Column(Integer, nullable=False)
     coding_llm_temperature = Column(Float, nullable=False) # todo: shall be in llm models later
     ast_token_limit = Column(Integer, nullable=False)

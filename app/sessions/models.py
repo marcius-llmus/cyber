@@ -12,7 +12,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.core.db import Base
-from app.core.enums import OperationalMode
+from app.core.enums import ContextStrategy, OperationalMode
 
 
 class ChatSession(Base):
@@ -22,7 +22,16 @@ class ChatSession(Base):
     name = Column(String, nullable=False)
     created_at = Column(DateTime, nullable=False, server_default=func.now())
     is_active = Column(Boolean, default=False, nullable=False, server_default="f")
-    operational_mode = Column(Enum(OperationalMode, name="operationalmode"), nullable=False, server_default=OperationalMode.CODING)
+    operational_mode = Column(
+        Enum(OperationalMode, name="operationalmode"),
+        nullable=False,
+        server_default=OperationalMode.CODING,
+    )
+    context_strategy = Column(
+        Enum(ContextStrategy, name="contextstrategy"),
+        nullable=False,
+        server_default=ContextStrategy.GREP,
+    )
     project_id = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
 
     project = relationship("Project", back_populates="chat_sessions", lazy="joined")

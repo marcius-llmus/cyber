@@ -43,7 +43,7 @@ def upgrade() -> None:
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
     sa.Column('project_id', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['project_id'], ['projects.id'], ),
+    sa.ForeignKeyConstraint(['project_id'], ['projects.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('prompts',
@@ -53,14 +53,12 @@ def upgrade() -> None:
     sa.Column('content', sa.Text(), nullable=False),
     sa.Column('source_path', sa.String(), nullable=True),
     sa.Column('project_id', sa.Integer(), nullable=True),
-    sa.ForeignKeyConstraint(['project_id'], ['projects.id'], ),
+    sa.ForeignKeyConstraint(['project_id'], ['projects.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('name', 'project_id', name='_name_project_uc')
     )
     op.create_table('settings',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('coding_mode', sa.Enum('AGENT', 'SINGLE_SHOT', name='codingmode'), nullable=False),
-    sa.Column('context_strategy', sa.Enum('MANUAL', 'AUTO_GATHER', 'RAG', name='contextstrategy'), nullable=False),
     sa.Column('max_history_length', sa.Integer(), nullable=False),
     sa.Column('ast_token_limit', sa.Integer(), nullable=False),
     sa.Column('coding_llm_settings_id', sa.Integer(), nullable=False),
@@ -71,7 +69,7 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('session_id', sa.Integer(), nullable=False),
     sa.Column('file_path', sa.String(), nullable=False),
-    sa.ForeignKeyConstraint(['session_id'], ['chat_sessions.id'], ),
+    sa.ForeignKeyConstraint(['session_id'], ['chat_sessions.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('session_id', 'file_path', name='_session_file_uc')
     )
@@ -84,21 +82,21 @@ def upgrade() -> None:
     sa.Column('input_tokens', sa.Integer(), nullable=True),
     sa.Column('output_tokens', sa.Integer(), nullable=True),
     sa.Column('cost', sa.Float(), nullable=True),
-    sa.ForeignKeyConstraint(['session_id'], ['chat_sessions.id'], ),
+    sa.ForeignKeyConstraint(['session_id'], ['chat_sessions.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('project_prompt_attachments',
     sa.Column('project_id', sa.Integer(), nullable=False),
     sa.Column('prompt_id', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['project_id'], ['projects.id'], ),
-    sa.ForeignKeyConstraint(['prompt_id'], ['prompts.id'], ),
+    sa.ForeignKeyConstraint(['project_id'], ['projects.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['prompt_id'], ['prompts.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('project_id', 'prompt_id')
     )
     op.create_table('session_prompt_attachments',
     sa.Column('session_id', sa.Integer(), nullable=False),
     sa.Column('prompt_id', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['prompt_id'], ['prompts.id'], ),
-    sa.ForeignKeyConstraint(['session_id'], ['chat_sessions.id'], ),
+    sa.ForeignKeyConstraint(['prompt_id'], ['prompts.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['session_id'], ['chat_sessions.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('session_id', 'prompt_id')
     )
     # ### end Alembic commands ###
