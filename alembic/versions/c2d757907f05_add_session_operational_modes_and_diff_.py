@@ -35,8 +35,8 @@ def upgrade() -> None:
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('applied_at', sa.DateTime(timezone=True), nullable=True),
-    sa.ForeignKeyConstraint(['message_id'], ['messages.id'], ),
-    sa.ForeignKeyConstraint(['session_id'], ['chat_sessions.id'], ),
+    sa.ForeignKeyConstraint(['message_id'], ['messages.id'], name="fk_diff_patches_message_id_messages", ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['session_id'], ['chat_sessions.id'], name="fk_diff_patches_session_id_chat_sessions", ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_diff_patches_id'), 'diff_patches', ['id'], unique=False)

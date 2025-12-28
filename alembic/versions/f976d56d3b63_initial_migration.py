@@ -61,8 +61,6 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('max_history_length', sa.Integer(), nullable=False),
     sa.Column('ast_token_limit', sa.Integer(), nullable=False),
-    sa.Column('coding_llm_settings_id', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['coding_llm_settings_id'], ['llm_settings.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('context_files',

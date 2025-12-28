@@ -36,7 +36,12 @@ def upgrade() -> None:
     sa.Column('input_tokens', sa.Integer(), nullable=False),
     sa.Column('output_tokens', sa.Integer(), nullable=False),
     sa.Column('cached_tokens', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['session_id'], ['chat_sessions.id'], ),
+    sa.ForeignKeyConstraint(
+        ['session_id'],
+        ['chat_sessions.id'],
+        name='fk_session_usage_session_id_chat_sessions',
+        ondelete='CASCADE',
+    ),
     sa.PrimaryKeyConstraint('session_id')
     )
     # ### end Alembic commands ###

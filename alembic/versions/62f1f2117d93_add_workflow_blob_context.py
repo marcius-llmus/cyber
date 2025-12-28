@@ -24,7 +24,12 @@ def upgrade() -> None:
     op.create_table('workflow_states',
     sa.Column('session_id', sa.Integer(), nullable=False),
     sa.Column('state', sa.JSON(), nullable=False),
-    sa.ForeignKeyConstraint(['session_id'], ['chat_sessions.id'], ),
+    sa.ForeignKeyConstraint(
+        ['session_id'],
+        ['chat_sessions.id'],
+        name='fk_workflow_states_session_id_chat_sessions',
+        ondelete='CASCADE',
+    ),
     sa.PrimaryKeyConstraint('session_id')
     )
     # ### end Alembic commands ###
