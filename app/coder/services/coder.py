@@ -16,6 +16,7 @@ from app.coder.schemas import (
 from app.agents.services import WorkflowService
 from app.usage.event_handlers import UsageCollector
 from app.coder.services.messaging import MessagingTurnEventHandler
+from app.sessions.services import SessionService
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +26,7 @@ class CoderService:
         self,
         db: DatabaseSessionManager, # this is not a session, but the manager
         chat_service_factory: Callable[[AsyncSession], Awaitable[ChatService]],
+        session_service_factory: Callable[[AsyncSession], Awaitable[SessionService]],
         workflow_service_factory: Callable[[AsyncSession], Awaitable[WorkflowService]],
         agent_factory: Callable[[AsyncSession, int], Coroutine[Any, Any, Any]],
         usage_service_factory: Callable[[AsyncSession], Awaitable[Any]],
@@ -32,6 +34,7 @@ class CoderService:
     ):
         self.db = db
         self.chat_service_factory = chat_service_factory
+        self.session_service_factory = session_service_factory
         self.agent_factory = agent_factory
         self.workflow_service_factory = workflow_service_factory
         self.usage_service_factory = usage_service_factory
@@ -77,7 +80,10 @@ class CoderService:
                 # session_id is the 'ChatSession', the one user can delete, not db
                 async with self.db.session() as session:
                     chat_service = await self.chat_service_factory(session)
-                    
+                    session_service = await self.session_service_factory(session)
+                    effective_mode = await session_service.get_operational_mode(session_id=session_id)
+                    logger.info("Session %s effective operational mode: %s", session_id, effective_mode)
+
                     await chat_service.save_turn(
                         session_id=session_id,
                         user_content=user_message,

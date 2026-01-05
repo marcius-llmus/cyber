@@ -12,6 +12,7 @@ from app.agents.factories import build_agent
 from app.agents.factories import build_workflow_service
 from app.context.dependencies import get_context_service
 from app.context.services import WorkspaceService
+from app.sessions.factories import build_session_service
 from app.usage.factories import build_usage_service
 from app.coder.factories import build_messaging_turn_event_handler
 
@@ -29,6 +30,7 @@ async def get_coder_service() -> CoderService:
     return CoderService(
         db=sessionmanager,
         chat_service_factory=build_chat_service,
+        session_service_factory=build_session_service,
         workflow_service_factory=build_workflow_service,
         usage_service_factory=build_usage_service,
         agent_factory=build_agent,

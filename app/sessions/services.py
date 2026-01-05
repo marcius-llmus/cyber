@@ -62,6 +62,10 @@ class SessionService:
             raise ChatSessionNotFoundException(f"Session with id {session_id} not found.")
         return session
 
+    async def get_operational_mode(self, session_id: int) -> OperationalMode:
+        session = await self.get_session(session_id=session_id)
+        return session.operational_mode
+
     async def set_operational_mode(self, session_id: int, mode: OperationalMode) -> ChatSession:
         return await self._update_session(session_id=session_id, obj_in=ChatSessionUpdate(operational_mode=mode))
 
