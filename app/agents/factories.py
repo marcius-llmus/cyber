@@ -10,7 +10,7 @@ from app.prompts.factories import build_prompt_service
 from app.coder.agent import CoderAgent
 from llama_index.core.tools import BaseTool
 from app.context.tools import SearchTools, FileTools
-from app.coder.tools import PatcherTools
+from app.patches.tools import PatcherTools
 from app.agents.repositories import WorkflowStateRepository
 from app.agents.services import WorkflowService, AgentContextService
 

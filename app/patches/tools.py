@@ -3,7 +3,7 @@ from typing import Annotated
 
 from pydantic import Field
 
-from app.coder.factories import build_patcher_service
+from app.patches.factories import build_diff_patch_service
 from app.commons.tools import BaseToolSet
 
 logger = logging.getLogger(__name__)
@@ -53,8 +53,8 @@ class PatcherTools(BaseToolSet):
                 return "Error: No active session ID."
 
             async with self.db.session() as session:
-                patcher = await build_patcher_service(session)
-                return await patcher.apply_diff(file_path=file_path, diff_content=diff)
+                diff_patch_service = await build_diff_patch_service(session)
+                return await diff_patch_service.apply_diff(file_path=file_path, diff_content=diff)
 
         except Exception as e:
             logger.error(f"PatcherTools.apply_diff failed: {e}", exc_info=True)
