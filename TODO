@@ -16,6 +16,7 @@ Fix:
 - On page load, scroll to the end
 - Fix calling tools spamming on openai
 - Update enums for case consistency
+- Cache persists after cleaning history?
 
 --------
 Roadmap
