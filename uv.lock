@@ -1247,16 +1247,16 @@ wheels = [
 
 [[package]]
 name = "llama-index-llms-google-genai"
-version = "0.8.2"
+version = "0.8.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "google-genai" },
     { name = "llama-index-core" },
     { name = "pillow" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/62/5d/80c11637c7975700111d446c4cab2908eed4d10e48f3971531608dbb462f/llama_index_llms_google_genai-0.8.2.tar.gz", hash = "sha256:158481fd51455b1db1f2d978cef1dca3254285a62a4a9c83cdaa91ed619f8a48", size = 13233, upload-time = "2025-12-16T02:55:43.796Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/7b/d1/a8abf2d7cb1e742e95808bfcdda0cbd88395d14bc45a44ac6b72ee8695dc/llama_index_llms_google_genai-0.8.3.tar.gz", hash = "sha256:4c8ad48b6124534b09af6b15a16e0a415826045c2a6a6ec82094c38cf53f73ad", size = 13239, upload-time = "2025-12-26T16:14:40.28Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5d/69/1a5b3179af860de6e9ea6ebd8950b959dac788becc284c7b39ed34126135/llama_index_llms_google_genai-0.8.2-py3-none-any.whl", hash = "sha256:61c456bfc9eff8b28e6672fe73c10f3d56c81c9970379c22fce6ac936a00fe99", size = 13805, upload-time = "2025-12-16T02:55:42.745Z" },
+    { url = "https://files.pythonhosted.org/packages/d5/0f/ca3c868f13b3f5071d18cb7b5d02fae035b95bca4b442ee1155568f68422/llama_index_llms_google_genai-0.8.3-py3-none-any.whl", hash = "sha256:ee906a92bbf579cac1411c062f66c624d211e4f64e34259f1da5504c36e24dab", size = 13815, upload-time = "2025-12-26T16:14:41.272Z" },
 ]
 
 [[package]]
