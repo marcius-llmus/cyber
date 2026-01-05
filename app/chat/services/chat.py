@@ -18,11 +18,11 @@ class ChatService:
     def __init__(
         self,
         message_repo: MessageRepository,
-        history_service: SessionService,
+        session_service: SessionService,
         project_service: ProjectService,
     ):
         self.message_repo = message_repo
-        self.history_service = history_service
+        self.session_service = session_service
         self.project_service = project_service
 
     async def get_or_create_active_session(self) -> ChatSession:
@@ -32,11 +32,11 @@ class ChatService:
         return await self.get_or_create_session_for_project(active_project.id)
 
     async def get_or_create_session_for_project(self, project_id: int) -> ChatSession:
-        if session := await self.history_service.get_most_recent_session_by_project(project_id=project_id):
+        if session := await self.session_service.get_most_recent_session_by_project(project_id=project_id):
             return session
 
         session_in = ChatSessionCreate(name="New Session", project_id=project_id)
-        return await self.history_service.create_session(session_in=session_in)
+        return await self.session_service.create_session(session_in=session_in)
 
     async def add_user_message(self, *, content: str, session_id: int) -> Message:
         # Convert raw content to a text block
@@ -66,7 +66,7 @@ class ChatService:
         return await self.message_repo.create(obj_in=message_in)
 
     async def get_session_by_id(self, session_id: int) -> ChatSession:
-        return await self.history_service.get_session(session_id=session_id)
+        return await self.session_service.get_session(session_id=session_id)
 
     async def list_messages_by_session(self, *, session_id: int) -> list[Message]:
         return await self.message_repo.list_by_session_id(session_id=session_id)

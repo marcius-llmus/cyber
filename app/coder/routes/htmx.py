@@ -41,10 +41,10 @@ async def read_session(
     request: Request,
     session_id: int,
     page_service: CoderPageService = Depends(get_coder_page_service),
-    history_service: SessionService = Depends(get_session_service),
+    session_service: SessionService = Depends(get_session_service),
 ):
     try:
-        await history_service.set_active_session(session_id=session_id)
+        await session_service.set_active_session(session_id=session_id)
         page_data = await page_service.get_main_page_data(session_id=session_id)
         return templates.TemplateResponse(
             "chat/pages/main.html", {"request": request, **page_data}

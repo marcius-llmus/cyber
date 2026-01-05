@@ -12,6 +12,6 @@ async def build_chat_service(db: AsyncSession) -> ChatService:
     project_service = await build_project_service(db)
     return ChatService(
         message_repo=message_repo,
-        history_service=session_service,
+        session_service=session_service,
         project_service=project_service,
     )
