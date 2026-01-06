@@ -106,11 +106,14 @@ class CoderService:
                             session_id,
                         )
 
-                    # Persist Context State
-                    workflow_service = await self.workflow_service_factory(session)
-                    await workflow_service.save_context(session_id, ctx)
-                    
-                    # Process remaining usage events
+                        if patch_ids:
+                            applied = await diff_patch_service.apply_pending_by_message_id(message_id=ai_message.id)
+                            logger.info(
+                                "Auto-apply attempted for message_id=%s (results=%s)",
+                                ai_message.id,
+                                len(applied),
+                            )
+
                     async for usage_event in self._process_new_usage(session_id, event_collector):
                         yield usage_event
 

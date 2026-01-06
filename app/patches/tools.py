@@ -32,10 +32,17 @@ EXAMPLE:
 
 FILE_PATH_DESCRIPTION = "The relative path of the file to modify (e.g., 'src/main.py')."
 
+
 class PatcherTools(BaseToolSet):
     """Tools for applying code changes via Unified Diffs."""
 
     spec_functions = ["apply_diff"]
+
+    @staticmethod
+    def _format_apply_result(*, file_path: str, error_message: str | None) -> str:
+        if error_message:
+            return f"Error applying patch to {file_path}: {error_message}"
+        return f"Successfully patched {file_path}"
 
     async def apply_diff(
         self,
@@ -54,7 +61,8 @@ class PatcherTools(BaseToolSet):
 
             async with self.db.session() as session:
                 diff_patch_service = await build_diff_patch_service(session)
-                return await diff_patch_service.apply_diff(file_path=file_path, diff_content=diff)
+                await diff_patch_service.apply_diff(file_path=file_path, diff_content=diff)
+                return self._format_apply_result(file_path=file_path, error_message=None)
 
         except Exception as e:
             logger.error(f"PatcherTools.apply_diff failed: {e}", exc_info=True)

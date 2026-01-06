@@ -22,3 +22,11 @@ class DiffPatchUpdate(BaseModel):
     status: DiffPatchStatus | None = None
     error_message: str | None = None
     applied_at: datetime | None = None
+
+
+class DiffPatchApplyResult(BaseModel):
+    patch_id: int
+    file_path: str
+    status: DiffPatchStatus
+    applied: bool
+    error_message: str | None = None

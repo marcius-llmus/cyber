@@ -15,8 +15,8 @@ from app.projects.exceptions import ActiveProjectRequiredException
 from app.projects.services import ProjectService
 from app.patches.enums import DiffPatchStatus
 from app.patches.repositories import DiffPatchRepository
-from app.patches.schemas import DiffPatchCreate
-from app.patches.schemas import DiffPatchUpdate
+from app.patches.schemas import DiffPatchApplyResult, DiffPatchCreate, DiffPatchUpdate
+from app.settings.services import SettingsService
 
 logger = logging.getLogger(__name__)
 
@@ -33,33 +33,57 @@ class DiffPatchService:
         llm_service: LLMService,
         project_service: ProjectService,
         codebase_service: CodebaseService,
+        settings_service: SettingsService,
     ):
         self.diff_patch_repo = diff_patch_repo
         self.llm_service = llm_service
         self.project_service = project_service
         self.codebase_service = codebase_service
+        self.settings_service = settings_service
 
-    async def apply_saved_patch(self, *, patch_id: int, strategy: PatchStrategy = PatchStrategy.LLM_GATHER) -> str:
+    async def apply_saved_patch(
+        self,
+        *,
+        patch_id: int,
+        strategy: PatchStrategy = PatchStrategy.LLM_GATHER,
+    ) -> DiffPatchApplyResult:
         patch = await self.diff_patch_repo.get(pk=patch_id)
         if not patch:
             raise ValueError(f"DiffPatch {patch_id} not found")
 
         if patch.status != DiffPatchStatus.PENDING:
-            return f"Patch {patch_id} is {patch.status}"
+            return DiffPatchApplyResult(
+                patch_id=patch.id,
+                file_path=patch.file_path,
+                status=patch.status,
+                applied=False,
+                error_message=patch.error_message,
+            )
 
         try:
-            result = await self.apply_diff(file_path=patch.file_path, diff_content=patch.diff_current, strategy=strategy)
+            await self.apply_diff(file_path=patch.file_path, diff_content=patch.diff_current, strategy=strategy)
             await self.diff_patch_repo.update(
                 db_obj=patch,
                 obj_in=DiffPatchUpdate(status=DiffPatchStatus.APPLIED, applied_at=datetime.now()),
             )
-            return result
+            return DiffPatchApplyResult(
+                patch_id=patch.id,
+                file_path=patch.file_path,
+                status=DiffPatchStatus.APPLIED,
+                applied=True,
+            )
         except Exception as e:
             await self.diff_patch_repo.update(
                 db_obj=patch,
                 obj_in=DiffPatchUpdate(status=DiffPatchStatus.FAILED, error_message=str(e)),
             )
-            raise
+            return DiffPatchApplyResult(
+                patch_id=patch.id,
+                file_path=patch.file_path,
+                status=DiffPatchStatus.FAILED,
+                applied=False,
+                error_message=str(e),
+            )
 
     async def apply_diff(
         self,
@@ -128,6 +152,22 @@ class DiffPatchService:
             created = await self.diff_patch_repo.create(obj_in=patch_in)
             created_ids.append(created.id)
         return created_ids
+
+    async def apply_pending_by_message_id(
+        self,
+        *,
+        message_id: int,
+        strategy: PatchStrategy = PatchStrategy.LLM_GATHER,
+    ) -> list[DiffPatchApplyResult]:
+        settings = await self.settings_service.get_settings()
+        if not settings.diff_patches_auto_apply:
+            return []
+
+        pending = await self.diff_patch_repo.list_pending_by_message(message_id=message_id)
+        results: list[DiffPatchApplyResult] = []
+        for patch in pending:
+            results.append(await self.apply_saved_patch(patch_id=patch.id, strategy=strategy))
+        return results
 
     @staticmethod
     def _extract_single_shot_diff_patches(
