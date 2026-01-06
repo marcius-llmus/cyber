@@ -20,7 +20,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    with op.batch_alter_table("settings", schema=None, recreate="always") as batch_op:
+    with op.batch_alter_table("settings", schema=None) as batch_op:
         batch_op.add_column(
             sa.Column("diff_patches_auto_apply", sa.Boolean(), server_default="f", nullable=False)
         )
@@ -28,5 +28,5 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Downgrade schema."""
-    with op.batch_alter_table("settings", schema=None, recreate="always") as batch_op:
+    with op.batch_alter_table("settings", schema=None) as batch_op:
         batch_op.drop_column("diff_patches_auto_apply")

@@ -6,7 +6,6 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
-
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -14,23 +13,23 @@ from sqlalchemy.sql import func
 from app.core.db import Base
 from app.core.enums import ContextStrategy, OperationalMode
 
-
 class ChatSession(Base):
     __tablename__ = "chat_sessions"
 
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     created_at = Column(DateTime, nullable=False, server_default=func.now())
+    updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
     is_active = Column(Boolean, default=False, nullable=False, server_default="f")
     operational_mode = Column(
-        Enum(OperationalMode, name="operationalmode"),
+        Enum(OperationalMode),
         nullable=False,
-        server_default=OperationalMode.CODING,
+        server_default=OperationalMode.CODING.value,
     )
     context_strategy = Column(
-        Enum(ContextStrategy, name="contextstrategy"),
+        Enum(ContextStrategy),
         nullable=False,
-        server_default=ContextStrategy.GREP,
+        server_default=ContextStrategy.GREP.value,
     )
     project_id = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
 

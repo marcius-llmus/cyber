@@ -2,12 +2,12 @@ from enum import StrEnum
 
 
 class DiffPatchStatus(StrEnum):
-    PENDING = "pending"
-    APPLIED = "applied"
-    REJECTED = "rejected"
-    FAILED = "failed"
+    PENDING = "PENDING"
+    APPLIED = "APPLIED"
+    REJECTED = "REJECTED"
+    FAILED = "FAILED"
 
 
 class PatchStrategy(StrEnum):
-    LLM_GATHER = "llm_gather"
-    PROGRAMMATIC = "programmatic"
+    LLM_GATHER = "LLM_GATHER"
+    PROGRAMMATIC = "PROGRAMMATIC"

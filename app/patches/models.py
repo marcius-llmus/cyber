@@ -5,7 +5,6 @@ from sqlalchemy.sql import func
 from app.core.db import Base
 from app.patches.enums import DiffPatchStatus
 
-
 class DiffPatch(Base):
     __tablename__ = "diff_patches"
 
@@ -22,7 +21,11 @@ class DiffPatch(Base):
     diff_original = Column(Text, nullable=False)
     diff_current = Column(Text, nullable=False)
 
-    status = Column(Enum(DiffPatchStatus, name="patchstatus"), default=DiffPatchStatus.PENDING, nullable=False)
+    status = Column(
+        Enum(DiffPatchStatus),
+        default=DiffPatchStatus.PENDING,
+        nullable=False,
+    )
     error_message = Column(Text, nullable=True)
 
     tool_call_id = Column(String, nullable=True)

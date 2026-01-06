@@ -2,9 +2,9 @@ from enum import StrEnum
 
 
 class LLMProvider(StrEnum):
-    ANTHROPIC = "Anthropic"
-    GOOGLE = "Google"
-    OPENAI = "OpenAI"
+    ANTHROPIC = "ANTHROPIC"
+    GOOGLE = "GOOGLE"
+    OPENAI = "OPENAI"
 
 
 class LLMModel(StrEnum):
@@ -44,4 +44,4 @@ class LLMModel(StrEnum):
 
 
 class LLMRole(StrEnum):
-    CODER = "coder"
+    CODER = "CODER"
