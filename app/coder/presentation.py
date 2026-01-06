@@ -190,7 +190,7 @@ class WebSocketOrchestrator:
                 "deletions": deletions,
                 "tool_run_id": event.tool_run_id,
             }
-            diff_template = templates.get_template("chat/partials/diff_patch_item_oob.html").render(diff_context)
+            diff_template = templates.get_template("patches/partials/diff_patch_item_oob.html").render(diff_context)
             
             await self.ws_manager.send_html(diff_template)
 
@@ -211,7 +211,7 @@ class WebSocketOrchestrator:
         # 2. If it's a Diff Patch, ALSO update the Inline Visual Card
         if event.tool_name == "apply_diff":
             diff_context = {"tool_id": event.tool_id, "tool_run_id": event.tool_run_id}
-            diff_template = templates.get_template("chat/partials/diff_patch_result.html").render(diff_context)
+            diff_template = templates.get_template("patches/partials/diff_patch_result.html").render(diff_context)
             await self.ws_manager.send_html(diff_template)
 
     async def _render_error(self, error_message: str):
