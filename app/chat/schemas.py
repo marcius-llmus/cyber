@@ -2,7 +2,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from app.chat.enums import MessageRole
+from llama_index.core.llms import MessageRole
 
 
 class TurnRequest(BaseModel):

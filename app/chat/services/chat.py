@@ -1,9 +1,8 @@
 import uuid
 from typing import Any
 
-from llama_index.core.llms import ChatMessage
+from llama_index.core.llms import ChatMessage, MessageRole
 
-from app.chat.enums import MessageRole
 from app.chat.repositories import MessageRepository
 from app.chat.schemas import MessageCreate
 from app.sessions.models import ChatSession
@@ -60,7 +59,7 @@ class ChatService:
     ) -> Message:
         message_in = MessageCreate(
             session_id=session_id,
-            role=MessageRole.AI,
+            role=MessageRole.ASSISTANT,
             blocks=blocks,
         )
         return await self.message_repo.create(obj_in=message_in)

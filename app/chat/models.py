@@ -11,7 +11,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from app.chat.enums import MessageRole
+from llama_index.core.llms import MessageRole
 from app.core.db import Base
 
 
@@ -20,7 +20,7 @@ class Message(Base):
 
     id = Column(Integer, primary_key=True)
     session_id = Column(Integer, ForeignKey("chat_sessions.id", ondelete="CASCADE"), nullable=False)
-    role = Column(Enum(MessageRole), nullable=False)
+    role = Column(Enum(MessageRole, name="message_role"), nullable=False)
     timestamp = Column(DateTime, nullable=False, server_default=func.now())
     input_tokens = Column(Integer, nullable=True)
     output_tokens = Column(Integer, nullable=True)
