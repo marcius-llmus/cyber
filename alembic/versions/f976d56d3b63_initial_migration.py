@@ -41,7 +41,12 @@ def upgrade() -> None:
     op.create_table('chat_sessions',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('project_id', sa.Integer(), nullable=False),
-    sa.Column('context_strategy', sa.Enum('MANUAL', 'GREP', 'RAG', 'GREP_RAG'), nullable=False),
+    sa.Column(
+        'context_strategy',
+        sa.Enum('MANUAL', 'GREP', 'RAG', 'GREP_RAG'),
+        nullable=False,
+        server_default='GREP',
+    ),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
     sa.Column('updated_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
     sa.ForeignKeyConstraint(['project_id'], ['projects.id'], ondelete='CASCADE'),

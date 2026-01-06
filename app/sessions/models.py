@@ -24,12 +24,12 @@ class ChatSession(Base):
     operational_mode = Column(
         Enum(OperationalMode),
         nullable=False,
-        server_default=OperationalMode.CODING.value,
+        server_default=OperationalMode.CODING,
     )
     context_strategy = Column(
         Enum(ContextStrategy),
         nullable=False,
-        server_default=ContextStrategy.GREP.value,
+        server_default=ContextStrategy.GREP,
     )
     project_id = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
 
