@@ -18,7 +18,6 @@ from app.usage.event_handlers import UsageCollector
 from app.coder.services.messaging import MessagingTurnEventHandler
 from app.sessions.services import SessionService
 from app.core.enums import OperationalMode
-from app.patches.factories import build_diff_patch_service
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +32,7 @@ class CoderService:
         agent_factory: Callable[[AsyncSession, int], Coroutine[Any, Any, Any]],
         usage_service_factory: Callable[[AsyncSession], Awaitable[Any]],
         turn_handler_factory: Callable[[], Awaitable[MessagingTurnEventHandler]],
+        diff_patch_service_factory: Callable[[AsyncSession], Awaitable[Any]],
     ):
         self.db = db
         self.chat_service_factory = chat_service_factory
@@ -41,6 +41,7 @@ class CoderService:
         self.workflow_service_factory = workflow_service_factory
         self.usage_service_factory = usage_service_factory
         self.turn_handler_factory = turn_handler_factory
+        self.diff_patch_service_factory = diff_patch_service_factory
 
     async def handle_user_message(
         self, *, user_message: str, session_id: int
@@ -93,26 +94,21 @@ class CoderService:
                     )
 
                     if effective_mode == OperationalMode.SINGLE_SHOT:
-                        diff_patch_service = await build_diff_patch_service(session)
-                        patch_ids = await diff_patch_service.create_patches_from_single_shot_blocks(
+                        diff_patch_service = await self.diff_patch_service_factory(session)
+                        extracted = diff_patch_service.extract_diffs_from_blocks(
                             message_id=ai_message.id,
                             session_id=session_id,
-                            blocks=ai_message.blocks,
+                            blocks=ai_message.blocks or [],
                         )
+                        results = []
+                        for patch_in in extracted:
+                            results.append(await diff_patch_service.process_diff(patch_in))
                         logger.info(
-                            "Created %s DiffPatch row(s) for SINGLE_SHOT message_id=%s session_id=%s",
-                            len(patch_ids),
+                            "Processed %s SINGLE_SHOT diff patch(es) for message_id=%s session_id=%s",
+                            len(results),
                             ai_message.id,
                             session_id,
                         )
-
-                        if patch_ids:
-                            applied = await diff_patch_service.apply_pending_by_message_id(message_id=ai_message.id)
-                            logger.info(
-                                "Auto-apply attempted for message_id=%s (results=%s)",
-                                ai_message.id,
-                                len(applied),
-                            )
 
                     async for usage_event in self._process_new_usage(session_id, event_collector):
                         yield usage_event

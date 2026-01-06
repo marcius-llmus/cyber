@@ -15,7 +15,11 @@ from app.projects.exceptions import ActiveProjectRequiredException
 from app.projects.services import ProjectService
 from app.patches.enums import DiffPatchStatus
 from app.patches.repositories import DiffPatchRepository
-from app.patches.schemas import DiffPatchApplyResult, DiffPatchCreate, DiffPatchUpdate
+from app.patches.schemas import (
+    DiffPatchApplyResult,
+    DiffPatchCreate,
+    DiffPatchUpdate,
+)
 from app.settings.services import SettingsService
 
 logger = logging.getLogger(__name__)
@@ -61,7 +65,7 @@ class DiffPatchService:
             )
 
         try:
-            await self.apply_diff(file_path=patch.file_path, diff_content=patch.diff_current, strategy=strategy)
+            await self.apply_diff(file_path=patch.file_path, diff_content=patch.diff, strategy=strategy)
             await self.diff_patch_repo.update(
                 db_obj=patch,
                 obj_in=DiffPatchUpdate(status=DiffPatchStatus.APPLIED, applied_at=datetime.now()),
@@ -129,29 +133,21 @@ class DiffPatchService:
             return match.group(1)
         return text
 
-    async def create_patches_from_single_shot_blocks(
+    def extract_diffs_from_blocks(
         self,
         *,
         message_id: int,
         session_id: int,
         blocks: list[dict[str, Any]],
-    ) -> list[int]:
+    ) -> list[DiffPatchCreate]:
         text_content = "\n".join(
             b.get("content", "") for b in (blocks or []) if b.get("type") == "text"
         )
-        patches_in = self._extract_single_shot_diff_patches(
+        return self._extract_diff_patches_from_text(
             message_id=message_id,
             session_id=session_id,
             text=text_content,
         )
-        if not patches_in:
-            return []
-
-        created_ids: list[int] = []
-        for patch_in in patches_in:
-            created = await self.diff_patch_repo.create(obj_in=patch_in)
-            created_ids.append(created.id)
-        return created_ids
 
     async def apply_pending_by_message_id(
         self,
@@ -159,10 +155,6 @@ class DiffPatchService:
         message_id: int,
         strategy: PatchStrategy = PatchStrategy.LLM_GATHER,
     ) -> list[DiffPatchApplyResult]:
-        settings = await self.settings_service.get_settings()
-        if not settings.diff_patches_auto_apply:
-            return []
-
         pending = await self.diff_patch_repo.list_pending_by_message(message_id=message_id)
         results: list[DiffPatchApplyResult] = []
         for patch in pending:
@@ -170,7 +162,7 @@ class DiffPatchService:
         return results
 
     @staticmethod
-    def _extract_single_shot_diff_patches(
+    def _extract_diff_patches_from_text(
         *,
         message_id: int,
         session_id: int,
@@ -217,10 +209,32 @@ class DiffPatchService:
                     message_id=message_id,
                     session_id=session_id,
                     file_path=file_path,
-                    diff_original=diff_content,
-                    diff_current=diff_content,
-                    status=DiffPatchStatus.PENDING,
+                    diff=diff_content,
                 )
             )
 
         return patches
+
+    async def create_patch(self, payload: DiffPatchCreate) -> int:
+        created = await self.diff_patch_repo.create(obj_in=payload)
+        return created.id
+
+    async def process_diff(
+        self,
+        payload: DiffPatchCreate,
+        *,
+        strategy: PatchStrategy = PatchStrategy.LLM_GATHER,
+    ) -> DiffPatchApplyResult:
+        patch_id = await self.create_patch(payload)
+        settings = await self.settings_service.get_settings()
+        if not settings.diff_patches_auto_apply:
+            return DiffPatchApplyResult(
+                patch_id=patch_id,
+                file_path=payload.file_path,
+                status=DiffPatchStatus.PENDING,
+                applied=False,
+                error_message=None,
+            )
+
+        applied = await self.apply_saved_patch(patch_id=patch_id, strategy=strategy)
+        return applied

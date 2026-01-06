@@ -18,8 +18,7 @@ class DiffPatch(Base):
     )
 
     file_path = Column(String, nullable=False)
-    diff_original = Column(Text, nullable=False)
-    diff_current = Column(Text, nullable=False)
+    diff = Column(Text, nullable=False)
 
     status = Column(
         Enum(DiffPatchStatus),

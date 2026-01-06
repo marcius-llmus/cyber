@@ -9,13 +9,9 @@ class DiffPatchCreate(BaseModel):
     message_id: int
     session_id: int
     file_path: str
-    diff_original: str
-    diff_current: str
-    status: DiffPatchStatus = DiffPatchStatus.PENDING
-    error_message: str | None = None
+    diff: str
     tool_call_id: str | None = None
     tool_run_id: str | None = None
-    applied_at: datetime | None = None
 
 
 class DiffPatchUpdate(BaseModel):
