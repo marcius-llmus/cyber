@@ -83,12 +83,12 @@ class ChatService:
         session_id: int,
         user_content: str,
         blocks: list[dict[str, Any]],
-    ) -> None:
+    ) -> Message:
         """
         Atomically saves the user message and the AI message constructed from the result DTO.
         """
         await self.add_user_message(session_id=session_id, content=user_content)
-        await self.add_ai_message(
+        return await self.add_ai_message(
             session_id=session_id,
             blocks=blocks,
         )

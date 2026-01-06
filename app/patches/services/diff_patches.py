@@ -1,6 +1,7 @@
 import logging
 import re
 from datetime import datetime
+from typing import Any
 
 from llama_index.core.llms import ChatMessage
 
@@ -14,9 +15,14 @@ from app.projects.exceptions import ActiveProjectRequiredException
 from app.projects.services import ProjectService
 from app.patches.enums import DiffPatchStatus
 from app.patches.repositories import DiffPatchRepository
+from app.patches.schemas import DiffPatchCreate
 from app.patches.schemas import DiffPatchUpdate
 
 logger = logging.getLogger(__name__)
+
+
+DIFF_BLOCK_PATTERN = r"^```diff(?:\w+)?\s*\n(.*?)(?=^```)```"
+PLUS_FILE_PATTERN = re.compile(r"^\+\+\+\s+(?:[ab]/)?(?P<path>\S+)")
 
 
 class DiffPatchService:
@@ -98,3 +104,83 @@ class DiffPatchService:
         if match:
             return match.group(1)
         return text
+
+    async def create_patches_from_single_shot_blocks(
+        self,
+        *,
+        message_id: int,
+        session_id: int,
+        blocks: list[dict[str, Any]],
+    ) -> list[int]:
+        text_content = "\n".join(
+            b.get("content", "") for b in (blocks or []) if b.get("type") == "text"
+        )
+        patches_in = self._extract_single_shot_diff_patches(
+            message_id=message_id,
+            session_id=session_id,
+            text=text_content,
+        )
+        if not patches_in:
+            return []
+
+        created_ids: list[int] = []
+        for patch_in in patches_in:
+            created = await self.diff_patch_repo.create(obj_in=patch_in)
+            created_ids.append(created.id)
+        return created_ids
+
+    @staticmethod
+    def _extract_single_shot_diff_patches(
+        *,
+        message_id: int,
+        session_id: int,
+        text: str,
+    ) -> list[DiffPatchCreate]:
+        if not text:
+            return []
+
+        diff_blocks = re.findall(DIFF_BLOCK_PATTERN, text, re.DOTALL | re.MULTILINE)
+        if not diff_blocks:
+            return []
+
+        patches: list[DiffPatchCreate] = []
+        for diff_content in diff_blocks:
+            diff_content = diff_content.strip("\n")
+            if not diff_content:
+                continue
+
+            lines = diff_content.splitlines()
+            file_path: str | None = None
+            for line in lines:
+                if not line.startswith("+++ "):
+                    continue
+
+                if line.strip() == "+++ /dev/null":
+                    file_path = None
+                    break
+
+                match = PLUS_FILE_PATTERN.match(line)
+                if match:
+                    file_path = match.group("path")
+                    break
+
+            if not file_path:
+                logger.warning(
+                    "Single-shot diff block skipped (no +++ header path) (session_id=%s message_id=%s).",
+                    session_id,
+                    message_id,
+                )
+                continue
+
+            patches.append(
+                DiffPatchCreate(
+                    message_id=message_id,
+                    session_id=session_id,
+                    file_path=file_path,
+                    diff_original=diff_content,
+                    diff_current=diff_content,
+                    status=DiffPatchStatus.PENDING,
+                )
+            )
+
+        return patches

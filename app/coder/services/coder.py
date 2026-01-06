@@ -17,6 +17,8 @@ from app.agents.services import WorkflowService
 from app.usage.event_handlers import UsageCollector
 from app.coder.services.messaging import MessagingTurnEventHandler
 from app.sessions.services import SessionService
+from app.core.enums import OperationalMode
+from app.patches.factories import build_diff_patch_service
 
 logger = logging.getLogger(__name__)
 
@@ -84,11 +86,25 @@ class CoderService:
                     effective_mode = await session_service.get_operational_mode(session_id=session_id)
                     logger.info("Session %s effective operational mode: %s", session_id, effective_mode)
 
-                    await chat_service.save_turn(
+                    ai_message = await chat_service.save_turn(
                         session_id=session_id,
                         user_content=user_message,
                         blocks=messaging_turn_handler.get_blocks(),
                     )
+
+                    if effective_mode == OperationalMode.SINGLE_SHOT:
+                        diff_patch_service = await build_diff_patch_service(session)
+                        patch_ids = await diff_patch_service.create_patches_from_single_shot_blocks(
+                            message_id=ai_message.id,
+                            session_id=session_id,
+                            blocks=ai_message.blocks,
+                        )
+                        logger.info(
+                            "Created %s DiffPatch row(s) for SINGLE_SHOT message_id=%s session_id=%s",
+                            len(patch_ids),
+                            ai_message.id,
+                            session_id,
+                        )
 
                     # Persist Context State
                     workflow_service = await self.workflow_service_factory(session)
