@@ -1,5 +1,6 @@
 import logging
-from typing import Any, AsyncGenerator, Callable, Coroutine, Awaitable
+import uuid
+from typing import Any, AsyncGenerator, AsyncIterator, Callable, Coroutine, Awaitable
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
@@ -45,81 +46,86 @@ class CoderService:
 
     async def handle_user_message(
         self, *, user_message: str, session_id: int
-    ) -> AsyncGenerator[CoderEvent, None]:
-        # 1. Init Event Handler (Stateful for this turn, includes Accumulator)
-        messaging_turn_handler = await self.turn_handler_factory()
-        
-        yield AgentStateEvent(status="Thinking...")
+    ) -> tuple[str, AsyncIterator[CoderEvent]]:
+        turn_id = str(uuid.uuid4())
 
-        async with UsageCollector() as event_collector:
-            async with self.db.session() as session:
-                workflow = await self.agent_factory(session, session_id)
+        async def _stream() -> AsyncGenerator[CoderEvent, None]:
+            # 1. Init Event Handler (Stateful for this turn, includes Accumulator)
+            messaging_turn_handler = await self.turn_handler_factory()
 
-                workflow_service = await self.workflow_service_factory(session)
-                
-                ctx = await workflow_service.get_context(session_id, workflow)
+            yield AgentStateEvent(status="Thinking...")
 
-                chat_service = await self.chat_service_factory(session)
-                chat_history = await chat_service.get_chat_history(session_id)
-
-            try:
-                handler = workflow.run(
-                    user_msg=user_message, chat_history=chat_history, ctx=ctx, max_iterations=settings.AGENT_MAX_ITERATIONS
-                )
-
-                async for event in handler.stream_events():
-                    async for coder_event in messaging_turn_handler.handle(event):
-                        yield coder_event
-                     
-                    async for usage_event in self._process_new_usage(session_id, event_collector):
-                        yield usage_event
-
-                logger.info(f"Workflow stream finished for session {session_id}.")
-
-                # this workflow awaits the agent to finish
-                await handler
-                
-                # session here is the db session
-                # session_id is the 'ChatSession', the one user can delete, not db
+            async with UsageCollector() as event_collector:
                 async with self.db.session() as session:
-                    chat_service = await self.chat_service_factory(session)
-                    session_service = await self.session_service_factory(session)
-                    effective_mode = await session_service.get_operational_mode(session_id=session_id)
-                    logger.info("Session %s effective operational mode: %s", session_id, effective_mode)
+                    workflow = await self.agent_factory(session, session_id)
 
-                    ai_message = await chat_service.save_turn(
-                        session_id=session_id,
-                        user_content=user_message,
-                        blocks=messaging_turn_handler.get_blocks(),
+                    workflow_service = await self.workflow_service_factory(session)
+
+                    ctx = await workflow_service.get_context(session_id, workflow)
+
+                    chat_service = await self.chat_service_factory(session)
+                    chat_history = await chat_service.get_chat_history(session_id)
+
+                try:
+                    handler = workflow.run(
+                        user_msg=user_message, chat_history=chat_history, ctx=ctx, max_iterations=settings.AGENT_MAX_ITERATIONS
                     )
 
-                    if effective_mode == OperationalMode.SINGLE_SHOT:
-                        diff_patch_service = await self.diff_patch_service_factory(session)
-                        extracted = diff_patch_service.extract_diffs_from_blocks(
-                            message_id=ai_message.id,
+                    async for event in handler.stream_events():
+                        async for coder_event in messaging_turn_handler.handle(event):
+                            yield coder_event
+
+                        async for usage_event in self._process_new_usage(session_id, event_collector):
+                            yield usage_event
+
+                    logger.info(f"Workflow stream finished for session {session_id}.")
+
+                    # this workflow awaits the agent to finish
+                    await handler
+
+                    # session here is the db session
+                    # session_id is the 'ChatSession', the one user can delete, not db
+                    async with self.db.session() as session:
+                        chat_service = await self.chat_service_factory(session)
+                        session_service = await self.session_service_factory(session)
+                        effective_mode = await session_service.get_operational_mode(session_id=session_id)
+                        logger.info("Session %s effective operational mode: %s", session_id, effective_mode)
+
+                        ai_message = await chat_service.save_turn(
                             session_id=session_id,
-                            blocks=ai_message.blocks or [],
-                        )
-                        results = []
-                        for patch_in in extracted:
-                            results.append(await diff_patch_service.process_diff(patch_in))
-                        logger.info(
-                            "Processed %s SINGLE_SHOT diff patch(es) for message_id=%s session_id=%s",
-                            len(results),
-                            ai_message.id,
-                            session_id,
+                            user_content=user_message,
+                            blocks=messaging_turn_handler.get_blocks(),
                         )
 
-                    async for usage_event in self._process_new_usage(session_id, event_collector):
-                        yield usage_event
+                        if effective_mode == OperationalMode.SINGLE_SHOT:
+                            diff_patch_service = await self.diff_patch_service_factory(session)
+                            extracted = diff_patch_service.extract_diffs_from_blocks(
+                                message_id=ai_message.id,
+                                session_id=session_id,
+                                blocks=ai_message.blocks or [],
+                            )
+                            results = []
+                            for patch_in in extracted:
+                                results.append(await diff_patch_service.process_diff(patch_in))
+                            logger.info(
+                                "Processed %s SINGLE_SHOT diff patch(es) for message_id=%s session_id=%s",
+                                len(results),
+                                ai_message.id,
+                                session_id,
+                            )
 
-            except Exception as e:
-                yield await self._handle_workflow_exception(e, original_message=user_message)
-            finally:
-                # Safety check: Log if any events were left behind (e.g., due to a crash before final save)
-                unprocessed_count = event_collector.unprocessed_count
-                if unprocessed_count > 0:
-                    logger.warning(f"Session {session_id}: {unprocessed_count} usage events were not processed/persisted.")
+                        async for usage_event in self._process_new_usage(session_id, event_collector):
+                            yield usage_event
+
+                except Exception as e:
+                    yield await self._handle_workflow_exception(e, original_message=user_message)
+                finally:
+                    # Safety check: Log if any events were left behind (e.g., due to a crash before final save)
+                    unprocessed_count = event_collector.unprocessed_count
+                    if unprocessed_count > 0:
+                        logger.warning(f"Session {session_id}: {unprocessed_count} usage events were not processed/persisted.")
+
+        return turn_id, _stream()
 
     async def _process_new_usage(self, session_id: int, collector: UsageCollector) -> AsyncGenerator[CoderEvent, None]:
         """Helper to consume new events from collector and yield metrics updates."""
