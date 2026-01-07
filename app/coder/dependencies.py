@@ -1,7 +1,7 @@
 from fastapi import Depends
 
 from app.chat.dependencies import get_chat_service
-from app.chat.factories import build_chat_service
+from app.chat.factories import build_chat_service, build_chat_turn_service
 from app.chat.services import ChatService
 from app.coder.services import CoderPageService
 from app.coder.services import CoderService
@@ -37,6 +37,7 @@ async def get_coder_service() -> CoderService:
     return CoderService(
         db=sessionmanager,
         chat_service_factory=build_chat_service,
+        turn_service_factory=build_chat_turn_service,
         session_service_factory=build_session_service,
         workflow_service_factory=build_workflow_service,
         usage_service_factory=build_usage_service,

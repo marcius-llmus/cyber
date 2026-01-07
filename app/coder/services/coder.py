@@ -1,11 +1,10 @@
 import logging
-import uuid
 from typing import Any, AsyncGenerator, AsyncIterator, Callable, Coroutine, Awaitable
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.db import DatabaseSessionManager
-from app.chat.services import ChatService
+from app.chat.services import ChatService, ChatTurnService
 from app.coder.schemas import (
     CoderEvent,
     WorkflowErrorEvent,
@@ -33,6 +32,7 @@ class CoderService:
         agent_factory: Callable[[AsyncSession, int], Coroutine[Any, Any, Any]],
         usage_service_factory: Callable[[AsyncSession], Awaitable[Any]],
         turn_handler_factory: Callable[[], Awaitable[MessagingTurnEventHandler]],
+        turn_service_factory: Callable[[AsyncSession], Awaitable[ChatTurnService]],
         diff_patch_service_factory: Callable[[AsyncSession], Awaitable[Any]],
     ):
         self.db = db
@@ -42,12 +42,13 @@ class CoderService:
         self.workflow_service_factory = workflow_service_factory
         self.usage_service_factory = usage_service_factory
         self.turn_handler_factory = turn_handler_factory
+        self.turn_service_factory = turn_service_factory
         self.diff_patch_service_factory = diff_patch_service_factory
 
     async def handle_user_message(
-        self, *, user_message: str, session_id: int
+        self, *, user_message: str, session_id: int, turn_id: str | None = None
     ) -> tuple[str, AsyncIterator[CoderEvent]]:
-        turn_id = str(uuid.uuid4())
+        turn_id = await self._start_turn(session_id=session_id, turn_id=turn_id)
 
         async def _stream() -> AsyncGenerator[CoderEvent, None]:
             # 1. Init Event Handler (Stateful for this turn, includes Accumulator)
@@ -56,15 +57,9 @@ class CoderService:
             yield AgentStateEvent(status="Thinking...")
 
             async with UsageCollector() as event_collector:
-                async with self.db.session() as session:
-                    workflow = await self.agent_factory(session, session_id)
-
-                    workflow_service = await self.workflow_service_factory(session)
-
-                    ctx = await workflow_service.get_context(session_id, workflow)
-
-                    chat_service = await self.chat_service_factory(session)
-                    chat_history = await chat_service.get_chat_history(session_id)
+                workflow = await self._build_workflow(session_id=session_id)
+                ctx = await self._get_workflow_context(session_id=session_id, workflow=workflow)
+                chat_history = await self._get_chat_history(session_id=session_id)
 
                 try:
                     handler = workflow.run(
@@ -88,34 +83,28 @@ class CoderService:
                     async with self.db.session() as session:
                         chat_service = await self.chat_service_factory(session)
                         session_service = await self.session_service_factory(session)
+
                         effective_mode = await session_service.get_operational_mode(session_id=session_id)
                         logger.info("Session %s effective operational mode: %s", session_id, effective_mode)
 
-                        ai_message = await chat_service.save_turn(
+                        ai_message = await chat_service.save_messages_for_turn(
                             session_id=session_id,
                             user_content=user_message,
                             blocks=messaging_turn_handler.get_blocks(),
+                            turn_id=turn_id,
                         )
 
-                        if effective_mode == OperationalMode.SINGLE_SHOT:
-                            diff_patch_service = await self.diff_patch_service_factory(session)
-                            extracted = diff_patch_service.extract_diffs_from_blocks(
-                                message_id=ai_message.id,
-                                session_id=session_id,
-                                blocks=ai_message.blocks or [],
-                            )
-                            results = []
-                            for patch_in in extracted:
-                                results.append(await diff_patch_service.process_diff(patch_in))
-                            logger.info(
-                                "Processed %s SINGLE_SHOT diff patch(es) for message_id=%s session_id=%s",
-                                len(results),
-                                ai_message.id,
-                                session_id,
-                            )
+                    await self._mark_turn_succeeded(session_id=session_id, turn_id=turn_id)
 
-                        async for usage_event in self._process_new_usage(session_id, event_collector):
-                            yield usage_event
+                    if effective_mode == OperationalMode.SINGLE_SHOT:
+                        await self._process_single_shot_diffs(
+                            session_id=session_id,
+                            message_id=ai_message.id,
+                            blocks=ai_message.blocks,
+                        )
+
+                    async for usage_event in self._process_new_usage(session_id, event_collector):
+                        yield usage_event
 
                 except Exception as e:
                     yield await self._handle_workflow_exception(e, original_message=user_message)
@@ -126,6 +115,54 @@ class CoderService:
                         logger.warning(f"Session {session_id}: {unprocessed_count} usage events were not processed/persisted.")
 
         return turn_id, _stream()
+
+    async def _build_workflow(self, *, session_id: int) -> Any:
+        async with self.db.session() as session:
+            return await self.agent_factory(session, session_id)
+
+    async def _get_workflow_context(self, *, session_id: int, workflow: Any) -> Any:
+        async with self.db.session() as session:
+            workflow_service = await self.workflow_service_factory(session)
+            return await workflow_service.get_context(session_id, workflow)
+
+    async def _get_chat_history(self, *, session_id: int) -> Any:
+        async with self.db.session() as session:
+            chat_service = await self.chat_service_factory(session)
+            return await chat_service.get_chat_history(session_id)
+
+    async def _process_single_shot_diffs(
+        self,
+        *,
+        session_id: int,
+        message_id: int,
+        blocks: list[dict[str, Any]],
+    ) -> None:
+        async with self.db.session() as session:
+            diff_patch_service = await self.diff_patch_service_factory(session)
+            extracted = diff_patch_service.extract_diffs_from_blocks(
+                message_id=message_id,
+                session_id=session_id,
+                blocks=blocks,
+            )
+            results = []
+            for patch_in in extracted:
+                results.append(await diff_patch_service.process_diff(patch_in))
+            logger.info(
+                "Processed %s SINGLE_SHOT diff patch(es) for message_id=%s session_id=%s",
+                len(results),
+                message_id,
+                session_id,
+            )
+
+    async def _start_turn(self, *, session_id: int, turn_id: str | None) -> str:
+        async with self.db.session() as session:
+            turn_service = await self.turn_service_factory(session)
+            return await turn_service.start_turn(session_id=session_id, turn_id=turn_id)
+
+    async def _mark_turn_succeeded(self, *, session_id: int, turn_id: str) -> None:
+        async with self.db.session() as session:
+            turn_service = await self.turn_service_factory(session)
+            await turn_service.mark_succeeded(session_id=session_id, turn_id=turn_id)
 
     async def _process_new_usage(self, session_id: int, collector: UsageCollector) -> AsyncGenerator[CoderEvent, None]:
         """Helper to consume new events from collector and yield metrics updates."""

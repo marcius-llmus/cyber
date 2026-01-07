@@ -37,7 +37,7 @@ class ChatService:
         session_in = ChatSessionCreate(name="New Session", project_id=project_id)
         return await self.session_service.create_session(session_in=session_in)
 
-    async def add_user_message(self, *, content: str, session_id: int) -> Message:
+    async def add_user_message(self, *, content: str, session_id: int, turn_id: str) -> Message:
         # Convert raw content to a text block
         blocks = [{
             "type": "text",
@@ -46,6 +46,7 @@ class ChatService:
         }]
         message_in = MessageCreate(
             session_id=session_id,
+            turn_id=turn_id,
             role=MessageRole.USER,
             blocks=blocks,
         )
@@ -55,10 +56,12 @@ class ChatService:
         self,
         *,
         session_id: int,
+        turn_id: str,
         blocks: list[dict[str, Any]],
     ) -> Message:
         message_in = MessageCreate(
             session_id=session_id,
+            turn_id=turn_id,
             role=MessageRole.ASSISTANT,
             blocks=blocks,
         )
@@ -76,19 +79,21 @@ class ChatService:
             ChatMessage(role=msg.role, content=msg.content) for msg in db_messages
         ]
 
-    async def save_turn(
+    async def save_messages_for_turn(
         self,
         *,
         session_id: int,
+        turn_id: str,
         user_content: str,
         blocks: list[dict[str, Any]],
     ) -> Message:
         """
         Atomically saves the user message and the AI message constructed from the result DTO.
         """
-        await self.add_user_message(session_id=session_id, content=user_content)
+        await self.add_user_message(content=user_content, session_id=session_id, turn_id=turn_id)
         return await self.add_ai_message(
             session_id=session_id,
+            turn_id=turn_id,
             blocks=blocks,
         )
 

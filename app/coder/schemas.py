@@ -11,6 +11,7 @@ class LogLevel(StrEnum):
 
 class WebSocketMessage(BaseModel):
     message: str
+    retry_turn_id: str | None = None
 
 
 class AIMessageChunkEvent(BaseModel):

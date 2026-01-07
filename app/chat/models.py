@@ -7,12 +7,15 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     JSON,
+    String,
+    Text,
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from llama_index.core.llms import MessageRole
 from app.core.db import Base
+from app.chat.enums import ChatTurnStatus
 
 
 class Message(Base):
@@ -20,6 +23,7 @@ class Message(Base):
 
     id = Column(Integer, primary_key=True)
     session_id = Column(Integer, ForeignKey("chat_sessions.id", ondelete="CASCADE"), nullable=False)
+    turn_id = Column(String, nullable=False, index=True)
     role = Column(Enum(MessageRole, name="message_role"), nullable=False)
     timestamp = Column(DateTime, nullable=False, server_default=func.now())
     input_tokens = Column(Integer, nullable=True)
@@ -48,3 +52,25 @@ class Message(Base):
         if not self.blocks:
             return []
         return [b["tool_call_data"] for b in self.blocks if b.get("type") == "tool"]
+
+
+
+class ChatTurn(Base):
+    __tablename__ = "chat_turns"
+
+    id = Column(String, primary_key=True)
+    session_id = Column(
+        Integer,
+        ForeignKey("chat_sessions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    status = Column(
+        Enum(ChatTurnStatus, name="chat_turn_status"),
+        nullable=False,
+        server_default=ChatTurnStatus.PENDING,
+    )
+    created_at = Column(DateTime, nullable=False, server_default=func.now())
+    updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
+
+    session = relationship("ChatSession", back_populates="turns", lazy="joined")

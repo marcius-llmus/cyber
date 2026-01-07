@@ -63,3 +63,10 @@ class ChatSession(Base):
         uselist=False,
         lazy="selectin",
     )
+
+    turns = relationship(
+        "ChatTurn",
+        back_populates="session",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
