@@ -17,6 +17,7 @@ Fix:
 - Fix calling tools spamming on openai
 - Update enums for case consistency
 - Cache persists after cleaning history?
+- Check the amount of events received by usage handler (seems spammy)
 
 --------
 Roadmap
@@ -32,6 +33,7 @@ Roadmap
 - Order llm's by provider
 - Add One tooling and general instructions prompt per provider
 - Add compatibility with .CLAUDE .GEMINI .CLINE etc
+- Add auto apply patches setting
 
 
 --------
