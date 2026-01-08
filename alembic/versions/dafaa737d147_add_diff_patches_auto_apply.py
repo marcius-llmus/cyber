@@ -22,7 +22,7 @@ def upgrade() -> None:
     """Upgrade schema."""
     with op.batch_alter_table("settings", schema=None) as batch_op:
         batch_op.add_column(
-            sa.Column("diff_patches_auto_apply", sa.Boolean(), server_default="f", nullable=False)
+            sa.Column("diff_patches_auto_apply", sa.Boolean(), server_default="t", nullable=False)
         )
 
 

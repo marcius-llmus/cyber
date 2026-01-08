@@ -17,4 +17,4 @@ class Settings(Base):
     ast_token_limit = Column(Integer, nullable=False)
     grep_token_limit = Column(Integer, nullable=False, default=4000)
     diff_patches_auto_open = Column(Boolean, nullable=False, default=True, server_default="t")
-    diff_patches_auto_apply = Column(Boolean, nullable=False, default=False, server_default="f")
+    diff_patches_auto_apply = Column(Boolean, nullable=False, default=True, server_default="t")

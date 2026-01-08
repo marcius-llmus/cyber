@@ -56,9 +56,11 @@
                 </div>
                 <div class="col-span-2">
                      <label class="flex items-center space-x-2 cursor-pointer">
-                        <input type="checkbox" name="diff_patches_auto_apply" value="true" {% if settings.diff_patches_auto_apply %}checked{% endif %} class="form-checkbox bg-dark-lighter border-dark-light rounded text-primary focus:ring-0">
-                        <span class="text-sm font-medium text-gray-300">Auto-apply Diffs</span>
-                    </label>
+                        <input type="checkbox" name="diff_patches_auto_apply" value="true" checked disabled class="form-checkbox bg-dark-lighter border-dark-light rounded text-primary focus:ring-0 opacity-60">
+                        <span class="text-sm font-medium text-gray-300">
+                            Auto-apply Diffs
+                        </span>
+                     </label>
                 </div>
             </div>
         </div>

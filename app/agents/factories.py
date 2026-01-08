@@ -36,7 +36,7 @@ async def build_agent_context_service(db: AsyncSession) -> AgentContextService:
     )
 
 
-async def build_agent(db: AsyncSession, session_id: int) -> CoderAgent:
+async def build_agent(db: AsyncSession, session_id: int, turn_id: str | None = None) -> CoderAgent:
     """Creates a CoderAgent (FunctionAgent) with the currently configured LLM."""
     settings_service = await build_settings_service(db)
     llm_service = await build_llm_service(db)
@@ -52,13 +52,13 @@ async def build_agent(db: AsyncSession, session_id: int) -> CoderAgent:
 
     tools: list[BaseTool] = []
 
-    file_tools = FileTools(db=sessionmanager, settings=settings, session_id=session_id)
+    file_tools = FileTools(db=sessionmanager, settings=settings, session_id=session_id, turn_id=turn_id)
     tools.extend(file_tools.to_tool_list())
 
     search_tools = SearchTools(db=sessionmanager, settings=settings, session_id=session_id)
     tools.extend(search_tools.to_tool_list())
 
-    patcher_tools = PatcherTools(db=sessionmanager, settings=settings, session_id=session_id)
+    patcher_tools = PatcherTools(db=sessionmanager, settings=settings, session_id=session_id, turn_id=turn_id)
     tools.extend(patcher_tools.to_tool_list())
 
     system_prompt = await agent_context_service.build_system_prompt(session_id)

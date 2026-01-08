@@ -13,8 +13,10 @@ class BaseToolSet(BaseToolSpec):
         db: DatabaseSessionManager,
         settings: Settings,
         session_id: int | None = None,
+        turn_id: str | None = None,
     ):
         super().__init__()
         self.db = db
         self.settings = settings
         self.session_id = session_id
+        self.turn_id = turn_id

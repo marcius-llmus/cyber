@@ -40,6 +40,8 @@ class PatcherTools(BaseToolSet):
 
     spec_functions = ["apply_diff"]
 
+    # NOTE: tool_run_id is UI-only. Diff patches are stored by (session_id, turn_id).
+
     @staticmethod
     def _format_save_result(
         *,
@@ -71,15 +73,16 @@ class PatcherTools(BaseToolSet):
             if not self.session_id:
                 return "Error: No active session ID."
 
+            if not self.turn_id:
+                return "Error: No active turn ID."
+
             async with self.db.session() as session:
                 diff_patch_service = await build_diff_patch_service(session)
                 payload = DiffPatchCreate(
-                    message_id=77777,
                     session_id=self.session_id,
+                    turn_id=self.turn_id,
                     file_path=file_path,
                     diff=diff,
-                    tool_call_id="7777777777",
-                    tool_run_id="777777777",
                 )
                 result = await diff_patch_service.process_diff(payload)
                 return self._format_save_result(

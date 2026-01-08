@@ -32,12 +32,6 @@ class Message(Base):
     blocks = Column(JSON, nullable=False, default=list, server_default='[]')
 
     session = relationship("ChatSession", back_populates="messages", lazy="joined")
-    diff_patches = relationship(
-        "DiffPatch",
-        back_populates="message",
-        cascade="all, delete-orphan",
-        lazy="selectin",
-    )
 
     @property
     def content(self) -> str:

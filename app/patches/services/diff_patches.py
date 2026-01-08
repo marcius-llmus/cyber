@@ -1,5 +1,6 @@
 import logging
 import re
+import asyncio
 from datetime import datetime
 from typing import Any
 
@@ -136,7 +137,7 @@ class DiffPatchService:
     def extract_diffs_from_blocks(
         self,
         *,
-        message_id: int,
+        turn_id: str,
         session_id: int,
         blocks: list[dict[str, Any]],
     ) -> list[DiffPatchCreate]:
@@ -144,27 +145,28 @@ class DiffPatchService:
             b.get("content", "") for b in (blocks or []) if b.get("type") == "text"
         )
         return self._extract_diff_patches_from_text(
-            message_id=message_id,
+            turn_id=turn_id,
             session_id=session_id,
             text=text_content,
         )
 
-    async def apply_pending_by_message_id(
+    async def apply_pending_by_turn_id(
         self,
         *,
-        message_id: int,
+        session_id: int,
+        turn_id: str,
         strategy: PatchStrategy = PatchStrategy.LLM_GATHER,
     ) -> list[DiffPatchApplyResult]:
-        pending = await self.diff_patch_repo.list_pending_by_message(message_id=message_id)
-        results: list[DiffPatchApplyResult] = []
-        for patch in pending:
-            results.append(await self.apply_saved_patch(patch_id=patch.id, strategy=strategy))
-        return results
+        pending = await self.diff_patch_repo.list_pending_by_turn(session_id=session_id, turn_id=turn_id)
+        if not (tasks := [self.apply_saved_patch(patch_id=p.id, strategy=strategy) for p in pending]):
+            return []
+
+        return list(await asyncio.gather(*tasks))
 
     @staticmethod
     def _extract_diff_patches_from_text(
         *,
-        message_id: int,
+        turn_id: str,
         session_id: int,
         text: str,
     ) -> list[DiffPatchCreate]:
@@ -198,16 +200,16 @@ class DiffPatchService:
 
             if not file_path:
                 logger.warning(
-                    "Single-shot diff block skipped (no +++ header path) (session_id=%s message_id=%s).",
+                    "Single-shot diff block skipped (no +++ header path) (session_id=%s turn_id=%s).",
                     session_id,
-                    message_id,
+                    turn_id,
                 )
                 continue
 
             patches.append(
                 DiffPatchCreate(
-                    message_id=message_id,
                     session_id=session_id,
+                    turn_id=turn_id,
                     file_path=file_path,
                     diff=diff_content,
                 )
@@ -226,15 +228,4 @@ class DiffPatchService:
         strategy: PatchStrategy = PatchStrategy.LLM_GATHER,
     ) -> DiffPatchApplyResult:
         patch_id = await self.create_patch(payload)
-        settings = await self.settings_service.get_settings()
-        if not settings.diff_patches_auto_apply:
-            return DiffPatchApplyResult(
-                patch_id=patch_id,
-                file_path=payload.file_path,
-                status=DiffPatchStatus.PENDING,
-                applied=False,
-                error_message=None,
-            )
-
-        applied = await self.apply_saved_patch(patch_id=patch_id, strategy=strategy)
-        return applied
+        return await self.apply_saved_patch(patch_id=patch_id, strategy=strategy)

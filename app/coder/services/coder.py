@@ -29,7 +29,7 @@ class CoderService:
         chat_service_factory: Callable[[AsyncSession], Awaitable[ChatService]],
         session_service_factory: Callable[[AsyncSession], Awaitable[SessionService]],
         workflow_service_factory: Callable[[AsyncSession], Awaitable[WorkflowService]],
-        agent_factory: Callable[[AsyncSession, int], Coroutine[Any, Any, Any]],
+        agent_factory: Callable[[AsyncSession, int, str], Coroutine[Any, Any, Any]],
         usage_service_factory: Callable[[AsyncSession], Awaitable[Any]],
         turn_handler_factory: Callable[[], Awaitable[MessagingTurnEventHandler]],
         turn_service_factory: Callable[[AsyncSession], Awaitable[ChatTurnService]],
@@ -57,7 +57,7 @@ class CoderService:
             yield AgentStateEvent(status="Thinking...")
 
             async with UsageCollector() as event_collector:
-                workflow = await self._build_workflow(session_id=session_id)
+                workflow = await self._build_workflow(session_id=session_id, turn_id=turn_id)
                 ctx = await self._get_workflow_context(session_id=session_id, workflow=workflow)
                 chat_history = await self._get_chat_history(session_id=session_id)
 
@@ -99,7 +99,7 @@ class CoderService:
                     if effective_mode == OperationalMode.SINGLE_SHOT:
                         await self._process_single_shot_diffs(
                             session_id=session_id,
-                            message_id=ai_message.id,
+                            turn_id=turn_id,
                             blocks=ai_message.blocks,
                         )
 
@@ -116,9 +116,9 @@ class CoderService:
 
         return turn_id, _stream()
 
-    async def _build_workflow(self, *, session_id: int) -> Any:
+    async def _build_workflow(self, *, session_id: int, turn_id: str) -> Any:
         async with self.db.session() as session:
-            return await self.agent_factory(session, session_id)
+            return await self.agent_factory(session, session_id, turn_id)
 
     async def _get_workflow_context(self, *, session_id: int, workflow: Any) -> Any:
         async with self.db.session() as session:
@@ -134,13 +134,13 @@ class CoderService:
         self,
         *,
         session_id: int,
-        message_id: int,
+        turn_id: str,
         blocks: list[dict[str, Any]],
     ) -> None:
         async with self.db.session() as session:
             diff_patch_service = await self.diff_patch_service_factory(session)
             extracted = diff_patch_service.extract_diffs_from_blocks(
-                message_id=message_id,
+                turn_id=turn_id,
                 session_id=session_id,
                 blocks=blocks,
             )
@@ -148,9 +148,9 @@ class CoderService:
             for patch_in in extracted:
                 results.append(await diff_patch_service.process_diff(patch_in))
             logger.info(
-                "Processed %s SINGLE_SHOT diff patch(es) for message_id=%s session_id=%s",
+                "Processed %s SINGLE_SHOT diff patch(es) for turn_id=%s session_id=%s",
                 len(results),
-                message_id,
+                turn_id,
                 session_id,
             )
 

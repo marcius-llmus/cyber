@@ -6,12 +6,10 @@ from app.patches.enums import DiffPatchStatus
 
 
 class DiffPatchCreate(BaseModel):
-    message_id: int
     session_id: int
+    turn_id: str
     file_path: str
     diff: str
-    tool_call_id: str | None = None
-    tool_run_id: str | None = None
 
 
 class DiffPatchUpdate(BaseModel):

@@ -56,7 +56,7 @@ async def initialize_application_settings(db: AsyncSession) -> None:
             ast_token_limit=10000,
             grep_token_limit=4000,
             diff_patches_auto_open=True,
-            diff_patches_auto_apply=False,
+            diff_patches_auto_apply=True,
         )
     )
     await db.commit()
