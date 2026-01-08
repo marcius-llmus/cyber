@@ -71,10 +71,10 @@ class PatcherTools(BaseToolSet):
         """
         try:
             if not self.session_id:
-                return "Error: No active session ID."
+                raise RuntimeError("No active session_id available for patch tool")
 
             if not self.turn_id:
-                return "Error: No active turn ID."
+                raise RuntimeError("No active turn_id available for patch tool")
 
             async with self.db.session() as session:
                 diff_patch_service = await build_diff_patch_service(session)
