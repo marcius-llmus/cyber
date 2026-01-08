@@ -76,21 +76,20 @@ class PatcherTools(BaseToolSet):
             if not self.turn_id:
                 raise RuntimeError("No active turn_id available for patch tool")
 
-            async with self.db.session() as session:
-                diff_patch_service = await build_diff_patch_service(session)
-                payload = DiffPatchCreate(
-                    session_id=self.session_id,
-                    turn_id=self.turn_id,
-                    file_path=file_path,
-                    diff=diff,
-                )
-                result = await diff_patch_service.process_diff(payload)
-                return self._format_save_result(
-                    file_path=file_path,
-                    patch_id=result.patch_id,
-                    status=result.status,
-                    error_message=result.error_message,
-                )
+            diff_patch_service = await build_diff_patch_service()
+            payload = DiffPatchCreate(
+                session_id=self.session_id,
+                turn_id=self.turn_id,
+                file_path=file_path,
+                diff=diff,
+            )
+            result = await diff_patch_service.process_diff(payload)
+            return self._format_save_result(
+                file_path=file_path,
+                patch_id=result.patch_id,
+                status=result.status,
+                error_message=result.error_message,
+            )
 
         except Exception as e:
             logger.error(f"PatcherTools.apply_diff failed: {e}", exc_info=True)

@@ -33,7 +33,7 @@ class CoderService:
         usage_service_factory: Callable[[AsyncSession], Awaitable[Any]],
         turn_handler_factory: Callable[[], Awaitable[MessagingTurnEventHandler]],
         turn_service_factory: Callable[[AsyncSession], Awaitable[ChatTurnService]],
-        diff_patch_service_factory: Callable[[AsyncSession], Awaitable[Any]],
+        diff_patch_service_factory: Callable[[], Awaitable[Any]],
     ):
         self.db = db
         self.chat_service_factory = chat_service_factory
@@ -127,8 +127,8 @@ class CoderService:
 
     async def _get_chat_history(self, *, session_id: int) -> Any:
         async with self.db.session() as session:
-            chat_service = await self.chat_service_factory(session)
-            return await chat_service.get_chat_history(session_id)
+            chat_service = await self.chat_service_factory(session) # db session
+            return await chat_service.get_chat_history(session_id) # chat session (unrelated to db)
 
     async def _process_single_shot_diffs(
         self,
@@ -137,22 +137,21 @@ class CoderService:
         turn_id: str,
         blocks: list[dict[str, Any]],
     ) -> None:
-        async with self.db.session() as session:
-            diff_patch_service = await self.diff_patch_service_factory(session)
-            extracted = diff_patch_service.extract_diffs_from_blocks(
-                turn_id=turn_id,
-                session_id=session_id,
-                blocks=blocks,
-            )
-            results = []
-            for patch_in in extracted:
-                results.append(await diff_patch_service.process_diff(patch_in))
-            logger.info(
-                "Processed %s SINGLE_SHOT diff patch(es) for turn_id=%s session_id=%s",
-                len(results),
-                turn_id,
-                session_id,
-            )
+        diff_patch_service = await self.diff_patch_service_factory()
+        extracted = diff_patch_service.extract_diffs_from_blocks(
+            turn_id=turn_id,
+            session_id=session_id,
+            blocks=blocks,
+        )
+        results = []
+        for patch_in in extracted:
+            results.append(await diff_patch_service.process_diff(patch_in))
+        logger.info(
+            "Processed %s SINGLE_SHOT diff patch(es) for turn_id=%s session_id=%s",
+            len(results),
+            turn_id,
+            session_id,
+        )
 
     async def _start_turn(self, *, session_id: int, turn_id: str | None) -> str:
         async with self.db.session() as session:
