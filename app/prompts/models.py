@@ -13,6 +13,7 @@ class Prompt(Base):
     type = Column(Enum(PromptType), nullable=False)
     content = Column(Text, nullable=False)
     source_path = Column(String, nullable=True)
+    # we keep project based prompts if project get deleted or renamed for safety instead of cascading delete
     project_id = Column(Integer, ForeignKey("projects.id", ondelete="SET NULL"), nullable=True)
 
     project = relationship("Project", back_populates="prompts", lazy="joined")
