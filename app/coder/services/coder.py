@@ -94,6 +94,7 @@ class CoderService:
                             blocks=messaging_turn_handler.get_blocks(),
                             turn_id=turn_id,
                         )
+                        ai_blocks = list(ai_message.blocks or [])
 
                     await self._mark_turn_succeeded(session_id=session_id, turn_id=turn_id)
 
@@ -101,7 +102,7 @@ class CoderService:
                         await self._process_single_shot_diffs(
                             session_id=session_id,
                             turn_id=turn_id,
-                            blocks=ai_message.blocks,
+                            blocks=ai_blocks,
                         )
 
                     async for usage_event in self._process_new_usage(session_id, event_collector):
