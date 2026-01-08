@@ -48,6 +48,7 @@ class CoderService:
     async def handle_user_message(
         self, *, user_message: str, session_id: int, turn_id: str | None = None
     ) -> tuple[str, AsyncIterator[CoderEvent]]:
+        # todo: turn_id and session_id will be refactored to support multiple simultaneous sessions
         turn_id = await self._start_turn(session_id=session_id, turn_id=turn_id)
 
         async def _stream() -> AsyncGenerator[CoderEvent, None]:
