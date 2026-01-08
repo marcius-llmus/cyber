@@ -1,5 +1,4 @@
 import logging
-import uuid
 from typing import Any, Callable, Coroutine
 
 from fastapi import WebSocketDisconnect
@@ -56,8 +55,7 @@ class WebSocketOrchestrator:
             return
         await handler(event, turn_id=turn_id)
 
-    async def _prepare_ui_for_new_turn(self, message_content: str) -> str:
-        turn_id = str(uuid.uuid4())
+    async def _prepare_ui_for_new_turn(self, message_content: str, turn_id: str) -> str:
         await self._render_user_message(message_content, turn_id)
         await self._render_ai_bubble_placeholder(turn_id)
         return turn_id
@@ -82,16 +80,18 @@ class WebSocketOrchestrator:
                     await self._render_error(f"Invalid message format: {e}")
                     continue
 
-                if retry_turn_id := data.get("retry_turn_id"):
-                    turn_id = await self._prepare_ui_for_retry_turn(retry_turn_id)
+                turn_id, stream = await self.coder_service.handle_user_message(
+                    user_message=message.message,
+                    session_id=self.session_id,
+                    turn_id=message.retry_turn_id,
+                )
+
+                if message.retry_turn_id:
+                    await self._prepare_ui_for_retry_turn(turn_id)
                 else:
-                    turn_id = await self._prepare_ui_for_new_turn(message.message)
+                    await self._prepare_ui_for_new_turn(message.message, turn_id)
 
                 try:
-                    stream = self.coder_service.handle_user_message(
-                        user_message=message.message, session_id=self.session_id
-                    )
-
                     async for event in stream:
                         await self._process_event(event, turn_id)
 
@@ -190,7 +190,7 @@ class WebSocketOrchestrator:
                 "deletions": deletions,
                 "tool_run_id": event.tool_run_id,
             }
-            diff_template = templates.get_template("chat/partials/diff_patch_item_oob.html").render(diff_context)
+            diff_template = templates.get_template("patches/partials/diff_patch_item_oob.html").render(diff_context)
             
             await self.ws_manager.send_html(diff_template)
 
@@ -211,7 +211,7 @@ class WebSocketOrchestrator:
         # 2. If it's a Diff Patch, ALSO update the Inline Visual Card
         if event.tool_name == "apply_diff":
             diff_context = {"tool_id": event.tool_id, "tool_run_id": event.tool_run_id}
-            diff_template = templates.get_template("chat/partials/diff_patch_result.html").render(diff_context)
+            diff_template = templates.get_template("patches/partials/diff_patch_result.html").render(diff_context)
             await self.ws_manager.send_html(diff_template)
 
     async def _render_error(self, error_message: str):

@@ -1,8 +1,8 @@
 import logging
 from decimal import Decimal
+
 from app.llms.enums import LLMModel, LLMRole
 from app.llms.factories import build_llm_service
-from app.settings.enums import CodingMode, ContextStrategy, OperationalMode
 from app.settings.repositories import SettingsRepository
 from app.settings.schemas import LLMSettingsCreate, SettingsCreate
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -51,13 +51,12 @@ async def initialize_application_settings(db: AsyncSession) -> None:
     # todo need to fix it later, call by services. coding_llm_settings_id should not be needed here
     await settings_repo.create(
         SettingsCreate(
-            operational_mode=OperationalMode.CODE,
-            coding_mode=CodingMode.AGENT,
-            context_strategy=ContextStrategy.MANUAL,
             max_history_length=50,
             coding_llm_temperature=Decimal("0.7"),
             ast_token_limit=10000,
-            grep_token_limit=4000
+            grep_token_limit=4000,
+            diff_patches_auto_open=True,
+            diff_patches_auto_apply=True,
         )
     )
     await db.commit()

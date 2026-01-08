@@ -566,7 +566,7 @@ requires-dist = [
     { name = "grep-ast", specifier = ">=0.9.0" },
     { name = "llama-index-core", specifier = ">=0.14.5" },
     { name = "llama-index-llms-anthropic", specifier = ">=0.10.0" },
-    { name = "llama-index-llms-google-genai", specifier = ">=0.8.2" },
+    { name = "llama-index-llms-google-genai", specifier = ">=0.8.3" },
     { name = "llama-index-llms-openai", specifier = ">=0.6.6" },
     { name = "llama-index-workflows", specifier = ">=2.8.3" },
     { name = "openinference-instrumentation-llama-index", specifier = ">=4.3.9" },

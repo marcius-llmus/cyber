@@ -7,27 +7,19 @@
         <div class="space-y-4">
             <div>
                 <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Operational Mode</label>
-                <select class="w-full bg-dark-card border border-dark-light rounded-lg px-3 py-2 text-sm">
-                    <option>Code</option>
-                    <option>Plan</option>
-                    <option>Read Only</option>
-                </select>
-            </div>
-
-            <div>
-                <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Coding Mode</label>
-                <select class="w-full bg-dark-card border border-dark-light rounded-lg px-3 py-2 text-sm">
-                    <option>Agent Mode</option>
-                    <option>Single Shot</option>
-                </select>
-            </div>
-
-            <div>
-                <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Context Strategy</label>
-                <select class="w-full bg-dark-card border border-dark-light rounded-lg px-3 py-2 text-sm">
-                    <option>Manual</option>
-                    <option>Auto-gather Context</option>
-                    <option>RAG Integration</option>
+                <select
+                    name="operational_mode"
+                    hx-post="/sessions/session/{{ session.id }}/mode"
+                    hx-trigger="change"
+                    hx-swap="none"
+                    hx-ext="form-json"
+                    class="w-full bg-dark-card border border-dark-light rounded-lg px-3 py-2 text-sm"
+                >
+                    <option value="CODING" {% if session and session.operational_mode == 'CODING' %}selected{% endif %}>Coding</option>
+                    <option value="ASK" {% if session and session.operational_mode == 'ASK' %}selected{% endif %}>Ask</option>
+                    <option value="CHAT" {% if session and session.operational_mode == 'CHAT' %}selected{% endif %}>Chat</option>
+                    <option value="PLANNER" {% if session and session.operational_mode == 'PLANNER' %}selected{% endif %}>Planner</option>
+                    <option value="SINGLE_SHOT" {% if session and session.operational_mode == 'SINGLE_SHOT' %}selected{% endif %}>Single-shot</option>
                 </select>
             </div>
 
@@ -53,13 +45,13 @@
                 </button>
 
                 <button
-                    data-modal-open="history-modal"
+                    data-modal-open="sessions-modal"
                     class="w-full text-left px-4 py-3 rounded-lg bg-dark-card hover:bg-dark-light border border-dark-light text-sm flex items-center text-gray-300"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span>History</span>
+                    <span>Sessions</span>
                 </button>
 
                 <button

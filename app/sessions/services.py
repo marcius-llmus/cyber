@@ -1,12 +1,13 @@
 from app.projects.exceptions import ActiveProjectRequiredException
 from app.projects.services import ProjectService
-from app.history.exceptions import ChatSessionNotFoundException
-from app.history.models import ChatSession
-from app.history.repositories import ChatSessionRepository
-from app.history.schemas import ChatSessionCreate
+from app.core.enums import OperationalMode
+from app.sessions.exceptions import ChatSessionNotFoundException
+from app.sessions.models import ChatSession
+from app.sessions.repositories import ChatSessionRepository
+from app.sessions.schemas import ChatSessionCreate, ChatSessionUpdate
 
 
-class HistoryService:
+class SessionService:
     def __init__(self, session_repo: ChatSessionRepository, project_service: ProjectService):
         self.session_repo = session_repo
         self.project_service = project_service
@@ -61,13 +62,29 @@ class HistoryService:
             raise ChatSessionNotFoundException(f"Session with id {session_id} not found.")
         return session
 
+    async def get_operational_mode(self, session_id: int) -> OperationalMode:
+        session = await self.get_session(session_id=session_id)
+        return session.operational_mode
 
-class HistoryPageService:
-    def __init__(self, history_service: HistoryService, project_service: ProjectService):
-        self.history_service = history_service
+    async def set_operational_mode(self, session_id: int, mode: OperationalMode) -> ChatSession:
+        return await self._update_session(session_id=session_id, obj_in=ChatSessionUpdate(operational_mode=mode))
+
+    async def rename_session(self, session_id: int, name: str) -> ChatSession:
+        if not (normalized := name.strip()):
+            raise ValueError("Session name cannot be empty")
+        return await self._update_session(session_id=session_id, obj_in=ChatSessionUpdate(name=normalized))
+
+    async def _update_session(self, session_id: int, obj_in: ChatSessionUpdate) -> ChatSession:
+        session = await self.get_session(session_id=session_id)
+        return await self.session_repo.update(db_obj=session, obj_in=obj_in)
+
+
+class SessionPageService:
+    def __init__(self, session_service: SessionService, project_service: ProjectService):
+        self.session_service = session_service
         self.project_service = project_service
 
-    async def get_history_page_data(self) -> dict:
+    async def get_sessions_page_data(self) -> dict:
         active_project = await self.project_service.project_repo.get_active()
-        sessions = await self.history_service.get_sessions_by_project(project_id=active_project.id) if active_project else []
+        sessions = await self.session_service.get_sessions_by_project(project_id=active_project.id) if active_project else []
         return {"sessions": sessions}

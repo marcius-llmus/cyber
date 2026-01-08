@@ -1,8 +1,9 @@
 from app.chat.services import ChatService
 from app.context.services import WorkspaceService
 from app.usage.services import UsagePageService
-from app.history.enums import HistoryEventType
+from app.sessions.enums import SessionEventType
 from app.prompts.enums import PromptEventType
+from app.settings.services import SettingsService
 
 
 class CoderPageService:
@@ -17,10 +18,12 @@ class CoderPageService:
         usage_page_service: UsagePageService,
         chat_service: ChatService,
         context_service: WorkspaceService,
+        settings_service: SettingsService,
     ):
         self.usage_page_service = usage_page_service
         self.chat_service = chat_service
         self.context_service = context_service
+        self.settings_service = settings_service
 
     async def get_main_page_data(self, session_id: int | None = None) -> dict:
         """Aggregates data from various services for the main page view."""
@@ -37,10 +40,12 @@ class CoderPageService:
         else:
             page_data = await self._get_empty_session_data()
 
+        settings = await self.settings_service.get_settings()
         return {
             **page_data,
             "PromptEventType": PromptEventType,
-            "HistoryEventType": HistoryEventType,
+            "SessionEventType": SessionEventType,
+            "settings": settings,
         }
 
     async def _get_empty_session_data(self) -> dict:

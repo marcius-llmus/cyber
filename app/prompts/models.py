@@ -13,7 +13,8 @@ class Prompt(Base):
     type = Column(Enum(PromptType), nullable=False)
     content = Column(Text, nullable=False)
     source_path = Column(String, nullable=True)
-    project_id = Column(Integer, ForeignKey("projects.id"), nullable=True)
+    # we keep project based prompts if project get deleted or renamed for safety instead of cascading delete
+    project_id = Column(Integer, ForeignKey("projects.id", ondelete="SET NULL"), nullable=True)
 
     project = relationship("Project", back_populates="prompts", lazy="joined")
     project_attachments = relationship(
@@ -35,8 +36,8 @@ class Prompt(Base):
 class ProjectPromptAttachment(Base):
     __tablename__ = "project_prompt_attachments"
 
-    project_id = Column(Integer, ForeignKey("projects.id"), primary_key=True)
-    prompt_id = Column(Integer, ForeignKey("prompts.id"), primary_key=True)
+    project_id = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), primary_key=True)
+    prompt_id = Column(Integer, ForeignKey("prompts.id", ondelete="CASCADE"), primary_key=True)
 
     project = relationship("Project", back_populates="prompt_attachments", lazy="joined")
     prompt = relationship("Prompt", back_populates="project_attachments", lazy="joined")
@@ -45,8 +46,8 @@ class ProjectPromptAttachment(Base):
 class SessionPromptAttachment(Base):
     __tablename__ = "session_prompt_attachments"
 
-    session_id = Column(Integer, ForeignKey("chat_sessions.id"), primary_key=True)
-    prompt_id = Column(Integer, ForeignKey("prompts.id"), primary_key=True)
+    session_id = Column(Integer, ForeignKey("chat_sessions.id", ondelete="CASCADE"), primary_key=True)
+    prompt_id = Column(Integer, ForeignKey("prompts.id", ondelete="CASCADE"), primary_key=True)
 
     session = relationship("ChatSession", back_populates="prompt_attachments", lazy="joined")
     prompt = relationship("Prompt", back_populates="session_attachments", lazy="joined")

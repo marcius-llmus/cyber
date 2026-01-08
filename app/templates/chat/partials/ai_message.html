@@ -15,7 +15,7 @@
                     {% set tool = block.tool_call_data %}
                     {% if tool and tool.name == "apply_diff" %}
                         {% with file_path=tool.kwargs.file_path, diff=tool.kwargs.diff, tool_id=tool.id, tool_run_id=block.tool_run_id, tool_output=tool.output %}
-                            {% include "chat/partials/diff_patch_item.html" %}
+                            {% include "patches/partials/diff_patch_item.html" %}
                         {% endwith %}
                     {% endif %}
                 {% endif %}

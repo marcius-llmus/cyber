@@ -1,7 +1,6 @@
 from enum import StrEnum
 
 
-class MessageRole(StrEnum):
-    USER = "user"
-    AI = "assistant"
-    SYSTEM = "system"
+class ChatTurnStatus(StrEnum):
+    PENDING = "PENDING"
+    SUCCEEDED = "SUCCEEDED"

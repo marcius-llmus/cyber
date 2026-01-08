@@ -1,10 +1,10 @@
 {% from "components/modals/base_modal.html" import modal_shell %}
 
-{% call modal_shell(modal_id='history-modal', title='Conversation History') %}
+{% call modal_shell(modal_id='sessions-modal', title='Sessions') %}
     <div class="p-6 overflow-y-auto flex-1 modal-scroll-content min-h-0">
         <div class="space-y-2" id="history-list-container"
-             hx-get="/history/?active_session_id={{ session.id if session else '' }}"
-             hx-trigger="intersect, {{ HistoryEventType.SESSIONS_CHANGED }} from:body"
+             hx-get="/sessions/?active_session_id={{ session.id if session else '' }}"
+             hx-trigger="intersect, {{ SessionEventType.SESSIONS_CHANGED }} from:body"
              hx-swap="innerHTML"
         >
             <div class="text-xs text-gray-500 text-center py-6">Loading...</div>
@@ -12,11 +12,11 @@
     </div>
 
     <div class="px-6 py-4 border-t border-dark-light flex justify-end flex-shrink-0">
-        <button data-action="clear-history" class="px-4 py-2 bg-red-900 hover:bg-red-800 border border-red-700 rounded-lg text-sm text-red-400">
+        <button data-action="clear-sessions" class="px-4 py-2 bg-red-900 hover:bg-red-800 border border-red-700 rounded-lg text-sm text-red-400">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
-            Clear All History
+            Clear All Sessions
         </button>
     </div>
 {% endcall %}

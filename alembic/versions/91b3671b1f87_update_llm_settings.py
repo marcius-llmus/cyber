@@ -25,7 +25,7 @@ def upgrade() -> None:
         batch_op.add_column(sa.Column("coding_llm_temperature", sa.Float(), nullable=False, server_default="0.7"))
 
     with op.batch_alter_table("llm_settings", schema=None) as batch_op:
-        batch_op.add_column(sa.Column("provider", sa.Enum("ANTHROPIC", "GOOGLE", "OPENAI", name="llmprovider"), nullable=False, server_default="OPENAI"))
+        batch_op.add_column(sa.Column("provider", sa.Enum("ANTHROPIC", "GOOGLE", "OPENAI"), nullable=False, server_default="OPENAI"))
         batch_op.add_column(sa.Column("api_key", sa.String(), nullable=True))
 
     with op.batch_alter_table("llm_settings", schema=None) as batch_op:

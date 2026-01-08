@@ -35,7 +35,7 @@ class TemplateSpec:
 
 
 class MissingFullPageTemplateError(HTTPException):
-    """Fullpage request not a corresponding template configured for url rewriting and history to work."""
+    """Fullpage request not a corresponding template configured for url rewriting and sessions to work."""
 
     def __init__(self) -> None:  # noqa: D107
         super().__init__(status_code=400, detail="Ressource cannot be accessed directly.")
@@ -119,7 +119,7 @@ def htmx(  # noqa: C901
             # hint: use `HXRequest` instead of `Request` for typing when using `request.hx_request`
             request.hx_request = not request_is_fullpage_request  # type: ignore
 
-            # convenient history support if kwargs match in the endpoint and constructor
+            # convenient sessions support if kwargs match in the endpoint and constructor
             if request_is_fullpage_request and full_template_constructor is not None:
                 if inspect.iscoroutinefunction(full_template_constructor):
                     response = await full_template_constructor(**kwargs)

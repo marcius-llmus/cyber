@@ -1,7 +1,6 @@
 from typing import Any, Generic, Type, TypeVar
 
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import Base
 

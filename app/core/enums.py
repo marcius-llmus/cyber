@@ -7,3 +7,18 @@ class LogLevel(StrEnum):
     WARNING = "WARNING"
     INFO = "INFO"
     DEBUG = "DEBUG"
+
+
+class ContextStrategy(StrEnum):
+    MANUAL = "MANUAL"
+    GREP = "GREP"
+    RAG = "RAG"
+    GREP_RAG = "GREP_RAG"
+
+
+class OperationalMode(StrEnum):
+    CODING = "CODING"
+    ASK = "ASK"
+    CHAT = "CHAT"
+    PLANNER = "PLANNER"
+    SINGLE_SHOT = "SINGLE_SHOT"

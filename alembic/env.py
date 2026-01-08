@@ -7,7 +7,7 @@ from sqlalchemy import pool
 
 from app.core.config import settings
 from app.core.db import Base  # noqa
-from app.history.models import *  # noqa
+from app.sessions.models import *  # noqa
 from app.projects.models import *  # noqa
 from app.prompts.models import *  # noqa
 from app.settings.models import *  # noqa
@@ -16,6 +16,7 @@ from app.agents.models import * # noqa
 from app.usage.models import * # noqa
 from app.llms.models import * # noqa
 from app.chat.models import * # noqa
+from app.patches.models import *  # noqa
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

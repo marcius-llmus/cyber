@@ -1,5 +1,5 @@
 class HistoryException(Exception):
-    """Base exception for history application."""
+    """Base exception for sessions application."""
 
 
 class ChatSessionNotFoundException(HistoryException):
