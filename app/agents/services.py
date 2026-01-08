@@ -4,11 +4,14 @@ from llama_index.core.workflow import Context, Workflow
 from app.agents.repositories import WorkflowStateRepository
 from app.context.services import RepoMapService, WorkspaceService, CodebaseService
 from app.projects.services import ProjectService
+from app.core.enums import OperationalMode
 from app.prompts.services import PromptService
 from app.context.schemas import FileStatus
 from app.agents.constants import (
     AGENT_IDENTITY,
     TOOL_USAGE_RULES,
+    PLANNER_IDENTITY,
+    SINGLE_SHOT_IDENTITY,
     REPO_MAP_DESCRIPTION,
     ACTIVE_CONTEXT_DESCRIPTION,
     CODER_BEHAVIOR,
@@ -53,12 +56,28 @@ class AgentContextService:
         self.project_service = project_service
         self.prompt_service = prompt_service
 
-    async def build_system_prompt(self, session_id: int) -> str:
+    async def build_system_prompt(self, session_id: int, operational_mode: OperationalMode = OperationalMode.CODING) -> str:
         project = await self.project_service.get_active_project()
         if not project:
             raise ActiveProjectRequiredException("Active project required to build system prompt.")
 
-        # fetch custom prompts (stable)
+        # Determine Identity and Rules based on Mode
+        identity = AGENT_IDENTITY
+        rules = TOOL_USAGE_RULES
+        guidelines = CODER_BEHAVIOR
+
+        if operational_mode == OperationalMode.PLANNER:
+            identity = PLANNER_IDENTITY
+        elif operational_mode == OperationalMode.SINGLE_SHOT:
+            identity = SINGLE_SHOT_IDENTITY
+            rules = ""  # No tools in single shot
+            guidelines = ""  # Strict output
+
+        # CHAT mode: minimal prompt, no context
+        if operational_mode == OperationalMode.CHAT:
+            return f"<identity>\n{identity}\n</identity>"
+
+        # For other modes, fetch context
         custom_prompts_xml = await self._build_prompts_xml(project.id)
 
         # fetch repo map (semi-stable)
@@ -70,14 +89,22 @@ class AgentContextService:
         # fetch active context (volatile)
         active_context_xml = await self._build_active_context_xml(session_id, project)
 
-        parts = [
-            f"<identity>\n{AGENT_IDENTITY}\n</identity>",
-            f"<rules>\n{TOOL_USAGE_RULES}\n</rules>",
-            f"<guidelines>\n{CODER_BEHAVIOR}\n</guidelines>",
-            f"<custom_instructions>\n{custom_prompts_xml}\n</custom_instructions>",
-            f"<repository_map>\n<!-- {REPO_MAP_DESCRIPTION} -->\n{repo_map}\n</repository_map>",
-            f"<active_context>\n<!-- {ACTIVE_CONTEXT_DESCRIPTION} -->\n{active_context_xml}\n</active_context>",
-        ]
+        parts = [f"<identity>\n{identity}\n</identity>"]
+
+        if rules:
+            parts.append(f"<rules>\n{rules}\n</rules>")
+        
+        if guidelines:
+            parts.append(f"<guidelines>\n{guidelines}\n</guidelines>")
+        
+        if custom_prompts_xml:
+            parts.append(f"<custom_instructions>\n{custom_prompts_xml}\n</custom_instructions>")
+            
+        if repo_map:
+            parts.append(f"<repository_map>\n<!-- {REPO_MAP_DESCRIPTION} -->\n{repo_map}\n</repository_map>")
+            
+        if active_context_xml:
+            parts.append(f"<active_context>\n<!-- {ACTIVE_CONTEXT_DESCRIPTION} -->\n{active_context_xml}\n</active_context>")
 
         return "\n\n".join(parts)
 

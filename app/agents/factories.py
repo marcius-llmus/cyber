@@ -13,6 +13,8 @@ from app.context.tools import SearchTools, FileTools
 from app.patches.tools import PatcherTools
 from app.agents.repositories import WorkflowStateRepository
 from app.agents.services import WorkflowService, AgentContextService
+from app.sessions.factories import build_session_service
+from app.core.enums import OperationalMode
 
 
 async def build_workflow_service(db: AsyncSession) -> WorkflowService:
@@ -40,6 +42,7 @@ async def build_agent(db: AsyncSession, session_id: int, turn_id: str | None = N
     """Creates a CoderAgent (FunctionAgent) with the currently configured LLM."""
     settings_service = await build_settings_service(db)
     llm_service = await build_llm_service(db)
+    session_service = await build_session_service(db)
     agent_context_service = await build_agent_context_service(db)
 
     settings = await settings_service.get_settings()
@@ -50,17 +53,23 @@ async def build_agent(db: AsyncSession, session_id: int, turn_id: str | None = N
         temperature=settings.coding_llm_temperature
     )
 
+    operational_mode = await session_service.get_operational_mode(session_id)
+
     tools: list[BaseTool] = []
 
-    file_tools = FileTools(db=sessionmanager, settings=settings, session_id=session_id, turn_id=turn_id)
-    tools.extend(file_tools.to_tool_list())
+    # File and Search tools: CODING, ASK, PLANNER
+    if operational_mode in [OperationalMode.CODING, OperationalMode.ASK, OperationalMode.PLANNER]:
+        file_tools = FileTools(db=sessionmanager, settings=settings, session_id=session_id, turn_id=turn_id)
+        tools.extend(file_tools.to_tool_list())
 
-    search_tools = SearchTools(db=sessionmanager, settings=settings, session_id=session_id)
-    tools.extend(search_tools.to_tool_list())
+        search_tools = SearchTools(db=sessionmanager, settings=settings, session_id=session_id)
+        tools.extend(search_tools.to_tool_list())
 
-    patcher_tools = PatcherTools(db=sessionmanager, settings=settings, session_id=session_id, turn_id=turn_id)
-    tools.extend(patcher_tools.to_tool_list())
+    # Patcher tools: CODING only
+    if operational_mode == OperationalMode.CODING:
+        patcher_tools = PatcherTools(db=sessionmanager, settings=settings, session_id=session_id, turn_id=turn_id)
+        tools.extend(patcher_tools.to_tool_list())
 
-    system_prompt = await agent_context_service.build_system_prompt(session_id)
+    system_prompt = await agent_context_service.build_system_prompt(session_id, operational_mode=operational_mode)
 
     return CoderAgent(tools=tools, llm=llm, system_prompt=system_prompt)
