@@ -100,12 +100,15 @@ class CoderService:
                     await self._mark_turn_succeeded(session_id=session_id, turn_id=turn_id)
 
                     if effective_mode == OperationalMode.SINGLE_SHOT:
+                        yield AgentStateEvent(status="Applying patches...")
+                        # todo: must make it concurrent
                         async for event in self._process_single_shot_diffs(
                             session_id=session_id,
                             turn_id=turn_id,
                             blocks=ai_blocks,
                         ):
                             yield event
+                        yield AgentStateEvent(status="")
 
                     async for usage_event in self._process_new_usage(session_id, event_collector):
                         yield usage_event
