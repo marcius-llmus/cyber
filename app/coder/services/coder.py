@@ -2,6 +2,9 @@ import logging
 from typing import Any, AsyncGenerator, AsyncIterator, Callable, Coroutine, Awaitable
 
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.context.services import WorkspaceService
+from app.context.schemas import ContextFileListItem
 from app.core.config import settings
 from app.core.db import DatabaseSessionManager
 from app.chat.services import ChatService, ChatTurnService
@@ -13,6 +16,7 @@ from app.coder.schemas import (
     WorkflowLogEvent,
     LogLevel,
     SingleShotDiffAppliedEvent,
+    ContextFilesUpdatedEvent,
 )
 from app.agents.services import WorkflowService
 from app.usage.event_handlers import UsageCollector
@@ -35,6 +39,7 @@ class CoderService:
         turn_handler_factory: Callable[[], Awaitable[MessagingTurnEventHandler]],
         turn_service_factory: Callable[[AsyncSession], Awaitable[ChatTurnService]],
         diff_patch_service_factory: Callable[[], Awaitable[Any]],
+        context_service_factory: Callable[[AsyncSession], Awaitable[WorkspaceService]],
     ):
         self.db = db
         self.chat_service_factory = chat_service_factory
@@ -45,6 +50,7 @@ class CoderService:
         self.turn_handler_factory = turn_handler_factory
         self.turn_service_factory = turn_service_factory
         self.diff_patch_service_factory = diff_patch_service_factory
+        self.context_service_factory = context_service_factory
 
     async def handle_user_message(
         self, *, user_message: str, session_id: int, turn_id: str | None = None
@@ -145,14 +151,19 @@ class CoderService:
         blocks: list[dict[str, Any]],
     ) -> AsyncGenerator[CoderEvent, None]:
         diff_patch_service = await self.diff_patch_service_factory()
+
+        results: list[dict[str, Any]] = []
+        diff_contents: list[str] = []
+
         extracted = diff_patch_service.extract_diffs_from_blocks(
             turn_id=turn_id,
             session_id=session_id,
             blocks=blocks,
         )
-        results = []
+
         for patch_in in extracted:
             p_file_path = patch_in.file_path
+            diff_contents.append(patch_in.diff)
 
             result = await diff_patch_service.process_diff(patch_in)
             results.append(result)
@@ -161,6 +172,23 @@ class CoderService:
                 file_path=p_file_path,
                 output=str(result),
             )
+
+        if diff_contents:
+            async with self.db.session() as session:
+                context_service = await self.context_service_factory(session)
+                for diff_content in diff_contents:
+                    await context_service.sync_context_for_diff(
+                        session_id=session_id,
+                        diff_content=diff_content,
+                    )
+
+                files = await context_service.get_active_context(session_id)
+                files_data = [
+                    ContextFileListItem(id=f.id, file_path=f.file_path)
+                    for f in files
+                ]
+
+            yield ContextFilesUpdatedEvent(session_id=session_id, files=files_data)
 
         logger.info(
             "Processed %s SINGLE_SHOT diff patch(es) for turn_id=%s session_id=%s",

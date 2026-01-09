@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 
 from app.context.models import ContextFile
 from app.context.repositories import ContextRepository
@@ -9,6 +10,10 @@ from app.projects.services import ProjectService
 from app.projects.exceptions import ActiveProjectRequiredException
 
 logger = logging.getLogger(__name__)
+
+
+_DIFF_MINUS_HEADER_RE = re.compile(r"^---\s+(?:[ab]/)?(?P<path>\S+)")
+_DIFF_PLUS_HEADER_RE = re.compile(r"^\+\+\+\s+(?:[ab]/)?(?P<path>\S+)")
 
 
 class WorkspaceService:
@@ -22,6 +27,82 @@ class WorkspaceService:
         self.context_repo = context_repo
         self.codebase_service = codebase_service
 
+    @staticmethod
+    def _extract_created_and_deleted_paths(diff_content: str) -> tuple[set[str], set[str]]:
+        created: set[str] = set()
+        deleted: set[str] = set()
+
+        minus_path: str | None = None
+        plus_path: str | None = None
+
+        def _flush() -> None:
+            nonlocal minus_path, plus_path
+
+            if minus_path == "/dev/null" and plus_path and plus_path != "/dev/null":
+                created.add(plus_path)
+            elif plus_path == "/dev/null" and minus_path and minus_path != "/dev/null":
+                deleted.add(minus_path)
+
+            minus_path = None
+            plus_path = None
+
+        for raw_line in (diff_content or "").splitlines():
+            line = raw_line.rstrip("\n")
+
+            if line.startswith("diff --git "):
+                _flush()
+                continue
+
+            if line.startswith("--- "):
+                if line.strip() == "--- /dev/null":
+                    minus_path = "/dev/null"
+                    continue
+
+                match = _DIFF_MINUS_HEADER_RE.match(line)
+                if match:
+                    minus_path = match.group("path")
+                continue
+
+            if line.startswith("+++ "):
+                if line.strip() == "+++ /dev/null":
+                    plus_path = "/dev/null"
+                    continue
+
+                match = _DIFF_PLUS_HEADER_RE.match(line)
+                if match:
+                    plus_path = match.group("path")
+                continue
+
+        _flush()
+
+        return created, deleted
+
+    async def sync_context_for_diff(self, *, session_id: int, diff_content: str) -> None:
+        """Sync active context to reflect file creations/deletions described by a unified diff.
+
+        Intended to be called by higher-level services (e.g. CoderService) after a diff is applied.
+        """
+
+        created_files, deleted_files = self._extract_created_and_deleted_paths(diff_content)
+        if not created_files and not deleted_files:
+            return
+
+        project = await self.project_service.get_active_project()
+        if not project:
+            raise ActiveProjectRequiredException("Active project required.")
+
+        # Created files: add (validate must_exist=True)
+        for file_path in sorted(created_files):
+            try:
+                await self.add_file(session_id, file_path)
+            except ValueError:
+                # Path may be invalid/ignored; safe to skip
+                continue
+
+        # Deleted files: remove by path (no validation)
+        if deleted_files:
+            await self.remove_context_files_by_path(session_id, sorted(deleted_files))
+
     async def add_file(self, session_id: int, file_path: str) -> ContextFile:
         """Promotes a file to the active context (Tier 2)."""
         # Gatekeeper check
@@ -34,6 +115,7 @@ class WorkspaceService:
 
         existing = await self.context_repo.get_by_session_and_path(session_id, file_path)
         if existing:
+            # todo: forgotten feature lol, hit count will affect file score in dynamic context
             update_data = ContextFileUpdate(hit_count=existing.hit_count + 1)
             return await self.context_repo.update(db_obj=existing, obj_in=update_data)
 
@@ -96,9 +178,9 @@ class WorkspaceService:
         """
         active_context_db = await self.get_active_context(session_id)
         active_abs_paths = []
-        
+
         for item in active_context_db:
             if not await self.codebase_service.is_ignored(project_root, item.file_path):
                 active_abs_paths.append(os.path.join(project_root, item.file_path))
-                
+
         return active_abs_paths

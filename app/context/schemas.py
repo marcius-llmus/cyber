@@ -3,6 +3,11 @@ from pydantic import BaseModel
 from typing import List, Optional
 
 
+class ContextFileListItem(BaseModel):
+    id: int
+    file_path: str
+
+
 class ContextFileCreate(BaseModel):
     session_id: int
     file_path: str

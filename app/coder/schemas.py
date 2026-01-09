@@ -3,6 +3,8 @@ from enum import StrEnum
 from pydantic import BaseModel
 from typing import Union, Any
 
+from app.context.schemas import ContextFileListItem
+
 
 class LogLevel(StrEnum):
     INFO = "info"
@@ -64,6 +66,11 @@ class AgentStateEvent(BaseModel):
     status: str
 
 
+class ContextFilesUpdatedEvent(BaseModel):
+    session_id: int
+    files: list[ContextFileListItem]
+
+
 CoderEvent = Union[
     AIMessageChunkEvent,
     AIMessageBlockStartEvent,
@@ -74,4 +81,5 @@ CoderEvent = Union[
     ToolCallResultEvent,
     AgentStateEvent,
     SingleShotDiffAppliedEvent,
+    ContextFilesUpdatedEvent,
 ]

@@ -15,6 +15,7 @@ from app.coder.schemas import (
     ToolCallResultEvent,
     WebSocketMessage,
     SingleShotDiffAppliedEvent,
+    ContextFilesUpdatedEvent,
     WorkflowErrorEvent,
     WorkflowLogEvent,
     LogLevel
@@ -48,6 +49,7 @@ class WebSocketOrchestrator:
             ToolCallEvent: self._render_tool_call,
             ToolCallResultEvent: self._render_tool_result,
             SingleShotDiffAppliedEvent: self._render_single_shot_applied,
+            ContextFilesUpdatedEvent: self._render_context_files_updated,
         }
 
     async def _process_event(self, event: CoderEvent, turn_id: str):
@@ -223,6 +225,12 @@ class WebSocketOrchestrator:
                 level=LogLevel.INFO
             )
         )
+
+    async def _render_context_files_updated(self, event: ContextFilesUpdatedEvent, turn_id: str):  # noqa
+        template = templates.get_template("context/partials/context_file_list_items.html").render(
+            {"files": event.files, "session_id": event.session_id}
+        )
+        await self.ws_manager.send_html(template)
 
     async def _render_error(self, error_message: str):
         context = {"message": error_message}

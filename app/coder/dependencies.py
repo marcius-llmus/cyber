@@ -11,6 +11,7 @@ from app.core.db import sessionmanager
 from app.agents.factories import build_agent
 from app.agents.factories import build_workflow_service
 from app.context.dependencies import get_context_service
+from app.context.factories import build_workspace_service
 from app.context.services import WorkspaceService
 from app.patches.factories import build_diff_patch_service
 from app.sessions.factories import build_session_service
@@ -44,4 +45,5 @@ async def get_coder_service() -> CoderService:
         agent_factory=build_agent,
         turn_handler_factory=build_messaging_turn_event_handler,
         diff_patch_service_factory=build_diff_patch_service,
+        context_service_factory=build_workspace_service,
     )

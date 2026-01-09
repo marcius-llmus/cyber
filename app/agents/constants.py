@@ -71,6 +71,7 @@ TOOL USAGE GUIDELINES
 Use the correct tools to apply patches, read and interact with files and search codebase.
 
 Batch Operations: Inefficiency is the enemy.
+    - Grep is your friend. You can use it as much as you can to optimize reading whole files afterwards.
     - You can read ALL relevant files in a single tool call.
     - You can Apply ALL necessary patches in a single turn using multiple tool calls if needed.
     - When possible, issue multiple tool calls in the same response to perform independent actions simultaneously.
