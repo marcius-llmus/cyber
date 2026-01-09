@@ -12,6 +12,7 @@ from app.coder.schemas import (
     AgentStateEvent,
     WorkflowLogEvent,
     LogLevel,
+    SingleShotDiffAppliedEvent,
 )
 from app.agents.services import WorkflowService
 from app.usage.event_handlers import UsageCollector
@@ -99,11 +100,12 @@ class CoderService:
                     await self._mark_turn_succeeded(session_id=session_id, turn_id=turn_id)
 
                     if effective_mode == OperationalMode.SINGLE_SHOT:
-                        await self._process_single_shot_diffs(
+                        async for event in self._process_single_shot_diffs(
                             session_id=session_id,
                             turn_id=turn_id,
                             blocks=ai_blocks,
-                        )
+                        ):
+                            yield event
 
                     async for usage_event in self._process_new_usage(session_id, event_collector):
                         yield usage_event
@@ -138,7 +140,7 @@ class CoderService:
         session_id: int,
         turn_id: str,
         blocks: list[dict[str, Any]],
-    ) -> None:
+    ) -> AsyncGenerator[CoderEvent, None]:
         diff_patch_service = await self.diff_patch_service_factory()
         extracted = diff_patch_service.extract_diffs_from_blocks(
             turn_id=turn_id,
@@ -147,7 +149,16 @@ class CoderService:
         )
         results = []
         for patch_in in extracted:
-            results.append(await diff_patch_service.process_diff(patch_in))
+            p_file_path = patch_in.file_path
+
+            result = await diff_patch_service.process_diff(patch_in)
+            results.append(result)
+
+            yield SingleShotDiffAppliedEvent(
+                file_path=p_file_path,
+                output=str(result),
+            )
+
         logger.info(
             "Processed %s SINGLE_SHOT diff patch(es) for turn_id=%s session_id=%s",
             len(results),

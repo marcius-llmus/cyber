@@ -55,6 +55,11 @@ class ToolCallResultEvent(BaseModel):
     tool_run_id: str
 
 
+class SingleShotDiffAppliedEvent(BaseModel):
+    file_path: str
+    output: str
+
+
 class AgentStateEvent(BaseModel):
     status: str
 
@@ -68,4 +73,5 @@ CoderEvent = Union[
     ToolCallEvent,
     ToolCallResultEvent,
     AgentStateEvent,
+    SingleShotDiffAppliedEvent,
 ]

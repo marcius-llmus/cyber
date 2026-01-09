@@ -14,6 +14,7 @@ from app.coder.schemas import (
     ToolCallEvent,
     ToolCallResultEvent,
     WebSocketMessage,
+    SingleShotDiffAppliedEvent,
     WorkflowErrorEvent,
     WorkflowLogEvent,
     LogLevel
@@ -46,6 +47,7 @@ class WebSocketOrchestrator:
             WorkflowLogEvent: self._handle_workflow_log,
             ToolCallEvent: self._render_tool_call,
             ToolCallResultEvent: self._render_tool_result,
+            SingleShotDiffAppliedEvent: self._render_single_shot_applied,
         }
 
     async def _process_event(self, event: CoderEvent, turn_id: str):
@@ -213,6 +215,14 @@ class WebSocketOrchestrator:
             diff_context = {"tool_id": event.tool_id, "tool_run_id": event.tool_run_id}
             diff_template = templates.get_template("patches/partials/diff_patch_result.html").render(diff_context)
             await self.ws_manager.send_html(diff_template)
+
+    async def _render_single_shot_applied(self, event: SingleShotDiffAppliedEvent, turn_id: str):
+        await self._handle_workflow_log(
+            WorkflowLogEvent(
+                message=f"Single-shot patch applied to {event.file_path}: {event.output}", 
+                level=LogLevel.INFO
+            )
+        )
 
     async def _render_error(self, error_message: str):
         context = {"message": error_message}
