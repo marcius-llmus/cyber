@@ -120,15 +120,18 @@ class AgentContextService:
         if not active_files:
             return ""
 
-        xml_parts = []
+        file_parts: list[str] = []
         for context_file in active_files:
             result = await self.codebase_service.read_file(project.path, context_file.file_path)
             if result.status == FileStatus.SUCCESS:
-                xml_parts.append(
-                    f'    <FILE path="{context_file.file_path}">\n{result.content}\n    </FILE>'
+                file_parts.append(
+                    f'<FILE path="{context_file.file_path}">\n{result.content}\n</FILE>'
                 )
 
-        return "\n\n".join(xml_parts)
+        if not file_parts:
+            return ""
+
+        return "<CONTEXT_FILES>\n" + "\n\n".join(file_parts) + "\n</CONTEXT_FILES>"
 
     async def _build_prompts_xml(self, project_id: int) -> str:
         # todo: later down the road we could make prompts by session no matter the project

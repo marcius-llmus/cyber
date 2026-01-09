@@ -1,9 +1,11 @@
 # Based on Aider prompts
 PROMPT_STRUCTURE_GUIDE = """
 SYSTEM STRUCTURE (How to interpret the XML sections you will receive):
+- <PROMPT_STRUCTURE> describes how this prompt is organized and how to interpret the sections.
 - <IDENTITY> / <RULES> / <GUIDELINES> / <CUSTOM_INSTRUCTIONS> describe your operating constraints.
 - <REPOSITORY_MAP> is the authoritative inventory of files and paths.
 - <ACTIVE_CONTEXT> contains full file contents that are safe to modify.
+- <CUSTOM_INSTRUCTIONS> contains one or more <INSTRUCTION> blocks.
 - Only propose edits to files present in <ACTIVE_CONTEXT>. If a file is not there, ask the user to add it.
 
 COMPLIANCE:
@@ -62,7 +64,7 @@ STRICT FORMAT RULES:
 3. File Deletion: Use `--- path/to/file` and `+++ /dev/null`.
 4. Markdown: ALWAYS wrap each diff in markdown code blocks (```diff). That's how we know a patch must be applied.
 
-""" + PROMPT_STRUCTURE_GUIDE
+"""
 
 TOOL_USAGE_RULES = """
 TOOL USAGE GUIDELINES
