@@ -9,6 +9,7 @@ from app.prompts.services import PromptService
 from app.context.schemas import FileStatus
 from app.agents.constants import (
     AGENT_IDENTITY,
+    PROMPT_STRUCTURE_GUIDE,
     TOOL_USAGE_RULES,
     PLANNER_IDENTITY,
     SINGLE_SHOT_IDENTITY,
@@ -75,7 +76,10 @@ class AgentContextService:
 
         # CHAT mode: minimal prompt, no context
         if operational_mode == OperationalMode.CHAT:
-            return f"<identity>\n{identity}\n</identity>"
+            return "\n\n".join([
+                f"<IDENTITY>\n{identity}\n</IDENTITY>",
+                f"<PROMPT_STRUCTURE>\n{PROMPT_STRUCTURE_GUIDE}\n</PROMPT_STRUCTURE>",
+            ])
 
         # For other modes, fetch context
         custom_prompts_xml = await self._build_prompts_xml(project.id)
@@ -89,22 +93,25 @@ class AgentContextService:
         # fetch active context (volatile)
         active_context_xml = await self._build_active_context_xml(session_id, project)
 
-        parts = [f"<identity>\n{identity}\n</identity>"]
+        parts = [
+            f"<IDENTITY>\n{identity}\n</IDENTITY>",
+            f"<PROMPT_STRUCTURE>\n{PROMPT_STRUCTURE_GUIDE}\n</PROMPT_STRUCTURE>",
+        ]
 
         if rules:
-            parts.append(f"<rules>\n{rules}\n</rules>")
+            parts.append(f"<RULES>\n{rules}\n</RULES>")
         
         if guidelines:
-            parts.append(f"<guidelines>\n{guidelines}\n</guidelines>")
+            parts.append(f"<GUIDELINES>\n{guidelines}\n</GUIDELINES>")
         
         if custom_prompts_xml:
-            parts.append(f"<custom_instructions>\n{custom_prompts_xml}\n</custom_instructions>")
+            parts.append(f"<CUSTOM_INSTRUCTIONS>\n{custom_prompts_xml}\n</CUSTOM_INSTRUCTIONS>")
             
         if repo_map:
-            parts.append(f"<repository_map>\n<!-- {REPO_MAP_DESCRIPTION} -->\n{repo_map}\n</repository_map>")
+            parts.append(f"<REPOSITORY_MAP>\n<!-- {REPO_MAP_DESCRIPTION} -->\n{repo_map}\n</REPOSITORY_MAP>")
             
         if active_context_xml:
-            parts.append(f"<active_context>\n<!-- {ACTIVE_CONTEXT_DESCRIPTION} -->\n{active_context_xml}\n</active_context>")
+            parts.append(f"<ACTIVE_CONTEXT>\n<!-- {ACTIVE_CONTEXT_DESCRIPTION} -->\n{active_context_xml}\n</ACTIVE_CONTEXT>")
 
         return "\n\n".join(parts)
 
@@ -118,7 +125,7 @@ class AgentContextService:
             result = await self.codebase_service.read_file(project.path, context_file.file_path)
             if result.status == FileStatus.SUCCESS:
                 xml_parts.append(
-                    f'    <file path="{context_file.file_path}">\n{result.content}\n    </file>'
+                    f'    <FILE path="{context_file.file_path}">\n{result.content}\n    </FILE>'
                 )
 
         return "\n\n".join(xml_parts)
@@ -131,5 +138,5 @@ class AgentContextService:
             return ""
 
         return "\n\n".join(
-            [f'<instruction name="{p.name}">\n{p.content}\n</instruction>' for p in prompts]
+            [f'<INSTRUCTION name="{p.name}">\n{p.content}\n</INSTRUCTION>' for p in prompts]
         )
