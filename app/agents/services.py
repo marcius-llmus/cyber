@@ -17,7 +17,7 @@ from app.agents.constants import (
     SINGLE_SHOT_IDENTITY,
     REPO_MAP_DESCRIPTION,
     ACTIVE_CONTEXT_DESCRIPTION,
-    CODER_BEHAVIOR,
+    CODER_BEHAVIOR
 )
 from app.projects.exceptions import ActiveProjectRequiredException
 from app.projects.models import Project
@@ -73,9 +73,11 @@ class AgentContextService:
             identity = ASK_IDENTITY
             # ASK is read-only: no patch/file modifications
             rules = TOOL_USAGE_RULES
-            guidelines = ""
+            guidelines = CODER_BEHAVIOR
+
         if operational_mode == OperationalMode.PLANNER:
             identity = PLANNER_IDENTITY
+            guidelines = CODER_BEHAVIOR
         elif operational_mode == OperationalMode.SINGLE_SHOT:
             identity = SINGLE_SHOT_IDENTITY
             rules = ""  # No tools in single shot
