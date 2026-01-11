@@ -9,6 +9,8 @@ from app.prompts.services import PromptService
 from app.context.schemas import FileStatus
 from app.agents.constants import (
     AGENT_IDENTITY,
+    ASK_IDENTITY,
+    CHAT_IDENTITY,
     PROMPT_STRUCTURE_GUIDE,
     TOOL_USAGE_RULES,
     PLANNER_IDENTITY,
@@ -67,12 +69,23 @@ class AgentContextService:
         rules = TOOL_USAGE_RULES
         guidelines = CODER_BEHAVIOR
 
+        if operational_mode == OperationalMode.ASK:
+            identity = ASK_IDENTITY
+            # ASK is read-only: no patch/file modifications
+            rules = TOOL_USAGE_RULES
+            guidelines = ""
         if operational_mode == OperationalMode.PLANNER:
             identity = PLANNER_IDENTITY
         elif operational_mode == OperationalMode.SINGLE_SHOT:
             identity = SINGLE_SHOT_IDENTITY
             rules = ""  # No tools in single shot
             guidelines = ""  # Strict output
+
+        if operational_mode == OperationalMode.CHAT:
+            identity = CHAT_IDENTITY
+            # CHAT has no tools
+            rules = ""
+            guidelines = ""
 
         # CHAT mode: minimal prompt, no context
         if operational_mode == OperationalMode.CHAT:

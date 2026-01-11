@@ -57,15 +57,15 @@ async def build_agent(db: AsyncSession, session_id: int, turn_id: str | None = N
 
     tools: list[BaseTool] = []
 
-    # File and Search tools: CODING, ASK, PLANNER
+    # Read-only tools: CODING, ASK, PLANNER
     if operational_mode in [OperationalMode.CODING, OperationalMode.ASK, OperationalMode.PLANNER]:
-        file_tools = FileTools(db=sessionmanager, settings=settings, session_id=session_id, turn_id=turn_id)
-        tools.extend(file_tools.to_tool_list())
-
         search_tools = SearchTools(db=sessionmanager, settings=settings, session_id=session_id)
         tools.extend(search_tools.to_tool_list())
 
-    # Patcher tools: CODING only
+        file_tools = FileTools(db=sessionmanager, settings=settings, session_id=session_id, turn_id=turn_id)
+        tools.extend(file_tools.to_tool_list())
+
+    # Write tools (patcher): CODING only
     if operational_mode == OperationalMode.CODING:
         patcher_tools = PatcherTools(db=sessionmanager, settings=settings, session_id=session_id, turn_id=turn_id)
         tools.extend(patcher_tools.to_tool_list())
