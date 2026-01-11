@@ -81,7 +81,7 @@ class AgentContextService:
         elif operational_mode == OperationalMode.SINGLE_SHOT:
             identity = SINGLE_SHOT_IDENTITY
             rules = ""  # No tools in single shot
-            guidelines = ""  # Strict output
+            guidelines = CODER_BEHAVIOR
 
         if operational_mode == OperationalMode.CHAT:
             identity = CHAT_IDENTITY

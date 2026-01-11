@@ -162,6 +162,7 @@ class CoderService:
             blocks=blocks,
         )
 
+        # todo: make it async parallel
         for diff_patch in extracted:
             diff_patch_file_path = diff_patch.parsed.path
             parsed_patches.append(diff_patch.parsed)
