@@ -95,6 +95,7 @@ class CoderService:
                         effective_mode = await session_service.get_operational_mode(session_id=session_id)
                         logger.info("Session %s effective operational mode: %s", session_id, effective_mode)
 
+                        # it returns only AI message
                         ai_message = await chat_service.save_messages_for_turn(
                             session_id=session_id,
                             user_content=user_message,
@@ -153,7 +154,7 @@ class CoderService:
         diff_patch_service = await self.diff_patch_service_factory()
 
         results: list[dict[str, Any]] = []
-        diff_contents: list[str] = []
+        parsed_patches = []
 
         extracted = diff_patch_service.extract_diffs_from_blocks(
             turn_id=turn_id,
@@ -161,26 +162,37 @@ class CoderService:
             blocks=blocks,
         )
 
-        for patch_in in extracted:
-            p_file_path = patch_in.file_path
-            diff_contents.append(patch_in.diff)
+        for diff_patch in extracted:
+            diff_patch_file_path = diff_patch.parsed.path
+            parsed_patches.append(diff_patch.parsed)
 
-            result = await diff_patch_service.process_diff(patch_in)
+            result = await diff_patch_service.process_diff(diff_patch)
             results.append(result)
 
             yield SingleShotDiffAppliedEvent(
-                file_path=p_file_path,
+                file_path=diff_patch_file_path,
                 output=str(result),
             )
 
-        if diff_contents:
+        # we must make sure that created and deleted files
+        # are added and remove from active context
+        if parsed_patches:
             async with self.db.session() as session:
                 context_service = await self.context_service_factory(session)
-                for diff_content in diff_contents:
-                    await context_service.sync_context_for_diff(
-                        session_id=session_id,
-                        diff_content=diff_content,
-                    )
+                for patch in parsed_patches:
+                    try:
+                        await context_service.sync_context_for_diff(
+                            session_id=session_id,
+                            patch=patch,
+                        )
+                    except Exception as e:
+                        yield WorkflowLogEvent(
+                            message=(
+                                "Failed to sync context from diff "
+                                f"(session_id={session_id}): {e}"
+                            ),
+                            level=LogLevel.ERROR,
+                        )
 
                 files = await context_service.get_active_context(session_id)
                 files_data = [

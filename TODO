@@ -29,6 +29,7 @@ Roadmap
 - Add option to make diff patch in message history (send applied patches un chat history)
 - Cache persists after cleaning history?
 - Add per session settings (overrides)
+- Add pre creation of diffs then optionally applying existing pending diffs (per message or per turn).
 
 
 --------

@@ -24,23 +24,20 @@ def upgrade() -> None:
 
     op.create_table('diff_patches',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('message_id', sa.Integer(), nullable=False),
     sa.Column('session_id', sa.Integer(), nullable=False),
-    sa.Column('file_path', sa.String(), nullable=False),
+    sa.Column('turn_id', sa.String(), nullable=False),
     sa.Column('diff', sa.Text(), nullable=False),
     sa.Column('status', sa.Enum('PENDING', 'APPLIED', 'REJECTED', 'FAILED'), nullable=False, server_default='PENDING'),
     sa.Column('error_message', sa.Text(), nullable=True),
-    sa.Column('tool_call_id', sa.String(), nullable=True),
-    sa.Column('tool_run_id', sa.String(), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('applied_at', sa.DateTime(timezone=True), nullable=True),
-    sa.ForeignKeyConstraint(['message_id'], ['messages.id'], name="fk_diff_patches_message_id_messages", ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['session_id'], ['chat_sessions.id'], name="fk_diff_patches_session_id_chat_sessions", ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_diff_patches_id'), 'diff_patches', ['id'], unique=False)
     op.create_index(op.f('ix_diff_patches_session_id'), 'diff_patches', ['session_id'], unique=False)
+    op.create_index(op.f('ix_diff_patches_turn_id'), 'diff_patches', ['turn_id'], unique=False)
     with op.batch_alter_table('chat_sessions', schema=None) as batch_op:
         batch_op.add_column(
             sa.Column(
@@ -65,6 +62,7 @@ def downgrade() -> None:
     with op.batch_alter_table('chat_sessions', schema=None) as batch_op:
         batch_op.drop_column('operational_mode')
 
+    op.drop_index(op.f('ix_diff_patches_turn_id'), table_name='diff_patches')
     op.drop_index(op.f('ix_diff_patches_session_id'), table_name='diff_patches')
     op.drop_index(op.f('ix_diff_patches_id'), table_name='diff_patches')
     op.drop_table('diff_patches')

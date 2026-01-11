@@ -176,6 +176,7 @@ class WebSocketOrchestrator:
         await self.ws_manager.send_html(html_response)
 
         # 2. If it is apply_diff, ADDITIONALLY render the Visual Diff Card (Inline Stream)
+        # todo: in coder service, check for tool call event type and create diff row from there
         if event.tool_name == "apply_diff":
             file_path = event.tool_kwargs.get("file_path", "unknown")
             diff = event.tool_kwargs.get("diff", "")

@@ -80,7 +80,6 @@ class PatcherTools(BaseToolSet):
             payload = DiffPatchCreate(
                 session_id=self.session_id,
                 turn_id=self.turn_id,
-                file_path=file_path,
                 diff=diff,
             )
             result = await diff_patch_service.process_diff(payload)
