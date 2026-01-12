@@ -121,12 +121,12 @@ class AgentContextService:
         
         if custom_prompts_xml:
             parts.append(f"<CUSTOM_INSTRUCTIONS>\n{custom_prompts_xml}\n</CUSTOM_INSTRUCTIONS>")
-            
-        if repo_map:
-            parts.append(f"<REPOSITORY_MAP>\n<!-- {REPO_MAP_DESCRIPTION} -->\n{repo_map}\n</REPOSITORY_MAP>")
-            
+
         if active_context_xml:
             parts.append(f"<ACTIVE_CONTEXT>\n<!-- {ACTIVE_CONTEXT_DESCRIPTION} -->\n{active_context_xml}\n</ACTIVE_CONTEXT>")
+
+        if repo_map:
+            parts.append(f"<REPOSITORY_MAP>\n<!-- {REPO_MAP_DESCRIPTION} -->\n{repo_map}\n</REPOSITORY_MAP>")
 
         return "\n\n".join(parts)
 
