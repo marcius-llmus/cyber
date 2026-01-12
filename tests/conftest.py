@@ -25,7 +25,7 @@ from app.main import app
 
 
 pytest_plugins = [
-    # Add domain specific fixtures here if needed
+    "tests.agents.fixtures",
 ]
 
 # Use an in-memory SQLite database for testing
