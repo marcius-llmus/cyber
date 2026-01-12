@@ -43,7 +43,7 @@
 
         <div id="from-blueprint-prompts" x-show="currentTab === 'from_blueprint'" style="display: none;"
              hx-get="/prompts/blueprint/list"
-             hx-trigger="intersect, {{ PromptEventType.BLUEPRINTS_CHANGED }} from:body"
+             hx-trigger="intersect, {{ PromptEventType.BLUEPRINTS_CHANGED|string }} from:body"
              hx-target="#blueprint-prompt-container"
              hx-swap="innerHTML">
             <div id="blueprint-prompt-container">

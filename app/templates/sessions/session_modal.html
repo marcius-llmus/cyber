@@ -4,7 +4,7 @@
     <div class="p-6 overflow-y-auto flex-1 modal-scroll-content min-h-0">
         <div class="space-y-2" id="history-list-container"
              hx-get="/sessions/?active_session_id={{ session.id if session else '' }}"
-             hx-trigger="intersect, {{ SessionEventType.SESSIONS_CHANGED }} from:body"
+             hx-trigger="intersect, {{ SessionEventType.SESSIONS_CHANGED|string }} from:body"
              hx-swap="innerHTML"
         >
             <div class="text-xs text-gray-500 text-center py-6">Loading...</div>
