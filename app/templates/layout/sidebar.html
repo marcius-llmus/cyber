@@ -15,11 +15,11 @@
                     hx-ext="form-json"
                     class="w-full bg-dark-card border border-dark-light rounded-lg px-3 py-2 text-sm"
                 >
-                    <option value="CODING" {% if session and session.operational_mode == 'CODING' %}selected{% endif %}>Coding</option>
-                    <option value="ASK" {% if session and session.operational_mode == 'ASK' %}selected{% endif %}>Ask</option>
-                    <option value="CHAT" {% if session and session.operational_mode == 'CHAT' %}selected{% endif %}>Chat</option>
-                    <option value="PLANNER" {% if session and session.operational_mode == 'PLANNER' %}selected{% endif %}>Planner</option>
-                    <option value="SINGLE_SHOT" {% if session and session.operational_mode == 'SINGLE_SHOT' %}selected{% endif %}>Single-shot</option>
+                    <option value="CODING" {% if session and session.operational_mode|string == 'CODING' %}selected{% endif %}>Coding</option>
+                    <option value="ASK" {% if session and session.operational_mode|string == 'ASK' %}selected{% endif %}>Ask</option>
+                    <option value="CHAT" {% if session and session.operational_mode|string == 'CHAT' %}selected{% endif %}>Chat</option>
+                    <option value="PLANNER" {% if session and session.operational_mode|string == 'PLANNER' %}selected{% endif %}>Planner</option>
+                    <option value="SINGLE_SHOT" {% if session and session.operational_mode|string == 'SINGLE_SHOT' %}selected{% endif %}>Single-shot</option>
                 </select>
             </div>
 

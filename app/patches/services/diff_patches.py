@@ -1,6 +1,5 @@
 import logging
 import re
-import asyncio
 from datetime import datetime
 from typing import Any, Awaitable, Callable
 
@@ -20,15 +19,14 @@ from app.patches.repositories import DiffPatchRepository
 from app.patches.schemas import (
     DiffPatchApplyResult,
     DiffPatchCreate,
-    DiffPatchUpdate,
+    DiffPatchInternalCreate
 )
 from app.core.db import DatabaseSessionManager
 
 logger = logging.getLogger(__name__)
 
 
-DIFF_BLOCK_PATTERN = r"^```diff(?:\w+)?\s*\n(.*?)(?=^```)```"
-PLUS_FILE_PATTERN = re.compile(r"^\+\+\+\s+(?:[ab]/)?(?P<path>\S+)")
+DIFF_BLOCK_PATTERN = r"^```diff(?:\w+)?\s*\n(.*?)(?=^```)"
 
 
 class DiffPatchService:
@@ -46,63 +44,6 @@ class DiffPatchService:
         self.llm_service_factory = llm_service_factory
         self.project_service_factory = project_service_factory
         self.codebase_service_factory = codebase_service_factory
-
-    async def apply_saved_patch(
-        self,
-        *,
-        patch_id: int,
-        strategy: PatchStrategy = PatchStrategy.LLM_GATHER,
-    ) -> DiffPatchApplyResult:
-        async with self.db.session() as session:
-            diff_patch_repo = self.diff_patch_repo_factory(session)
-            patch = await diff_patch_repo.get(pk=patch_id)
-            if not patch:
-                raise ValueError(f"DiffPatch {patch_id} not found")
-
-            if patch.status != DiffPatchStatus.PENDING:
-                return DiffPatchApplyResult(
-                    patch_id=patch.id,
-                    file_path=patch.file_path,
-                    status=patch.status,
-                    applied=False,
-                    error_message=patch.error_message,
-                )
-
-            file_path = patch.file_path
-            diff_content = patch.diff
-
-        try:
-            # apply diff can take a lot of time. that's why diff service handle its own session
-            await self.apply_diff(file_path=file_path, diff_content=diff_content, strategy=strategy)
-            async with self.db.session() as session:
-                diff_patch_repo = self.diff_patch_repo_factory(session)
-                patch = await diff_patch_repo.get(pk=patch_id)
-                await diff_patch_repo.update(
-                    db_obj=patch,
-                    obj_in=DiffPatchUpdate(status=DiffPatchStatus.APPLIED, applied_at=datetime.now()),
-                )
-            return DiffPatchApplyResult(
-                patch_id=patch_id,
-                file_path=file_path,
-                status=DiffPatchStatus.APPLIED,
-                applied=True,
-            )
-        except Exception as e:
-            async with self.db.session() as session:
-                diff_patch_repo = self.diff_patch_repo_factory(session)
-                patch = await diff_patch_repo.get(pk=patch_id)
-                if patch:
-                    await diff_patch_repo.update(
-                        db_obj=patch,
-                        obj_in=DiffPatchUpdate(status=DiffPatchStatus.FAILED, error_message=str(e)),
-                    )
-            return DiffPatchApplyResult(
-                patch_id=patch_id,
-                file_path=file_path,
-                status=DiffPatchStatus.FAILED,
-                applied=False,
-                error_message=str(e),
-            )
 
     async def apply_diff(
         self,
@@ -176,21 +117,6 @@ class DiffPatchService:
             text=text_content,
         )
 
-    async def apply_pending_by_turn_id(
-        self,
-        *,
-        session_id: int,
-        turn_id: str,
-        strategy: PatchStrategy = PatchStrategy.LLM_GATHER,
-    ) -> list[DiffPatchApplyResult]:
-        async with self.db.session() as session:
-            diff_patch_repo = self.diff_patch_repo_factory(session)
-            pending = await diff_patch_repo.list_pending_by_turn(session_id=session_id, turn_id=turn_id)
-        if not (tasks := [self.apply_saved_patch(patch_id=p.id, strategy=strategy) for p in pending]):
-            return []
-
-        return list(await asyncio.gather(*tasks))
-
     @staticmethod
     def _extract_diff_patches_from_text(
         *,
@@ -209,36 +135,12 @@ class DiffPatchService:
         for diff_content in diff_blocks:
             diff_content = diff_content.strip("\n")
             if not diff_content:
-                continue
-
-            lines = diff_content.splitlines()
-            file_path: str | None = None
-            for line in lines:
-                if not line.startswith("+++ "):
-                    continue
-
-                if line.strip() == "+++ /dev/null":
-                    file_path = None
-                    break
-
-                match = PLUS_FILE_PATTERN.match(line)
-                if match:
-                    file_path = match.group("path")
-                    break
-
-            if not file_path:
-                logger.warning(
-                    "Single-shot diff block skipped (no +++ header path) (session_id=%s turn_id=%s).",
-                    session_id,
-                    turn_id,
-                )
-                continue
+                raise ValueError("Error parsing diff: No content to parse")
 
             patches.append(
                 DiffPatchCreate(
                     session_id=session_id,
                     turn_id=turn_id,
-                    file_path=file_path,
                     diff=diff_content,
                 )
             )
@@ -257,5 +159,37 @@ class DiffPatchService:
         *,
         strategy: PatchStrategy = PatchStrategy.LLM_GATHER,
     ) -> DiffPatchApplyResult:
-        patch_id = await self.create_patch(payload)
-        return await self.apply_saved_patch(patch_id=patch_id, strategy=strategy)
+        file_path = payload.parsed.path
+
+        applied_at: datetime | None = None
+        error_message: str | None = None
+        applied: False
+
+        try:
+            await self.apply_diff(file_path=file_path, diff_content=payload.diff, strategy=strategy)
+            status = DiffPatchStatus.APPLIED
+            applied_at = datetime.now()
+        except Exception as e:
+            status = DiffPatchStatus.FAILED
+            error_message = str(e)
+
+        internal_create = DiffPatchInternalCreate(
+            session_id=payload.session_id,
+            turn_id=payload.turn_id,
+            diff=payload.diff,
+            status=status,
+            error_message=error_message,
+            applied_at=applied_at,
+        )
+
+        async with self.db.session() as session:
+            diff_patch_repo = self.diff_patch_repo_factory(session)
+            created = await diff_patch_repo.create(obj_in=internal_create)
+            patch_id = created.id
+
+        return DiffPatchApplyResult(
+            patch_id=patch_id,
+            file_path=file_path,
+            status=status,
+            error_message=error_message,
+        )

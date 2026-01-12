@@ -1,22 +1,12 @@
 Fix:
-- Message retry or remove. don't allow two user messages at once.
 - Add single shot (no tool call, process diffs directly with regex, non agentic)
-- Fix grep search, prompts for token efficiency
-- Add tool results (diff only) to chat history
-- Check multi turn caching
-- Lock message input on workflow run and add connected websocket status
 - Operational mode check
-- Allow multiple tabs open for multiple sessions
 - Must focus on last message
 - Check partial file truncation and full per file file cut on context size checking
 - By some reason, Readme (markdowns dif patching) are not working
 - Fix context search folders
 - Apply patch should be able analyse if patch was applied correctly and raise if not
-- Add option to make diff patch in message history
 - On page load, scroll to the end
-- Fix calling tools spamming on openai
-- Update enums for case consistency
-- Cache persists after cleaning history?
 - Check the amount of events received by usage handler (seems spammy)
 
 --------
@@ -34,6 +24,12 @@ Roadmap
 - Add One tooling and general instructions prompt per provider
 - Add compatibility with .CLAUDE .GEMINI .CLINE etc
 - Add auto apply patches setting
+- Add connected websocket status feedback
+- Allow multiple tabs open for multiple sessions
+- Add option to make diff patch in message history (send applied patches un chat history)
+- Cache persists after cleaning history?
+- Add per session settings (overrides)
+- Add pre creation of diffs then optionally applying existing pending diffs (per message or per turn).
 
 
 --------

@@ -2,6 +2,9 @@ import logging
 from typing import Any, AsyncGenerator, AsyncIterator, Callable, Coroutine, Awaitable
 
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.context.services import WorkspaceService
+from app.context.schemas import ContextFileListItem
 from app.core.config import settings
 from app.core.db import DatabaseSessionManager
 from app.chat.services import ChatService, ChatTurnService
@@ -12,6 +15,8 @@ from app.coder.schemas import (
     AgentStateEvent,
     WorkflowLogEvent,
     LogLevel,
+    SingleShotDiffAppliedEvent,
+    ContextFilesUpdatedEvent,
 )
 from app.agents.services import WorkflowService
 from app.usage.event_handlers import UsageCollector
@@ -34,6 +39,7 @@ class CoderService:
         turn_handler_factory: Callable[[], Awaitable[MessagingTurnEventHandler]],
         turn_service_factory: Callable[[AsyncSession], Awaitable[ChatTurnService]],
         diff_patch_service_factory: Callable[[], Awaitable[Any]],
+        context_service_factory: Callable[[AsyncSession], Awaitable[WorkspaceService]],
     ):
         self.db = db
         self.chat_service_factory = chat_service_factory
@@ -44,6 +50,7 @@ class CoderService:
         self.turn_handler_factory = turn_handler_factory
         self.turn_service_factory = turn_service_factory
         self.diff_patch_service_factory = diff_patch_service_factory
+        self.context_service_factory = context_service_factory
 
     async def handle_user_message(
         self, *, user_message: str, session_id: int, turn_id: str | None = None
@@ -88,21 +95,27 @@ class CoderService:
                         effective_mode = await session_service.get_operational_mode(session_id=session_id)
                         logger.info("Session %s effective operational mode: %s", session_id, effective_mode)
 
+                        # it returns only AI message
                         ai_message = await chat_service.save_messages_for_turn(
                             session_id=session_id,
                             user_content=user_message,
                             blocks=messaging_turn_handler.get_blocks(),
                             turn_id=turn_id,
                         )
+                        ai_blocks = list(ai_message.blocks or [])
 
                     await self._mark_turn_succeeded(session_id=session_id, turn_id=turn_id)
 
                     if effective_mode == OperationalMode.SINGLE_SHOT:
-                        await self._process_single_shot_diffs(
+                        yield AgentStateEvent(status="Applying patches...")
+                        # todo: must make it concurrent
+                        async for event in self._process_single_shot_diffs(
                             session_id=session_id,
                             turn_id=turn_id,
-                            blocks=ai_message.blocks,
-                        )
+                            blocks=ai_blocks,
+                        ):
+                            yield event
+                        yield AgentStateEvent(status="")
 
                     async for usage_event in self._process_new_usage(session_id, event_collector):
                         yield usage_event
@@ -137,16 +150,59 @@ class CoderService:
         session_id: int,
         turn_id: str,
         blocks: list[dict[str, Any]],
-    ) -> None:
+    ) -> AsyncGenerator[CoderEvent, None]:
         diff_patch_service = await self.diff_patch_service_factory()
+
+        results: list[dict[str, Any]] = []
+        parsed_patches = []
+
         extracted = diff_patch_service.extract_diffs_from_blocks(
             turn_id=turn_id,
             session_id=session_id,
             blocks=blocks,
         )
-        results = []
-        for patch_in in extracted:
-            results.append(await diff_patch_service.process_diff(patch_in))
+
+        # todo: make it async parallel
+        for diff_patch in extracted:
+            diff_patch_file_path = diff_patch.parsed.path
+            parsed_patches.append(diff_patch.parsed)
+
+            result = await diff_patch_service.process_diff(diff_patch)
+            results.append(result)
+
+            yield SingleShotDiffAppliedEvent(
+                file_path=diff_patch_file_path,
+                output=str(result),
+            )
+
+        # we must make sure that created and deleted files
+        # are added and remove from active context
+        if parsed_patches:
+            async with self.db.session() as session:
+                context_service = await self.context_service_factory(session)
+                for patch in parsed_patches:
+                    try:
+                        await context_service.sync_context_for_diff(
+                            session_id=session_id,
+                            patch=patch,
+                        )
+                    except Exception as e:
+                        yield WorkflowLogEvent(
+                            message=(
+                                "Failed to sync context from diff "
+                                f"(session_id={session_id}): {e}"
+                            ),
+                            level=LogLevel.ERROR,
+                        )
+
+                files = await context_service.get_active_context(session_id)
+                files_data = [
+                    ContextFileListItem(id=f.id, file_path=f.file_path)
+                    for f in files
+                ]
+
+            yield ContextFilesUpdatedEvent(session_id=session_id, files=files_data)
+
         logger.info(
             "Processed %s SINGLE_SHOT diff patch(es) for turn_id=%s session_id=%s",
             len(results),

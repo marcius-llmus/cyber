@@ -14,6 +14,8 @@ from app.coder.schemas import (
     ToolCallEvent,
     ToolCallResultEvent,
     WebSocketMessage,
+    SingleShotDiffAppliedEvent,
+    ContextFilesUpdatedEvent,
     WorkflowErrorEvent,
     WorkflowLogEvent,
     LogLevel
@@ -46,6 +48,8 @@ class WebSocketOrchestrator:
             WorkflowLogEvent: self._handle_workflow_log,
             ToolCallEvent: self._render_tool_call,
             ToolCallResultEvent: self._render_tool_result,
+            SingleShotDiffAppliedEvent: self._render_single_shot_applied,
+            ContextFilesUpdatedEvent: self._render_context_files_updated,
         }
 
     async def _process_event(self, event: CoderEvent, turn_id: str):
@@ -172,6 +176,7 @@ class WebSocketOrchestrator:
         await self.ws_manager.send_html(html_response)
 
         # 2. If it is apply_diff, ADDITIONALLY render the Visual Diff Card (Inline Stream)
+        # todo: in coder service, check for tool call event type and create diff row from there
         if event.tool_name == "apply_diff":
             file_path = event.tool_kwargs.get("file_path", "unknown")
             diff = event.tool_kwargs.get("diff", "")
@@ -213,6 +218,20 @@ class WebSocketOrchestrator:
             diff_context = {"tool_id": event.tool_id, "tool_run_id": event.tool_run_id}
             diff_template = templates.get_template("patches/partials/diff_patch_result.html").render(diff_context)
             await self.ws_manager.send_html(diff_template)
+
+    async def _render_single_shot_applied(self, event: SingleShotDiffAppliedEvent, turn_id: str):
+        await self._handle_workflow_log(
+            WorkflowLogEvent(
+                message=f"Single-shot patch applied to {event.file_path}: {event.output}", 
+                level=LogLevel.INFO
+            )
+        )
+
+    async def _render_context_files_updated(self, event: ContextFilesUpdatedEvent, turn_id: str):  # noqa
+        template = templates.get_template("context/partials/context_file_list_items.html").render(
+            {"files": event.files, "session_id": event.session_id}
+        )
+        await self.ws_manager.send_html(template)
 
     async def _render_error(self, error_message: str):
         context = {"message": error_message}

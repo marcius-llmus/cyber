@@ -10,11 +10,11 @@
 
 <button id="new-prompt-btn"
         hx-swap-oob="true"
-        hx-get="/prompts/new/{{ prompt_type }}"
-        hx-target="#{{ prompt_type }}-prompt-list-container"
+        hx-get="/prompts/new/{{ prompt_type|string|lower }}"
+        hx-target="#{{ prompt_type|string|lower }}-prompt-list-container"
         hx-swap="afterbegin"
         class="px-4 py-2 bg-primary hover:bg-primary-dark rounded-lg text-sm font-medium text-white"
-        {% if prompt_type == 'project' and not active_project %}style="display: none;"{% endif %}>
+        {% if prompt_type|string == 'PROJECT' and not active_project %}style="display: none;"{% endif %}>
     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-    <span id="new-prompt-text">New {{ prompt_type|title }} Prompt</span>
+    <span id="new-prompt-text">New {{ prompt_type|string|title }} Prompt</span>
 </button>

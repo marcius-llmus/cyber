@@ -1,7 +1,7 @@
 <div
     id="session-list-wrapper"
     hx-get="/sessions/"
-    hx-trigger="{{ SessionEventType.SESSIONS_CHANGED }} from:body"
+    hx-trigger="{{ SessionEventType.SESSIONS_CHANGED|string }} from:body"
     hx-swap="outerHTML"
 >
 

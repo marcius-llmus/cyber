@@ -5,6 +5,7 @@ from sqlalchemy.sql import func
 from app.core.db import Base
 from app.patches.enums import DiffPatchStatus
 
+
 class DiffPatch(Base):
     __tablename__ = "diff_patches"
 
@@ -17,7 +18,6 @@ class DiffPatch(Base):
         index=True,
     )
 
-    file_path = Column(String, nullable=False)
     diff = Column(Text, nullable=False)
 
     status = Column(

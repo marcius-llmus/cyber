@@ -5,6 +5,7 @@ from app.context.models import ContextFile
 from app.context.repositories import ContextRepository
 from app.context.schemas import ContextFileCreate, ContextFileUpdate
 from app.context.services.codebase import CodebaseService
+from app.patches.schemas import ParsedDiffPatch
 from app.projects.services import ProjectService
 from app.projects.exceptions import ActiveProjectRequiredException
 
@@ -22,6 +23,25 @@ class WorkspaceService:
         self.context_repo = context_repo
         self.codebase_service = codebase_service
 
+    async def sync_context_for_diff(self, *, session_id: int, patch: ParsedDiffPatch) -> None:
+        """Sync active context to reflect a single-file diff.
+
+        Diff parsing belongs to the patches layer. This service operates on the parsed change.
+        """
+
+        if not (patch.is_added_file or patch.is_removed_file or patch.is_rename):
+            return
+
+        project = await self.project_service.get_active_project()
+        if not project:
+            raise ActiveProjectRequiredException("Active project required.")
+
+        if patch.is_added_file or patch.is_rename:
+            await self.add_file(session_id, patch.path)
+
+        if patch.is_removed_file:
+            await self.remove_context_files_by_path(session_id, [patch.path])
+
     async def add_file(self, session_id: int, file_path: str) -> ContextFile:
         """Promotes a file to the active context (Tier 2)."""
         # Gatekeeper check
@@ -34,6 +54,7 @@ class WorkspaceService:
 
         existing = await self.context_repo.get_by_session_and_path(session_id, file_path)
         if existing:
+            # todo: forgotten feature lol, hit count will affect file score in dynamic context
             update_data = ContextFileUpdate(hit_count=existing.hit_count + 1)
             return await self.context_repo.update(db_obj=existing, obj_in=update_data)
 
@@ -96,9 +117,9 @@ class WorkspaceService:
         """
         active_context_db = await self.get_active_context(session_id)
         active_abs_paths = []
-        
+
         for item in active_context_db:
             if not await self.codebase_service.is_ignored(project_root, item.file_path):
                 active_abs_paths.append(os.path.join(project_root, item.file_path))
-                
+
         return active_abs_paths
