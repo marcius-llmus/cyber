@@ -1,11 +1,11 @@
 <div class="prompt-form-container p-4 bg-dark-lighter rounded-md border-l-2 border-primary">
     <form
         {% if prompt %}
-            hx-put="/prompts/{{ prompt.type.value }}/{{ prompt.id }}"
+            hx-put="/prompts/{{ prompt.type.value|lower }}/{{ prompt.id }}"
             hx-target="closest .prompt-form-container"
             hx-swap="outerHTML"
         {% else %}
-            hx-post="/prompts/{{ prompt_type }}"
+            hx-post="/prompts/{{ prompt_type|lower }}"
             hx-target="closest .space-y-2"
             hx-swap="afterbegin"
             hx-on::after-request="this.closest('.prompt-form-container').remove()"
@@ -20,7 +20,7 @@
                 <button type="button" class="px-3 py-1 bg-dark-light hover:bg-dark-light border border-dark-light rounded-lg text-xs"
                     data-action="restore-prompt-state"
                     {% if prompt %}
-                        hx-get="/prompts/{{ prompt.type.value }}/{{ prompt.id }}/view"
+                        hx-get="/prompts/{{ prompt.type.value|lower }}/{{ prompt.id }}/view"
                         hx-target="closest .prompt-form-container"
                         hx-swap="outerHTML"
                     {% else %}

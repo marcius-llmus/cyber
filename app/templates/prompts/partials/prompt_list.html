@@ -10,8 +10,8 @@
 
 <button id="new-prompt-btn"
         hx-swap-oob="true"
-        hx-get="/prompts/new/{{ prompt_type }}"
-        hx-target="#{{ prompt_type }}-prompt-list-container"
+        hx-get="/prompts/new/{{ prompt_type|lower }}"
+        hx-target="#{{ prompt_type|lower }}-prompt-list-container"
         hx-swap="afterbegin"
         class="px-4 py-2 bg-primary hover:bg-primary-dark rounded-lg text-sm font-medium text-white"
         {% if prompt_type == 'project' and not active_project %}style="display: none;"{% endif %}>
