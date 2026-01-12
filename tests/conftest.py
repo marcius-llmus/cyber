@@ -27,6 +27,8 @@ from app.main import app
 
 pytest_plugins = [
     "tests.agents.fixtures",
+    "tests.projects.fixtures",
+    "tests.sessions.fixtures",
 ]
 
 @pytest.fixture(scope="session")

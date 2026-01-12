@@ -1,5 +1,4 @@
 from unittest.mock import MagicMock
-import uuid
 
 import pytest
 from llama_index.core.workflow import Workflow
@@ -9,31 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.agents.repositories import WorkflowStateRepository
 from app.agents.services import AgentContextService, WorkflowService
 from app.context.services import CodebaseService, RepoMapService, WorkspaceService
-from app.core.enums import OperationalMode
-from app.projects.models import Project
 from app.projects.services import ProjectService
 from app.prompts.services import PromptService
-from app.sessions.models import ChatSession
-
-
-@pytest.fixture
-async def project(db_session: AsyncSession) -> Project:
-    uid = uuid.uuid4()
-    unique_path = f"/tmp/test_project_{uid}"
-    proj = Project(name=f"Test Project {uid}", path=unique_path)
-    db_session.add(proj)
-    await db_session.commit()
-    await db_session.refresh(proj)
-    return proj
-
-
-@pytest.fixture
-async def chat_session(db_session: AsyncSession, project: Project) -> ChatSession:
-    session = ChatSession(name="Test Session", operational_mode=OperationalMode.CODING, project_id=project.id)
-    db_session.add(session)
-    await db_session.commit()
-    await db_session.refresh(session)
-    return session
 
 
 @pytest.fixture
