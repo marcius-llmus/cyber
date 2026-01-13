@@ -8,6 +8,6 @@ from app.projects.models import Project
 async def chat_session(db_session: AsyncSession, project: Project) -> ChatSession:
     session = ChatSession(name="Test Session", operational_mode=OperationalMode.CODING, project_id=project.id)
     db_session.add(session)
-    await db_session.commit()
+    await db_session.flush()
     await db_session.refresh(session)
     return session

@@ -52,7 +52,7 @@ class TestWorkflowStateModel:
         workflow_state_invalid = WorkflowState(session_id=new_session.id)
         db_session.add(workflow_state_invalid)
 
-        # Flush should trigger the IntegrityError due to nullable=False
+        # Commit should trigger the IntegrityError due to nullable=False
         with pytest.raises(IntegrityError):
             await db_session.commit()
 
