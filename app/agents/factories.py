@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.db import DatabaseSessionManager, sessionmanager
+from app.core.db import sessionmanager
 from app.context.factories import build_repo_map_service, build_workspace_service, build_codebase_service
 from app.settings.factories import build_settings_service
 from app.llms.factories import build_llm_service
@@ -38,13 +38,7 @@ async def build_agent_context_service(db: AsyncSession) -> AgentContextService:
     )
 
 
-async def build_agent(
-    db: AsyncSession,
-    session_id: int,
-    turn_id: str | None = None,
-    *,
-    tool_db: DatabaseSessionManager = sessionmanager,
-) -> CoderAgent:
+async def build_agent(db: AsyncSession, session_id: int, turn_id: str | None = None) -> CoderAgent:
     """Creates a CoderAgent (FunctionAgent) with the currently configured LLM."""
     settings_service = await build_settings_service(db)
     llm_service = await build_llm_service(db)
@@ -65,15 +59,15 @@ async def build_agent(
 
     # Read-only tools: CODING, ASK, PLANNER
     if operational_mode in [OperationalMode.CODING, OperationalMode.ASK, OperationalMode.PLANNER]:
-        search_tools = SearchTools(db=tool_db, settings=settings, session_id=session_id)
+        search_tools = SearchTools(db=sessionmanager, settings=settings, session_id=session_id)
         tools.extend(search_tools.to_tool_list())
 
-        file_tools = FileTools(db=tool_db, settings=settings, session_id=session_id, turn_id=turn_id)
+        file_tools = FileTools(db=sessionmanager, settings=settings, session_id=session_id, turn_id=turn_id)
         tools.extend(file_tools.to_tool_list())
 
     # Write tools (patcher): CODING only
     if operational_mode == OperationalMode.CODING:
-        patcher_tools = PatcherTools(db=tool_db, settings=settings, session_id=session_id, turn_id=turn_id)
+        patcher_tools = PatcherTools(db=sessionmanager, settings=settings, session_id=session_id, turn_id=turn_id)
         tools.extend(patcher_tools.to_tool_list())
 
     system_prompt = await agent_context_service.build_system_prompt(session_id, operational_mode=operational_mode)
