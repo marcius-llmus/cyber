@@ -263,7 +263,7 @@ class TestAgentContextService:
 
         prompt = await agent_context_service.build_system_prompt(session_id=1, operational_mode=OperationalMode.CODING)
 
-        assert "<CUSTOM_INSTRUCTIONS>" in prompt
+        assert "<CUSTOM_INSTRUCTIONS>\n" in prompt
         assert '<INSTRUCTION name="P1">' in prompt
         assert "C1" in prompt
 
@@ -606,3 +606,43 @@ class TestAgentContextService:
         
         prompt = await agent_context_service.build_system_prompt(session_id=1)
         assert "<REPOSITORY_MAP>\n" not in prompt
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "mode",
+        [
+            OperationalMode.CODING,
+            OperationalMode.ASK,
+            OperationalMode.PLANNER,
+            OperationalMode.SINGLE_SHOT,
+        ],
+    )
+    async def test_build_system_prompt_includes_custom_instructions_in_all_non_chat_modes_when_prompts_exist(
+        self,
+        mode: OperationalMode,
+        agent_context_service: AgentContextService,
+        project_service_mock: MagicMock,
+        prompt_service_mock: MagicMock,
+    ):
+        project_service_mock.get_active_project.return_value = Project(id=1, name="p", path="/")
+        prompt_service_mock.get_active_prompts.return_value = [Prompt(name="P1", content="C1")]
+
+        prompt = await agent_context_service.build_system_prompt(session_id=1, operational_mode=mode)
+
+        assert "<CUSTOM_INSTRUCTIONS>\n" in prompt
+        assert '<INSTRUCTION name="P1">' in prompt
+        assert "C1" in prompt
+
+    @pytest.mark.asyncio
+    async def test_build_system_prompt_never_includes_custom_instructions_in_chat_mode_even_if_prompts_exist(
+        self,
+        agent_context_service: AgentContextService,
+        project_service_mock: MagicMock,
+        prompt_service_mock: MagicMock,
+    ):
+        project_service_mock.get_active_project.return_value = Project(id=1, name="p", path="/")
+        prompt_service_mock.get_active_prompts.return_value = [Prompt(name="P1", content="C1")]
+
+        prompt = await agent_context_service.build_system_prompt(session_id=1, operational_mode=OperationalMode.CHAT)
+
+        assert "<CUSTOM_INSTRUCTIONS>\n" not in prompt
