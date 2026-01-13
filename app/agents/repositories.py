@@ -14,6 +14,9 @@ class WorkflowStateRepository(BaseRepository[WorkflowState]):
         return result.scalar_one_or_none()
 
     async def save_state(self, session_id: int, state: dict) -> WorkflowState:
+        if not isinstance(state, dict):
+            raise ValueError("state must be a dict")
+
         stmt = insert(self.model).values(
             session_id=session_id, state=state
         ).on_conflict_do_update(
