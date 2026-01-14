@@ -143,6 +143,43 @@ async def test_llm_service__get_coding_llm__when_no_coder_role__assigns_default_
     assert coder.active_role == LLMRole.CODER
 
 
+async def test_llm_service__get_coding_llm__default_assignment_returns_coder_role_even_if_model_was_preloaded(
+    db_session,
+):
+    """Scenario: no CODER exists, but the default model row exists.
+
+    This exercises a potential stale identity-map case:
+        - the default model instance is loaded into the Session identity map
+        - service assigns CODER role via bulk UPDATE
+        - service then calls Session.get() inside update_settings
+
+    Asserts:
+        - returned LLMSettings has active_role=CODER
+
+    Notes:
+        - This can fail if bulk updates do not expire/refresh already-loaded instances.
+    """
+    service = await build_llm_service(db_session)
+
+    default_row = LLMSettings(
+        model_name=LLMModel.GPT_4_1_MINI,
+        provider=LLMProvider.OPENAI,
+        api_key="sk-openai",
+        context_window=128000,
+        active_role=None,
+    )
+    db_session.add(default_row)
+    await db_session.flush()
+
+    preloaded = await db_session.get(LLMSettings, default_row.id)
+    assert preloaded is default_row
+    assert preloaded.active_role is None
+
+    coder = await service.get_coding_llm()
+    assert coder.id == default_row.id
+    assert coder.active_role == LLMRole.CODER
+
+
 async def test_llm_service__update_settings__raises_when_missing(db_session):
     """Scenario: update settings for non-existent llm_id.
 
