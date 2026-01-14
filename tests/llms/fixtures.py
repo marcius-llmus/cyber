@@ -1,6 +1,9 @@
 import pytest
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
+from pytest_mock import MockerFixture
+
+from app.llms.dependencies import get_llm_service
 from app.llms.enums import LLMModel, LLMProvider, LLMRole
 from app.llms.factories import build_llm_factory_instance
 from app.llms.models import LLMSettings
@@ -99,17 +102,6 @@ async def llm_settings_openai_coder(db_session):
     return obj
 
 
-class FakeLLMFactory(LLMFactory):
-    def __init__(self, model_registry: dict[LLMModel, LLM]):
-        self._model_registry = model_registry
-
-    async def get_llm(self, model_name: LLMModel) -> LLM:
-        return self._model_registry[model_name]
-
-    async def get_all_llms(self) -> list[LLM]:
-        return list(self._model_registry.values())
-
-
 @pytest.fixture
 def fake_llm_client():
     client = AsyncMock()
@@ -118,20 +110,34 @@ def fake_llm_client():
 
 
 @pytest.fixture
-def make_llm_service_with_fake_factory(db_session):
-    def _make(*, model_registry: dict[LLMModel, LLM]) -> LLMService:
-        repo = LLMSettingsRepository(db_session)
-        factory = FakeLLMFactory(model_registry=model_registry)
-        return LLMService(repo, factory)
-
-    return _make
+def llm_settings_repository(db_session) -> LLMSettingsRepository:
+    return LLMSettingsRepository(db_session)
 
 
 @pytest.fixture
-async def llm_service(db_session) -> LLMService:
-    repo = LLMSettingsRepository(db_session)
+def llm_settings_repository_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.create_autospec(LLMSettingsRepository, instance=True)
+
+
+@pytest.fixture
+async def llm_service(llm_settings_repository_mock: MagicMock) -> LLMService:
+    """Provides a LLMService instance with a MOCKED repository for unit testing."""
     factory = await build_llm_factory_instance()
-    return LLMService(repo, factory)
+    return LLMService(llm_settings_repository_mock, factory)
+
+
+@pytest.fixture
+def llm_service_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.create_autospec(LLMService, instance=True)
+
+
+@pytest.fixture
+def override_get_llm_service(llm_service_mock: MagicMock):
+    from app.main import app
+
+    app.dependency_overrides[get_llm_service] = lambda: llm_service_mock
+    yield
+    app.dependency_overrides.clear()
 
 
 import pytest
@@ -151,14 +157,14 @@ async def llm_settings_seed_many(db_session) -> list[LLMSettings]:
             active_role=LLMRole.CODER,
         ),
         LLMSettings(
-            model_name=LLMModel.GEMINI_2_5_FLASH,
+            model_name=LLMModel.CLAUDE_OPUS_4_1,
             provider=LLMProvider.ANTHROPIC,
             api_key="sk-anthropic",
             context_window=200000,
             active_role=None,
         ),
         LLMSettings(
-            model_name=LLMModel.CLAUDE_OPUS_4_1,
+            model_name=LLMModel.GEMINI_2_5_FLASH,
             provider=LLMProvider.GOOGLE,
             api_key="sk-google",
             context_window=1000000,
