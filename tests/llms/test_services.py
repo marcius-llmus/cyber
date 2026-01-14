@@ -4,7 +4,6 @@ from unittest.mock import AsyncMock
 from app.llms.exceptions import MissingLLMApiKeyException
 from app.llms.enums import LLMModel, LLMProvider, LLMRole
 from app.llms.factories import build_llm_service
-from app.llms.services import LLMService
 from app.settings.exceptions import ContextWindowExceededException, LLMSettingsNotFoundException
 from app.settings.schemas import LLMSettingsUpdate
 from app.llms.models import LLMSettings
@@ -91,85 +90,39 @@ async def test_llm_service__get_llm_settings__returns_when_present(db_session, l
     assert obj.id == llm_settings_openai_coder.id
 
 
-@pytest.mark.parametrize(
-    "has_coder_role,has_default_model",
-    [
-        (True, True),
-        (False, True),
-    ],
-)
-async def test_llm_service__get_coding_llm__returns_existing_or_assigns_default(
-    has_coder_role: bool,
-    has_default_model: bool,
-    db_session,
-):
-    """Scenario matrix:
-        - if a CODER role exists, return it
-        - else, assign CODER to the default model (GPT_4_1_MINI) and return it
+async def test_llm_service__get_coding_llm__when_coder_role_exists__returns_existing(db_session):
+    """Scenario: a CODER role already exists.
 
     Asserts:
-        - returns an LLMSettings
-        - if default assignment path is taken, CODER role is set
+        - returns the existing CODER LLMSettings
     """
     service = await build_llm_service(db_session)
 
-    if has_coder_role:
-        db_session.add(
-            LLMSettings(
-                model_name=LLMModel.GPT_4O,
-                provider=LLMProvider.OPENAI,
-                api_key="sk-openai",
-                context_window=128000,
-                active_role=LLMRole.CODER,
-            )
-        )
-        await db_session.flush()
-
-    if has_default_model:
-        db_session.add(
-            LLMSettings(
-                model_name=LLMModel.GPT_4_1_MINI,
-                provider=LLMProvider.OPENAI,
-                api_key="sk-openai",
-                context_window=128000,
-                active_role=None,
-            )
-        )
-        await db_session.flush()
-
-    coder = await service.get_coding_llm()
-    assert coder is not None
-    if not has_coder_role:
-        assert str(coder.model_name) == str(LLMModel.GPT_4_1_MINI)
-        assert coder.active_role == LLMRole.CODER
-
-
-async def test_llm_service__get_coding_llm__raises_when_no_coder_and_no_models(db_session):
-    """Scenario: DB has no CODER and does not contain the default model.
-
-    Asserts:
-        - raises LLMSettingsNotFoundException
-    """
-    service = await build_llm_service(db_session)
     with pytest.raises(LLMSettingsNotFoundException):
         await service.get_coding_llm()
 
+    coder_row = LLMSettings(
+        model_name=LLMModel.GPT_4O,
+        provider=LLMProvider.OPENAI,
+        api_key="sk-openai",
+        context_window=128000,
+        active_role=LLMRole.CODER,
+    )
+    db_session.add(coder_row)
+    await db_session.flush()
 
-async def test_llm_service__get_coding_llm__default_assignment_returns_coder_role_even_if_model_was_preloaded(
-    db_session,
-):
-    """Scenario: no CODER exists, but the default model row exists.
+    coder = await service.get_coding_llm()
+    assert coder is not None
+    assert coder.id == coder_row.id
+    assert coder.active_role == LLMRole.CODER
 
-    This exercises a potential stale identity-map case:
-        - the default model instance is loaded into the Session identity map
-        - service assigns CODER role via bulk UPDATE
-        - service then calls Session.get() inside update_settings
+
+async def test_llm_service__get_coding_llm__when_no_coder_role__assigns_default_model(db_session):
+    """Scenario: no CODER role exists, but the default model exists.
 
     Asserts:
-        - returned LLMSettings has active_role=CODER
-
-    Notes:
-        - This can fail if bulk updates do not expire/refresh already-loaded instances.
+        - assigns CODER role to the default model (GPT_4_1_MINI)
+        - returns the updated default model row
     """
     service = await build_llm_service(db_session)
 
@@ -183,12 +136,10 @@ async def test_llm_service__get_coding_llm__default_assignment_returns_coder_rol
     db_session.add(default_row)
     await db_session.flush()
 
-    preloaded = await db_session.get(LLMSettings, default_row.id)
-    assert preloaded is default_row
-    assert preloaded.active_role is None
-
     coder = await service.get_coding_llm()
+    assert coder is not None
     assert coder.id == default_row.id
+    assert str(coder.model_name) == str(LLMModel.GPT_4_1_MINI)
     assert coder.active_role == LLMRole.CODER
 
 

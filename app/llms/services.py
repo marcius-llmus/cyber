@@ -102,6 +102,8 @@ class LLMService:
 
         if not db_obj:
             logger.warning("No LLM assigned as CODER. Attempting to set default (GPT-4.1-mini).")
+            # let's make default gpt_4_1 explicitly o.o
+            # I am not an openai fanboy, but gemini is too unstable xdd
             db_obj = await self.llm_settings_repo.get_by_model_name(LLMModel.GPT_4_1_MINI)
             
             if not db_obj:
