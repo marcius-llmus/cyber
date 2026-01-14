@@ -140,12 +140,6 @@ def override_get_llm_service(llm_service_mock: MagicMock):
     app.dependency_overrides.clear()
 
 
-import pytest
-
-from app.llms.enums import LLMModel, LLMProvider, LLMRole
-from app.llms.models import LLMSettings
-
-
 @pytest.fixture
 async def llm_settings_seed_many(db_session) -> list[LLMSettings]:
     rows = [
