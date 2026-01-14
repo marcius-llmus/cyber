@@ -87,6 +87,28 @@ class TestWorkflowStateModel:
 
         await db_session.delete(chat_session)
         await db_session.flush()
+
+        # We rely on a DB-level FK (ON DELETE CASCADE) for WorkflowState.session_id.
+        # The database deletes the WorkflowState row when ChatSession is deleted.
+        #
+        # Important nuance (especially with a unit-of-work / request-scoped session):
+        # SQLAlchemy's Session keeps an identity map (in-memory cache) and relationship
+        # state for objects it has already seen. A DB cascade does *not* automatically
+        # update/evict those in-memory objects, so within the same Session you can end
+        # up observing stale state unless you explicitly expire/refresh.
+        #
+        # We intentionally expire the Session here so the next ORM lookup reflects the
+        # database truth rather than returning cached state.
+        #
+        # Why not refresh(chat_session)?
+        # - chat_session has been deleted, so it is not refreshable (refresh() will raise
+        #   "Instance ... is not persistent within this Session").
+        # - refresh() also doesn't help for verifying cascaded child deletion; we want a
+        #   fresh lookup of WorkflowState after the cascade has occurred.
+        # On commit, we expire everything
         db_session.expire_all()
+
+        # Optional sanity check: the parent row should be gone as well.
+        assert await db_session.get(ChatSession, session_id) is None
 
         assert await db_session.get(WorkflowState, session_id) is None
