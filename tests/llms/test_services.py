@@ -125,7 +125,6 @@ async def test_llm_service__get_coding_llm__when_no_coder_role__assigns_default_
 
 
 async def test_llm_service__get_coding_llm__default_assignment_returns_coder_role_even_if_model_was_preloaded(
-    db_session,
 ):
     """Scenario: no CODER exists, but the default model row exists.
 
@@ -146,7 +145,7 @@ async def test_llm_service__get_coding_llm__default_assignment_returns_coder_rol
     pytest.skip("Integration test irrelevant for unit testing with mocks.")
 
 
-async def test_llm_service__update_settings__raises_when_missing(db_session, llm_service):
+async def test_llm_service__update_settings__raises_when_missing(llm_service):
     """Scenario: update settings for non-existent llm_id.
 
     Asserts:
@@ -158,7 +157,6 @@ async def test_llm_service__update_settings__raises_when_missing(db_session, llm
 
 
 async def test_llm_service__update_settings__raises_when_context_window_exceeds_model_max(
-    db_session,
     llm_settings_openai_no_role,
     llm_service,
 ):
@@ -173,7 +171,6 @@ async def test_llm_service__update_settings__raises_when_context_window_exceeds_
 
 
 async def test_llm_service__update_settings__updates_api_key_for_provider_when_api_key_set(
-    db_session,
     llm_settings_openai_no_role,
     llm_service,
 ):
@@ -194,7 +191,6 @@ async def test_llm_service__update_settings__updates_api_key_for_provider_when_a
 
 
 async def test_llm_service__update_coding_llm__sets_role_then_updates_settings(
-    db_session,
     llm_settings_openai_no_role,
     llm_settings_anthropic,
     llm_service,
@@ -248,7 +244,6 @@ async def test_llm_service__update_settings__api_key_enforced_one_key_per_provid
 async def test_llm_service__get_client__hydrates_provider_specific_client(
     provider,
     model_name,
-    db_session,
     fake_llm_client,
     llm_service,
     mocker,
@@ -279,7 +274,6 @@ async def test_llm_service__get_client__hydrates_provider_specific_client(
 
 
 async def test_llm_service__get_client__uses_provider_api_key_from_repo(
-    db_session,
     llm_settings_openai_no_role,
     fake_llm_client,
     llm_service,
@@ -307,7 +301,6 @@ async def test_llm_service__get_client__uses_provider_api_key_from_repo(
 
 
 async def test_llm_service__get_client__raises_when_api_key_missing(
-    db_session,
     llm_service,
     mocker,
 ):
@@ -332,7 +325,7 @@ async def test_llm_service__get_client__raises_when_api_key_missing(
         await llm_service.get_client(LLMModel.GPT_4_1_MINI, temperature=0.2)
 
 
-async def test_llm_service__get_client__raises_on_unsupported_provider(db_session, mocker, llm_service):
+async def test_llm_service__get_client__raises_on_unsupported_provider(mocker, llm_service):
     """Scenario: registry returns an LLM with an unsupported provider.
 
     Asserts:

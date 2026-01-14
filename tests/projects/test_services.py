@@ -1,5 +1,4 @@
 import pytest
-from sqlalchemy.ext.asyncio import AsyncSession
 from unittest.mock import AsyncMock
 
 from app.projects.exceptions import ProjectNotFoundException
@@ -31,7 +30,6 @@ class TestProjectService:
         project_service: ProjectService,
         project: Project,
         project_inactive: Project,
-        db_session: AsyncSession,
     ) -> None:
         assert project.is_active is True
         assert project_inactive.is_active is False
@@ -53,7 +51,6 @@ class TestProjectService:
         self,
         project_service: ProjectService,
         project: Project,
-        db_session: AsyncSession,
     ) -> None:
         assert project.is_active is True
         project_service.project_repo.get = AsyncMock(return_value=project)
