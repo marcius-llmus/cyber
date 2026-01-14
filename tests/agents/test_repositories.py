@@ -1,8 +1,9 @@
 """Repository tests for the agents app."""
 
 from sqlalchemy import select
-import pytest
 from sqlalchemy.exc import IntegrityError
+
+import pytest
 
 from app.core.enums import OperationalMode
 from app.agents.models import WorkflowState
@@ -12,7 +13,6 @@ from app.sessions.models import ChatSession
 
 
 class TestWorkflowStateRepository:
-    @pytest.mark.asyncio
     async def test_get_by_session_id_returns_none_when_missing(
         self, workflow_state_repository: WorkflowStateRepository
     ):
@@ -20,7 +20,6 @@ class TestWorkflowStateRepository:
         result = await workflow_state_repository.get_by_session_id(999999)
         assert result is None
 
-    @pytest.mark.asyncio
     async def test_get_by_session_id_returns_record_when_present(
         self, workflow_state_repository: WorkflowStateRepository, chat_session: ChatSession
     ):
@@ -33,7 +32,6 @@ class TestWorkflowStateRepository:
         assert result.session_id == chat_session.id
         assert result.state == state
 
-    @pytest.mark.asyncio
     async def test_get_by_session_id_returns_latest_state(
         self, workflow_state_repository: WorkflowStateRepository, chat_session: ChatSession
     ):
@@ -44,7 +42,6 @@ class TestWorkflowStateRepository:
         result = await workflow_state_repository.get_by_session_id(chat_session.id)
         assert result.state == {"v": 2}
 
-    @pytest.mark.asyncio
     async def test_get_by_session_id_uses_correct_where_clause(
         self, workflow_state_repository: WorkflowStateRepository, chat_session: ChatSession, db_session, project: Project
     ):
@@ -63,7 +60,6 @@ class TestWorkflowStateRepository:
         result = await workflow_state_repository.get_by_session_id(session_id)
         assert result.state == {"target": True}
 
-    @pytest.mark.asyncio
     async def test_save_state_inserts_new_record(
         self, workflow_state_repository: WorkflowStateRepository, chat_session: ChatSession
     ):
@@ -77,7 +73,6 @@ class TestWorkflowStateRepository:
         in_db = await workflow_state_repository.get_by_session_id(chat_session.id)
         assert in_db is not None
 
-    @pytest.mark.asyncio
     async def test_save_state_upserts_existing_record(
         self, workflow_state_repository: WorkflowStateRepository, chat_session: ChatSession
     ):
@@ -86,7 +81,6 @@ class TestWorkflowStateRepository:
         updated = await workflow_state_repository.save_state(chat_session.id, {"step": 2})
         assert updated.state == {"step": 2}
 
-    @pytest.mark.asyncio
     async def test_save_state_returns_persisted_model(
         self, workflow_state_repository: WorkflowStateRepository, chat_session: ChatSession
     ):
@@ -95,7 +89,6 @@ class TestWorkflowStateRepository:
         assert isinstance(result, WorkflowState)
         assert result.session_id == chat_session.id
 
-    @pytest.mark.asyncio
     async def test_save_state_flushes_changes(
         self, workflow_state_repository: WorkflowStateRepository, chat_session: ChatSession, db_session
     ):
@@ -106,7 +99,6 @@ class TestWorkflowStateRepository:
         result = await db_session.execute(select(WorkflowState).where(WorkflowState.session_id == chat_session.id))
         assert result.scalar_one().state == {"k": 1}
 
-    @pytest.mark.asyncio
     async def test_save_state_stores_json_round_trip(self, workflow_state_repository: WorkflowStateRepository, chat_session: ChatSession):
         """save_state should persist JSON such that nested dictionaries round-trip accurately."""
         complex_state = {"a": 1, "b": {"c": [1, 2, 3], "d": "text"}}
@@ -114,7 +106,6 @@ class TestWorkflowStateRepository:
         retrieved = await workflow_state_repository.get_by_session_id(chat_session.id)
         assert retrieved.state == complex_state
 
-    @pytest.mark.asyncio
     async def test_save_state_overwrites_previous_state_entirely(self, workflow_state_repository: WorkflowStateRepository, chat_session: ChatSession):
         """save_state should overwrite the prior state (replace semantics, not merge)."""
         await workflow_state_repository.save_state(chat_session.id, {"a": 1})
@@ -122,13 +113,11 @@ class TestWorkflowStateRepository:
         retrieved = await workflow_state_repository.get_by_session_id(chat_session.id)
         assert retrieved.state == {"b": 2}
 
-    @pytest.mark.asyncio
     async def test_save_state_rejects_non_dict_state(self, workflow_state_repository: WorkflowStateRepository, chat_session: ChatSession):
         """save_state should reject non-dict inputs to enforce repository contract."""
         with pytest.raises(ValueError):
             await workflow_state_repository.save_state(chat_session.id, "not a dict")
 
-    @pytest.mark.asyncio
     async def test_save_state_does_not_commit(
         self,
         workflow_state_repository: WorkflowStateRepository,
@@ -143,7 +132,6 @@ class TestWorkflowStateRepository:
         result = await workflow_state_repository.get_by_session_id(chat_session.id)
         assert result is None
 
-    @pytest.mark.asyncio
     async def test_save_state_propagates_db_errors(
         self, workflow_state_repository: WorkflowStateRepository
     ):

@@ -17,7 +17,6 @@ from app.prompts.models import Prompt
 
 
 class TestWorkflowService:
-    @pytest.mark.asyncio
     async def test_get_context_hydrates_existing_context(
         self,
         workflow_service: WorkflowService,
@@ -40,7 +39,6 @@ class TestWorkflowService:
 
         workflow_state_repository.get_by_session_id.assert_called_once_with(session_id)
 
-    @pytest.mark.asyncio
     async def test_get_context_creates_new_context_when_missing(
         self,
         workflow_service: WorkflowService,
@@ -57,7 +55,6 @@ class TestWorkflowService:
         assert isinstance(context, Context)
         workflow_state_repository.get_by_session_id.assert_called_once_with(session_id)
 
-    @pytest.mark.asyncio
     async def test_get_context_calls_repository_with_session_id(
         self,
         workflow_service: WorkflowService,
@@ -73,7 +70,6 @@ class TestWorkflowService:
 
         workflow_state_repository.get_by_session_id.assert_called_once_with(session_id)
 
-    @pytest.mark.asyncio
     async def test_save_context_persists_state(
         self,
         workflow_service: WorkflowService,
@@ -95,7 +91,6 @@ class TestWorkflowService:
         assert args[0][0] == session_id
         assert isinstance(args[0][1], dict)
 
-    @pytest.mark.asyncio
     async def test_save_context_propagates_repository_errors(
         self,
         workflow_service: WorkflowService,
@@ -113,7 +108,6 @@ class TestWorkflowService:
 
 
 class TestAgentContextService:
-    @pytest.mark.asyncio
     async def test_build_system_prompt_raises_when_no_active_project(
         self, agent_context_service: AgentContextService, project_service_mock: MagicMock
     ):
@@ -123,7 +117,6 @@ class TestAgentContextService:
         with pytest.raises(ActiveProjectRequiredException):
             await agent_context_service.build_system_prompt(session_id=1, operational_mode=OperationalMode.CODING)
 
-    @pytest.mark.asyncio
     async def test_build_system_prompt_chat_mode_is_minimal(
         self, agent_context_service: AgentContextService, project_service_mock: MagicMock
     ):
@@ -142,7 +135,6 @@ class TestAgentContextService:
         assert "<ACTIVE_CONTEXT>\n" not in prompt
         assert "<RULES>\n" not in prompt
 
-    @pytest.mark.asyncio
     async def test_build_system_prompt_includes_repo_map_and_active_context_in_coding_mode(
         self,
         agent_context_service: AgentContextService,
@@ -165,7 +157,6 @@ class TestAgentContextService:
         assert "tree" in prompt
         assert "code" in prompt
 
-    @pytest.mark.asyncio
     async def test_build_system_prompt_includes_repo_map_in_ask_mode(
         self,
         agent_context_service: AgentContextService,
@@ -181,7 +172,6 @@ class TestAgentContextService:
         assert "<REPOSITORY_MAP>" in prompt
         assert "tree" in prompt
 
-    @pytest.mark.asyncio
     async def test_build_system_prompt_ask_mode_includes_tool_rules(
         self,
         agent_context_service: AgentContextService,
@@ -194,7 +184,6 @@ class TestAgentContextService:
         
         assert "<RULES>" in prompt
 
-    @pytest.mark.asyncio
     async def test_build_system_prompt_includes_repo_map_in_planner_mode(
         self,
         agent_context_service: AgentContextService,
@@ -209,7 +198,6 @@ class TestAgentContextService:
 
         assert "<REPOSITORY_MAP>" in prompt
 
-    @pytest.mark.asyncio
     async def test_build_system_prompt_single_shot_mode_excludes_tool_rules(
         self,
         agent_context_service: AgentContextService,
@@ -224,7 +212,6 @@ class TestAgentContextService:
         # Prompt structure text mentions <RULES>, so check the wrapper tag.
         assert "<RULES>\n" not in prompt
 
-    @pytest.mark.asyncio
     async def test_build_system_prompt_planner_mode_includes_tool_rules(
         self,
         agent_context_service: AgentContextService,
@@ -237,7 +224,6 @@ class TestAgentContextService:
         
         assert "<RULES>" in prompt
 
-    @pytest.mark.asyncio
     async def test_build_system_prompt_includes_guidelines_in_non_chat_modes(
         self,
         agent_context_service: AgentContextService,
@@ -250,7 +236,6 @@ class TestAgentContextService:
             prompt = await agent_context_service.build_system_prompt(session_id=1, operational_mode=mode)
             assert "<GUIDELINES>" in prompt
 
-    @pytest.mark.asyncio
     async def test_build_system_prompt_includes_custom_prompts_when_present(
         self,
         agent_context_service: AgentContextService,
@@ -267,7 +252,6 @@ class TestAgentContextService:
         assert '<INSTRUCTION name="P1">' in prompt
         assert "C1" in prompt
 
-    @pytest.mark.asyncio
     async def test_build_system_prompt_excludes_custom_prompts_when_absent(
         self,
         agent_context_service: AgentContextService,
@@ -284,7 +268,6 @@ class TestAgentContextService:
         # Assert the actual wrapper section is not present.
         assert "<CUSTOM_INSTRUCTIONS>\n" not in prompt
 
-    @pytest.mark.asyncio
     async def test_build_system_prompt_omits_active_context_when_no_active_files(
         self,
         agent_context_service: AgentContextService,
@@ -299,7 +282,6 @@ class TestAgentContextService:
 
         assert "<ACTIVE_CONTEXT>\n" not in prompt
 
-    @pytest.mark.asyncio
     async def test_build_system_prompt_omits_repo_map_when_repo_map_service_returns_empty(
         self,
         agent_context_service: AgentContextService,
@@ -314,7 +296,6 @@ class TestAgentContextService:
 
         assert "<REPOSITORY_MAP>\n" not in prompt
 
-    @pytest.mark.asyncio
     async def test_build_system_prompt_active_context_filters_non_successful_file_reads(
         self,
         agent_context_service: AgentContextService,
@@ -341,7 +322,6 @@ class TestAgentContextService:
         assert "good.py" in prompt
         assert "bad.py" not in prompt
 
-    @pytest.mark.asyncio
     async def test_build_system_prompt_sections_order_is_stable(
         self,
         agent_context_service: AgentContextService,
@@ -379,7 +359,6 @@ class TestAgentContextService:
 
         assert idx_identity < idx_structure < idx_rules < idx_guidelines < idx_custom < idx_context < idx_map
 
-    @pytest.mark.asyncio
     async def test_build_system_prompt_repo_map_includes_description_comment(
         self,
         agent_context_service: AgentContextService,
@@ -395,7 +374,6 @@ class TestAgentContextService:
         assert "<!--" in prompt
         assert "AUTHORITATIVE source of truth" in prompt
 
-    @pytest.mark.asyncio
     async def test_build_system_prompt_active_context_includes_description_comment(
         self,
         agent_context_service: AgentContextService,
@@ -413,7 +391,6 @@ class TestAgentContextService:
         assert "<!--" in prompt
         assert "FULL CONTENT of the files" in prompt
 
-    @pytest.mark.asyncio
     async def test_build_system_prompt_propagates_repo_map_service_errors(
         self,
         agent_context_service: AgentContextService,
@@ -427,7 +404,6 @@ class TestAgentContextService:
         with pytest.raises(Exception, match="Repo Map Error"):
             await agent_context_service.build_system_prompt(session_id=1)
 
-    @pytest.mark.asyncio
     async def test_build_system_prompt_propagates_workspace_service_errors(
         self,
         agent_context_service: AgentContextService,
@@ -441,7 +417,6 @@ class TestAgentContextService:
         with pytest.raises(Exception, match="Workspace Error"):
             await agent_context_service.build_system_prompt(session_id=1)
 
-    @pytest.mark.asyncio
     async def test_build_system_prompt_propagates_codebase_service_errors(
         self,
         agent_context_service: AgentContextService,
@@ -457,7 +432,6 @@ class TestAgentContextService:
         with pytest.raises(Exception, match="Codebase Error"):
             await agent_context_service.build_system_prompt(session_id=1)
 
-    @pytest.mark.asyncio
     async def test_build_active_context_xml_returns_empty_when_workspace_returns_none(
         self,
         agent_context_service: AgentContextService,
@@ -470,7 +444,6 @@ class TestAgentContextService:
         result = await agent_context_service._build_active_context_xml(session_id=1, project=project)
         assert result == ""
 
-    @pytest.mark.asyncio
     async def test_build_active_context_xml_skips_files_with_non_successful_reads(
         self,
         agent_context_service: AgentContextService,
@@ -485,7 +458,6 @@ class TestAgentContextService:
         result = await agent_context_service._build_active_context_xml(session_id=1, project=project)
         assert result == ""
 
-    @pytest.mark.asyncio
     async def test_build_active_context_xml_handles_duplicate_paths(
         self,
         agent_context_service: AgentContextService,
@@ -508,7 +480,6 @@ class TestAgentContextService:
         # It should probably include it twice if the service blindly iterates
         assert result.count('<FILE path="a.py">') == 2
 
-    @pytest.mark.asyncio
     async def test_build_active_context_xml_includes_file_tag_with_path_attribute(
         self,
         agent_context_service: AgentContextService,
@@ -524,7 +495,6 @@ class TestAgentContextService:
         assert '<FILE path="a.py">' in result
         assert '</FILE>' in result
 
-    @pytest.mark.asyncio
     async def test_build_active_context_xml_preserves_file_content_exactly(
         self,
         agent_context_service: AgentContextService,
@@ -540,7 +510,6 @@ class TestAgentContextService:
         result = await agent_context_service._build_active_context_xml(session_id=1, project=project)
         assert content in result
 
-    @pytest.mark.asyncio
     async def test_build_prompts_xml_wraps_each_prompt_in_instruction_tag(
         self,
         agent_context_service: AgentContextService,
@@ -553,7 +522,6 @@ class TestAgentContextService:
         assert '<INSTRUCTION name="P1">' in result
         assert '</INSTRUCTION>' in result
 
-    @pytest.mark.asyncio
     async def test_build_prompts_xml_preserves_prompt_content(
         self,
         agent_context_service: AgentContextService,
@@ -565,7 +533,6 @@ class TestAgentContextService:
         result = await agent_context_service._build_prompts_xml(project_id=1)
         assert "Content" in result
 
-    @pytest.mark.asyncio
     async def test_build_prompts_xml_returns_empty_when_no_active_prompts(
         self,
         agent_context_service: AgentContextService,
@@ -577,7 +544,6 @@ class TestAgentContextService:
         result = await agent_context_service._build_prompts_xml(project_id=1)
         assert result == ""
 
-    @pytest.mark.asyncio
     async def test_build_system_prompt_excludes_active_context_when_all_reads_fail(
         self,
         agent_context_service: AgentContextService,
@@ -593,7 +559,6 @@ class TestAgentContextService:
         prompt = await agent_context_service.build_system_prompt(session_id=1)
         assert "<ACTIVE_CONTEXT>\n" not in prompt
 
-    @pytest.mark.asyncio
     async def test_build_system_prompt_excludes_repo_map_when_repo_map_is_none(
         self,
         agent_context_service: AgentContextService,
@@ -607,7 +572,6 @@ class TestAgentContextService:
         prompt = await agent_context_service.build_system_prompt(session_id=1)
         assert "<REPOSITORY_MAP>\n" not in prompt
 
-    @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "mode",
         [
@@ -633,7 +597,6 @@ class TestAgentContextService:
         assert '<INSTRUCTION name="P1">' in prompt
         assert "C1" in prompt
 
-    @pytest.mark.asyncio
     async def test_build_system_prompt_never_includes_custom_instructions_in_chat_mode_even_if_prompts_exist(
         self,
         agent_context_service: AgentContextService,

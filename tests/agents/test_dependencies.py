@@ -6,7 +6,7 @@ import pytest
 from app.agents.dependencies import get_workflow_service
 from app.agents.services import WorkflowService
 
-@pytest.mark.asyncio
+
 class TestAgentsDependencies:
     async def test_get_workflow_service_returns_service_instance(self, db_session):
         """get_workflow_service should return a WorkflowService instance."""
