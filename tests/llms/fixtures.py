@@ -132,35 +132,3 @@ async def llm_service(db_session) -> LLMService:
     repo = LLMSettingsRepository(db_session)
     factory = await build_llm_factory_instance()
     return LLMService(repo, factory)
-
-
-@pytest.fixture(autouse=True)
-async def ensure_default_coder_llm_for_suite(db_session, request):
-    """Ensure agents/settings that call llm_service.get_coding_llm() have a default model available.
-
-    This is global because multiple apps assume at least one LLMSettings row exists.
-    """
-    # Skip for LLM unit tests to avoid unique constraint conflicts and pollution
-    if "tests/llms" in str(request.node.fspath):
-        yield
-        return
-
-    repo = LLMSettingsRepository(db_session)
-    existing_coder = await repo.get_by_role(LLMRole.CODER)
-    if existing_coder is None:
-        existing_default = await repo.get_by_model_name(str(LLMModel.GPT_4_1_MINI))
-        if existing_default is None:
-            db_session.add(
-                LLMSettings(
-                    model_name=LLMModel.GPT_4_1_MINI,
-                    provider=LLMProvider.OPENAI,
-                    api_key="sk-test-openai",
-                    context_window=128000,
-                    active_role=LLMRole.CODER,
-                )
-            )
-            await db_session.flush()
-        else:
-            await repo.set_active_role(llm_id=existing_default.id, role=LLMRole.CODER)
-            await db_session.flush()
-    yield
