@@ -15,6 +15,7 @@ from app.llms.repositories import LLMSettingsRepository
 from app.llms.models import LLMSettings
 from app.settings.schemas import LLMSettingsUpdate
 from app.settings.exceptions import ContextWindowExceededException, LLMSettingsNotFoundException
+from app.llms.exceptions import MissingLLMApiKeyException
 
 
 logger = logging.getLogger(__name__)
@@ -143,6 +144,11 @@ class LLMService:
         """
         llm_metadata = await self.llm_factory.get_llm(model_name)
         api_key = await self.llm_settings_repo.get_api_key_for_provider(llm_metadata.provider)
+
+        if not api_key:
+            raise MissingLLMApiKeyException(
+                f"Missing API key for provider {llm_metadata.provider}. Please configure it in settings."
+            )
         
         return await self._get_client_instance(model_name, temperature, api_key)
 
