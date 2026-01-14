@@ -2,6 +2,7 @@ import pytest
 from app.llms.repositories import LLMSettingsRepository
 from app.llms.enums import LLMModel, LLMRole, LLMProvider
 from app.llms.models import LLMSettings
+from app.settings.schemas import LLMSettingsUpdate
 
 
 async def test_llm_settings_repository__get_by_model_name__returns_none_when_missing(db_session):
@@ -178,35 +179,47 @@ async def test_llm_settings_repository__get_api_key_for_provider__returns_none_w
     assert key is None
 
 
-async def test_llm_settings_repository__get_api_key_for_provider__when_multiple_keys__returns_any(
+async def test_llm_service__update_settings__api_key_enforced_one_key_per_provider_by_overwrite(
     db_session,
-    llm_settings_openai_no_role,
+    make_llm_service_with_fake_factory,
 ):
-    """Scenario: multiple rows share a provider and more than one has a non-null api_key.
+    """Scenario: two models share a provider; api_key update should not allow diverging keys.
 
-    Notes:
-        - repository currently does not define ordering; this test only asserts returned key is one of them.
+    We don't enforce this at the DB layer; instead we enforce it at the service level by
+    updating *all* rows under the provider to the same api_key.
 
     Asserts:
-        - returns a non-null key that belongs to a row of that provider
+        - after updating api_key for one model, all provider rows have the same api_key
+        - get_api_key_for_provider returns that api_key
     """
-    llm_settings_openai_no_role.api_key = "sk-openai-1"
+    # Two OPENAI models with different keys (invalid state), then service overwrites to one.
+    m1 = LLMSettings(
+        model_name=LLMModel.GPT_4_1_MINI,
+        provider=LLMProvider.OPENAI,
+        api_key="sk-openai-1",
+        context_window=128000,
+        active_role=None,
+    )
+    m2 = LLMSettings(
+        model_name=LLMModel.GPT_4O,
+        provider=LLMProvider.OPENAI,
+        api_key="sk-openai-2",
+        context_window=128000,
+        active_role=None,
+    )
+    db_session.add_all([m1, m2])
     await db_session.flush()
 
-    db_session.add(
-        LLMSettings(
-            model_name=LLMModel.GPT_4O,
-            provider=LLMProvider.OPENAI,
-            api_key="sk-openai-2",
-            context_window=128000,
-            active_role=None,
-        )
-    )
-    await db_session.flush()
+    service = make_llm_service_with_fake_factory(model_registry={})
+    await service.update_settings(m1.id, LLMSettingsUpdate(api_key="sk-openai-canonical"))
 
     repo = LLMSettingsRepository(db_session)
-    key = await repo.get_api_key_for_provider(LLMProvider.OPENAI)
-    assert key in {"sk-openai-1", "sk-openai-2"}
+    assert await repo.get_api_key_for_provider(LLMProvider.OPENAI) == "sk-openai-canonical"
+
+    await db_session.refresh(m1)
+    await db_session.refresh(m2)
+    assert m1.api_key == "sk-openai-canonical"
+    assert m2.api_key == "sk-openai-canonical"
 
 
 async def test_llm_settings_repository__get_by_role__returns_none_when_missing(db_session):

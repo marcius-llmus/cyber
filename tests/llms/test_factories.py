@@ -16,7 +16,7 @@ async def test_build_llm_factory_instance__returns_llm_factory_singleton():
     factory1 = await build_llm_factory_instance()
     factory2 = await build_llm_factory_instance()
     assert isinstance(factory1, LLMFactory)
-    assert factory1 is factory2
+    assert factory1 is factory2 # different from others. here, we WANT the same .-.
 
 
 async def test_build_llm_service__returns_llm_service(db_session):
