@@ -20,7 +20,7 @@ class TestWorkflowStateModel:
         session_id = chat_session.id
         workflow_state = WorkflowState(session_id=session_id, state={"step": "init"})
         db_session.add(workflow_state)
-        await db_session.commit()
+        await db_session.flush()
 
         # Retrieve by PK
         retrieved = await db_session.get(WorkflowState, session_id)
@@ -37,7 +37,7 @@ class TestWorkflowStateModel:
         state_data = {"step": 1, "context": {"foo": "bar"}}
         workflow_state = WorkflowState(session_id=session_id, state=state_data)
         db_session.add(workflow_state)
-        await db_session.commit()
+        await db_session.flush()
 
         retrieved = await db_session.get(WorkflowState, session_id)
         assert retrieved.state == state_data
@@ -45,18 +45,14 @@ class TestWorkflowStateModel:
         # Test non-nullable constraint
         new_session = ChatSession(name="Invalid Session", operational_mode=OperationalMode.CODING, project_id=project_id)
         db_session.add(new_session)
-        await db_session.commit()
+        await db_session.flush()
 
-        await db_session.refresh(new_session)
-        
         workflow_state_invalid = WorkflowState(session_id=new_session.id)
         db_session.add(workflow_state_invalid)
 
-        # Commit should trigger the IntegrityError due to nullable=False
+        # Flush should trigger the IntegrityError due to nullable=False
         with pytest.raises(IntegrityError):
-            await db_session.commit()
-
-        await db_session.rollback()
+            await db_session.flush()
 
     @pytest.mark.asyncio
     async def test_workflow_state_relationship_to_chat_session_is_defined(
@@ -66,7 +62,7 @@ class TestWorkflowStateModel:
         session_id = chat_session.id
         workflow_state = WorkflowState(session_id=session_id, state={})
         db_session.add(workflow_state)
-        await db_session.commit()
+        await db_session.flush()
 
         # Check relationship via join
         stmt = (
@@ -85,11 +81,12 @@ class TestWorkflowStateModel:
         session_id = chat_session.id
         workflow_state = WorkflowState(session_id=session_id, state={})
         db_session.add(workflow_state)
-        await db_session.commit()
+        await db_session.flush()
 
         assert await db_session.get(WorkflowState, session_id) is not None
 
         await db_session.delete(chat_session)
-        await db_session.commit()
+        await db_session.flush()
+        db_session.expire_all()
 
         assert await db_session.get(WorkflowState, session_id) is None
