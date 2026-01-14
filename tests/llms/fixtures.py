@@ -132,3 +132,39 @@ async def llm_service(db_session) -> LLMService:
     repo = LLMSettingsRepository(db_session)
     factory = await build_llm_factory_instance()
     return LLMService(repo, factory)
+
+
+import pytest
+
+from app.llms.enums import LLMModel, LLMProvider, LLMRole
+from app.llms.models import LLMSettings
+
+
+@pytest.fixture
+async def llm_settings_seed_many(db_session) -> list[LLMSettings]:
+    rows = [
+        LLMSettings(
+            model_name=LLMModel.GPT_4_1_MINI,
+            provider=LLMProvider.OPENAI,
+            api_key="sk-openai",
+            context_window=128000,
+            active_role=LLMRole.CODER,
+        ),
+        LLMSettings(
+            model_name=LLMModel.GEMINI_2_5_FLASH,
+            provider=LLMProvider.ANTHROPIC,
+            api_key="sk-anthropic",
+            context_window=200000,
+            active_role=None,
+        ),
+        LLMSettings(
+            model_name=LLMModel.CLAUDE_OPUS_4_1,
+            provider=LLMProvider.GOOGLE,
+            api_key="sk-google",
+            context_window=1000000,
+            active_role=None,
+        ),
+    ]
+    db_session.add_all(rows)
+    await db_session.flush()
+    return rows

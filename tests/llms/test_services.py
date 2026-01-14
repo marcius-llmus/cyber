@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock
 from app.llms.exceptions import MissingLLMApiKeyException
 from app.llms.enums import LLMModel, LLMProvider, LLMRole
 from app.llms.factories import build_llm_service
+from app.llms.services import LLMService
 from app.settings.exceptions import ContextWindowExceededException, LLMSettingsNotFoundException
 from app.settings.schemas import LLMSettingsUpdate
 from app.llms.models import LLMSettings
@@ -35,6 +36,7 @@ async def test_llm_service__get_all_models__returns_non_empty_list(llm_service):
     assert len(llms) > 0
 
 
+# will keep this one and bellow as for good redundancy
 async def test_llm_service__get_all_llm_settings__delegates_to_repo(db_session):
     """Scenario: LLM settings exist in DB.
 
@@ -43,6 +45,28 @@ async def test_llm_service__get_all_llm_settings__delegates_to_repo(db_session):
     """
     service = await build_llm_service(db_session)
     assert isinstance(await service.get_all_llm_settings(), list)
+
+
+@pytest.mark.asyncio
+async def test_llm_service__get_all_llm_settings__returns_all_db_rows(
+    db_session,
+    llm_settings_seed_many,
+):
+    """Scenario: multiple LLMSettings exist in DB.
+
+    Asserts:
+        - returns exactly all rows currently in DB
+        - seeded IDs are present in results
+    """
+    service = await build_llm_service(db_session)
+
+    results = await service.get_all_llm_settings()
+
+    assert len(results) == len(llm_settings_seed_many)
+
+    result_ids = {x.id for x in results}
+    for seeded in llm_settings_seed_many:
+        assert seeded.id in result_ids
 
 
 async def test_llm_service__get_llm_settings__raises_when_missing(db_session):
