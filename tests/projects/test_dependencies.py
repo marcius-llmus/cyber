@@ -14,7 +14,6 @@ from app.projects.repositories import ProjectRepository
 from app.projects.services import ProjectPageService, ProjectService
 
 
-@pytest.mark.asyncio
 class TestProjectsDependencies:
     async def test_get_project_repository_returns_repository(self, db_session):
         repo = await get_project_repository(db=db_session)

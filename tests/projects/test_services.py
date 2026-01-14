@@ -7,8 +7,6 @@ from app.projects.services import ProjectService
 from app.projects.schemas import ProjectCreate
 
 
-pytestmark = pytest.mark.asyncio
-
 class TestProjectService:
     async def test_get_project_raises_when_missing(
         self,
@@ -36,12 +34,17 @@ class TestProjectService:
         assert project_inactive.is_active is False
 
         projects = await project_service.set_active_project(project_id=project_inactive.id)
-        
+
         await db_session.refresh(project)
         await db_session.refresh(project_inactive)
 
         assert project.is_active is False
         assert project_inactive.is_active is True
+
+        assert isinstance(projects, list)
+        assert {p.id for p in projects} == {project.id, project_inactive.id}
+        assert sum(1 for p in projects if p.is_active) == 1
+        assert next(p for p in projects if p.is_active).id == project_inactive.id
 
     async def test_set_active_project_is_idempotent(
         self,
@@ -51,9 +54,14 @@ class TestProjectService:
     ) -> None:
         assert project.is_active is True
         projects = await project_service.set_active_project(project_id=project.id)
-        
+
         await db_session.refresh(project)
         assert project.is_active is True
+
+        assert isinstance(projects, list)
+        assert [p.id for p in projects] == [project.id]
+        assert sum(1 for p in projects if p.is_active) == 1
+        assert projects[0].is_active is True
 
     async def test_get_active_project_returns_active(
         self,

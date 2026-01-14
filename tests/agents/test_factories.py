@@ -1,6 +1,4 @@
 """Factory tests for the agents app."""
-
-import pytest
 from sqlalchemy import update
 
 from app.agents.factories import (
@@ -14,7 +12,6 @@ from app.core.enums import OperationalMode
 from app.sessions.models import ChatSession
 
 
-@pytest.mark.asyncio
 class TestAgentsFactories:
     async def test_build_workflow_service_wires_repository(self, db_session):
         """build_workflow_service should construct a WorkflowService with WorkflowStateRepository."""

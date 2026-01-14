@@ -12,7 +12,6 @@ from app.sessions.models import ChatSession
 
 
 class TestWorkflowStateModel:
-    @pytest.mark.asyncio
     async def test_workflow_state_primary_key_is_session_id(
         self, db_session: AsyncSession, chat_session: ChatSession
     ):
@@ -27,7 +26,6 @@ class TestWorkflowStateModel:
         assert retrieved is not None
         assert retrieved.session_id == session_id
 
-    @pytest.mark.asyncio
     async def test_workflow_state_has_state_json_column(
         self, db_session: AsyncSession, chat_session: ChatSession, project: Project
     ):
@@ -54,7 +52,6 @@ class TestWorkflowStateModel:
         with pytest.raises(IntegrityError):
             await db_session.flush()
 
-    @pytest.mark.asyncio
     async def test_workflow_state_relationship_to_chat_session_is_defined(
         self, db_session: AsyncSession, chat_session: ChatSession
     ):
@@ -73,7 +70,6 @@ class TestWorkflowStateModel:
         result = await db_session.execute(stmt)
         assert result.scalar_one() is not None
 
-    @pytest.mark.asyncio
     async def test_workflow_state_fk_cascade_on_delete(
         self, db_session: AsyncSession, chat_session: ChatSession
     ):
@@ -108,7 +104,5 @@ class TestWorkflowStateModel:
         # On commit, we expire everything
         db_session.expire_all()
 
-        # Optional sanity check: the parent row should be gone as well.
         assert await db_session.get(ChatSession, session_id) is None
-
         assert await db_session.get(WorkflowState, session_id) is None

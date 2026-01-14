@@ -6,7 +6,6 @@ from app.projects.factories import build_project_service
 from app.projects.services import ProjectService
 
 
-@pytest.mark.asyncio
 class TestProjectsFactories:
     async def test_build_project_service_returns_service(self, db_session):
         service = await build_project_service(db_session)
