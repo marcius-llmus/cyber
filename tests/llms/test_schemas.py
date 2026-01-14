@@ -38,12 +38,8 @@ def test_llm_schema__rejects_invalid_field_types_or_values(field_name: str, bad_
     Asserts:
         - pydantic raises validation error
     """
-    payload = {
-        "model_name": LLMModel.GPT_4O,
-        "provider": LLMProvider.OPENAI,
-        "default_context_window": 128_000,
-    }
-    payload[field_name] = bad_value
+    payload = {"model_name": LLMModel.GPT_4O, "provider": LLMProvider.OPENAI, "default_context_window": 128_000,
+               field_name: bad_value}
 
     with pytest.raises(ValidationError):
         LLM(**payload)

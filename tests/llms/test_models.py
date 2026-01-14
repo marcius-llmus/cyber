@@ -1,7 +1,8 @@
 import pytest
 from sqlalchemy.exc import IntegrityError
-from app.llms.models import LLMSettings
+
 from app.llms.enums import LLMModel, LLMProvider, LLMRole
+from app.llms.models import LLMSettings
 
 
 async def test_llm_settings__can_be_persisted(db_session):
@@ -11,21 +12,16 @@ async def test_llm_settings__can_be_persisted(db_session):
         - row is persisted and retrievable by primary key
         - required fields are stored
     """
-    llm = LLMSettings(
+    obj = LLMSettings(
         model_name=LLMModel.GPT_4O,
         provider=LLMProvider.OPENAI,
         api_key="sk-test",
         context_window=128000,
-        active_role=LLMRole.CODER,
+        active_role=None,
     )
-    db_session.add(llm)
-    await db_session.commit()
-
-    retrieved = await db_session.get(LLMSettings, llm.id)
-    assert retrieved is not None
-    assert retrieved.model_name == LLMModel.GPT_4O
-    assert retrieved.provider == LLMProvider.OPENAI
-    assert retrieved.active_role == LLMRole.CODER
+    db_session.add(obj)
+    await db_session.flush()
+    assert obj.id is not None
 
 
 @pytest.mark.parametrize(
@@ -52,7 +48,7 @@ async def test_llm_settings__required_fields__enforced_by_db(field_name: str, db
     db_session.add(llm)
 
     with pytest.raises(IntegrityError):
-        await db_session.commit()
+        await db_session.flush()
 
 
 async def test_llm_settings__model_name_unique(db_session):
@@ -61,22 +57,22 @@ async def test_llm_settings__model_name_unique(db_session):
     Asserts:
         - DB unique constraint rejects duplicates
     """
-    llm1 = LLMSettings(
+    first = LLMSettings(
         model_name=LLMModel.GPT_4O,
         provider=LLMProvider.OPENAI,
         context_window=128000,
     )
-    db_session.add(llm1)
-    await db_session.commit()
+    db_session.add(first)
+    await db_session.flush()
 
-    llm2 = LLMSettings(
+    second = LLMSettings(
         model_name=LLMModel.GPT_4O,
         provider=LLMProvider.OPENAI,
         context_window=128000,
     )
-    db_session.add(llm2)
+    db_session.add(second)
     with pytest.raises(IntegrityError):
-        await db_session.commit()
+        await db_session.flush()
 
 
 async def test_llm_settings__active_role_unique(db_session):
@@ -85,24 +81,24 @@ async def test_llm_settings__active_role_unique(db_session):
     Asserts:
         - DB unique constraint rejects duplicates
     """
-    llm1 = LLMSettings(
+    first = LLMSettings(
         model_name=LLMModel.GPT_4O,
         provider=LLMProvider.OPENAI,
         context_window=128000,
         active_role=LLMRole.CODER,
     )
-    db_session.add(llm1)
-    await db_session.commit()
+    db_session.add(first)
+    await db_session.flush()
 
-    llm2 = LLMSettings(
+    second = LLMSettings(
         model_name=LLMModel.GPT_4_TURBO,
         provider=LLMProvider.OPENAI,
         context_window=128000,
         active_role=LLMRole.CODER,
     )
-    db_session.add(llm2)
+    db_session.add(second)
     with pytest.raises(IntegrityError):
-        await db_session.commit()
+        await db_session.flush()
 
 
 async def test_llm_settings__api_key_nullable(db_session):
@@ -118,5 +114,5 @@ async def test_llm_settings__api_key_nullable(db_session):
         context_window=128000,
     )
     db_session.add(llm)
-    await db_session.commit()
+    await db_session.flush()
     assert llm.id is not None

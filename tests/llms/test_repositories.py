@@ -1,6 +1,7 @@
 import pytest
 from app.llms.repositories import LLMSettingsRepository
-from app.llms.enums import LLMRole, LLMProvider
+from app.llms.enums import LLMModel, LLMRole, LLMProvider
+from app.llms.models import LLMSettings
 
 
 async def test_llm_settings_repository__get_by_model_name__returns_none_when_missing(db_session):
@@ -45,16 +46,16 @@ async def test_llm_settings_repository__get_all__returns_all_rows(
 
 
 @pytest.mark.parametrize(
-    "provider_fixture_name",
+    "provider,model_name",
     [
-        "llm_settings_openai_no_role",
-        "llm_settings_anthropic",
-        "llm_settings_google",
+        (LLMProvider.OPENAI, LLMModel.GPT_4_1_MINI),
+        (LLMProvider.ANTHROPIC, LLMModel.CLAUDE_OPUS_4_1),
+        (LLMProvider.GOOGLE, LLMModel.GEMINI_2_5_FLASH),
     ],
 )
 async def test_llm_settings_repository__update_api_key_for_provider__updates_all_models_for_provider(
-    provider_fixture_name: str,
-    request,
+    provider,
+    model_name,
     db_session,
 ):
     """Scenario: multiple LLMSettings can share a provider.
@@ -63,8 +64,16 @@ async def test_llm_settings_repository__update_api_key_for_provider__updates_all
         - update_api_key_for_provider updates api_key for all rows with that provider
         - changes are flushed (visible in subsequent reads in same session)
     """
-    existing_row = request.getfixturevalue(provider_fixture_name)
-    provider = existing_row.provider
+    # Create initial row
+    db_session.add(LLMSettings(
+        model_name=model_name,
+        provider=provider,
+        api_key="old-key",
+        context_window=1000,
+        active_role=None,
+    ))
+    await db_session.flush()
+
     repo = LLMSettingsRepository(db_session)
     
     new_key = "sk-new-key-123"
@@ -76,16 +85,16 @@ async def test_llm_settings_repository__update_api_key_for_provider__updates_all
     
 
 @pytest.mark.parametrize(
-    "provider_fixture_name",
+    "provider,model_name",
     [
-        "llm_settings_openai_no_role",
-        "llm_settings_anthropic",
-        "llm_settings_google",
+        (LLMProvider.OPENAI, LLMModel.GPT_4_1_MINI),
+        (LLMProvider.ANTHROPIC, LLMModel.CLAUDE_OPUS_4_1),
+        (LLMProvider.GOOGLE, LLMModel.GEMINI_2_5_FLASH),
     ],
 )
 async def test_llm_settings_repository__update_api_key_for_provider__can_clear_key(
-    provider_fixture_name: str,
-    request,
+    provider,
+    model_name,
     db_session,
 ):
     """Scenario: provider has keys, then key is cleared.
@@ -94,8 +103,16 @@ async def test_llm_settings_repository__update_api_key_for_provider__can_clear_k
         - update_api_key_for_provider(api_key=None) sets api_key to NULL for provider
         - get_api_key_for_provider returns None afterwards
     """
-    existing_row = request.getfixturevalue(provider_fixture_name)
-    provider = existing_row.provider
+    # Create initial row
+    db_session.add(LLMSettings(
+        model_name=model_name,
+        provider=provider,
+        api_key="sk-existing",
+        context_window=1000,
+        active_role=None,
+    ))
+    await db_session.flush()
+
     repo = LLMSettingsRepository(db_session)
 
     await repo.update_api_key_for_provider(provider, None)
@@ -103,16 +120,16 @@ async def test_llm_settings_repository__update_api_key_for_provider__can_clear_k
 
 
 @pytest.mark.parametrize(
-    "provider_fixture_name",
+    "provider,model_name",
     [
-        "llm_settings_openai_no_role",
-        "llm_settings_anthropic",
-        "llm_settings_google",
+        (LLMProvider.OPENAI, LLMModel.GPT_4_1_MINI),
+        (LLMProvider.ANTHROPIC, LLMModel.CLAUDE_OPUS_4_1),
+        (LLMProvider.GOOGLE, LLMModel.GEMINI_2_5_FLASH),
     ],
 )
 async def test_llm_settings_repository__get_api_key_for_provider__returns_first_non_null_key(
-    provider_fixture_name: str,
-    request,
+    provider,
+    model_name,
     db_session,
 ):
     """Scenario: at least one model under provider has a non-null api_key.
@@ -120,13 +137,21 @@ async def test_llm_settings_repository__get_api_key_for_provider__returns_first_
     Asserts:
         - get_api_key_for_provider returns a string
     """
-    existing_row = request.getfixturevalue(provider_fixture_name)
-    provider = existing_row.provider
+    api_key = "sk-test-key"
+    db_session.add(LLMSettings(
+        model_name=model_name,
+        provider=provider,
+        api_key=api_key,
+        context_window=1000,
+        active_role=None,
+    ))
+    await db_session.flush()
+
     repo = LLMSettingsRepository(db_session)
     
     key = await repo.get_api_key_for_provider(provider)
     assert key is not None
-    assert key == existing_row.api_key
+    assert key == api_key
 
 
 async def test_llm_settings_repository__get_api_key_for_provider__returns_none_when_no_keys(db_session):
@@ -136,6 +161,19 @@ async def test_llm_settings_repository__get_api_key_for_provider__returns_none_w
         - returns None
     """
     repo = LLMSettingsRepository(db_session)
+    # Explicitly clear any existing keys for OPENAI to ensure test isolation
+    await repo.update_api_key_for_provider(LLMProvider.OPENAI, None)
+
+    db_session.add(
+        LLMSettings(
+            model_name=LLMModel.GPT_4O,
+            provider=LLMProvider.OPENAI,
+            api_key=None,
+            context_window=128000,
+            active_role=None,
+        )
+    )
+    await db_session.flush()
     key = await repo.get_api_key_for_provider(LLMProvider.OPENAI)
     assert key is None
 
@@ -152,10 +190,9 @@ async def test_llm_settings_repository__get_api_key_for_provider__when_multiple_
     Asserts:
         - returns a non-null key that belongs to a row of that provider
     """
-    from app.llms.models import LLMSettings
-    from app.llms.enums import LLMModel
-
     llm_settings_openai_no_role.api_key = "sk-openai-1"
+    await db_session.flush()
+
     db_session.add(
         LLMSettings(
             model_name=LLMModel.GPT_4O,
@@ -238,9 +275,13 @@ async def test_llm_settings_repository__set_active_role__no_commit_side_effects(
         - repository does not commit; rollback reverts changes
     """
     repo = LLMSettingsRepository(db_session)
-    await repo.set_active_role(llm_settings_openai_no_role.id, LLMRole.CODER)
-    
-    await db_session.rollback()
-    
-    await db_session.refresh(llm_settings_openai_no_role)
-    assert llm_settings_openai_no_role.active_role is None
+    target_id = llm_settings_openai_no_role.id
+    target_model_name = llm_settings_openai_no_role.model_name
+
+    nested = await db_session.begin_nested()
+    await repo.set_active_role(target_id, LLMRole.CODER)
+    await nested.rollback()
+
+    fresh_row = await repo.get_by_model_name(target_model_name)
+    assert fresh_row is not None
+    assert fresh_row.active_role is None
