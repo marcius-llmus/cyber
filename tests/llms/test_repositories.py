@@ -269,9 +269,6 @@ async def test_llm_settings_repository__set_active_role__clears_existing_and_set
     # Switch role
     await repo.set_active_role(llm_settings_openai_no_role.id, LLMRole.CODER)
     
-    # NOTE: repository does not flush; ensure state is visible for subsequent reads
-    await db_session.flush()
-    
     # Verify new state
     new_coder = await repo.get_by_role(LLMRole.CODER)
     assert new_coder.id == llm_settings_openai_no_role.id

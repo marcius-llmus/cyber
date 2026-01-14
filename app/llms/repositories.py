@@ -48,3 +48,4 @@ class LLMSettingsRepository(BaseRepository[LLMSettings]):
         await self.db.execute(
             update(self.model).where(self.model.id == llm_id).values(active_role=role)
         )
+        await self.db.flush()
