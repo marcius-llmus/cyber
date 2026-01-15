@@ -101,7 +101,7 @@ class TestWorkflowStateModel:
         #   "Instance ... is not persistent within this Session").
         # - refresh() also doesn't help for verifying cascaded child deletion; we want a
         #   fresh lookup of WorkflowState after the cascade has occurred.
-        # On commit, we expire everything
+        # We don't need to expire in between sessions as on commit, we expire everything
         db_session.expire_all()
 
         assert await db_session.get(ChatSession, session_id) is None

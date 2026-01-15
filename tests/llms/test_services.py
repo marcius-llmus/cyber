@@ -45,7 +45,6 @@ async def test_llm_service__get_all_llm_settings__delegates_to_repo(llm_service)
     assert isinstance(await llm_service.get_all_llm_settings(), list)
 
 
-@pytest.mark.asyncio
 async def test_llm_service__get_all_llm_settings__returns_all_db_rows(
     llm_settings_seed_many,
     llm_service,
