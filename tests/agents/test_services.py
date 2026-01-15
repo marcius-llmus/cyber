@@ -20,60 +20,62 @@ class TestWorkflowService:
     async def test_get_context_hydrates_existing_context(
         self,
         workflow_service: WorkflowService,
-        workflow_state_repository: WorkflowStateRepository,
+        workflow_state_repository_mock: MagicMock,
         workflow_mock: MagicMock,
+        mocker,
     ):
         """Should hydrate a workflow Context from stored state when a record exists."""
         session_id = 1
         state_data = {"step": 1}
         # Use AsyncMock for async methods
-        workflow_state_repository.get_by_session_id = AsyncMock(
+        workflow_state_repository_mock.get_by_session_id = AsyncMock(
             return_value=WorkflowState(session_id=session_id, state=state_data)
         )
         # Ensure workflow_mock has attributes expected by Context if any
         workflow_mock._timeout = 10.0
 
+        mocker.patch("app.agents.services.Context.from_dict", return_value=Context(workflow_mock))
         context = await workflow_service.get_context(session_id, workflow_mock)
 
         assert isinstance(context, Context)
 
-        workflow_state_repository.get_by_session_id.assert_called_once_with(session_id)
+        workflow_state_repository_mock.get_by_session_id.assert_called_once_with(session_id)
 
     async def test_get_context_creates_new_context_when_missing(
         self,
         workflow_service: WorkflowService,
-        workflow_state_repository: WorkflowStateRepository,
+        workflow_state_repository_mock: MagicMock,
         workflow_mock: MagicMock,
     ):
         """Should create a new workflow Context when no stored state exists."""
         session_id = 1
-        workflow_state_repository.get_by_session_id = AsyncMock(return_value=None)
+        workflow_state_repository_mock.get_by_session_id = AsyncMock(return_value=None)
         workflow_mock._timeout = 10.0
 
         context = await workflow_service.get_context(session_id, workflow_mock)
 
         assert isinstance(context, Context)
-        workflow_state_repository.get_by_session_id.assert_called_once_with(session_id)
+        workflow_state_repository_mock.get_by_session_id.assert_called_once_with(session_id)
 
     async def test_get_context_calls_repository_with_session_id(
         self,
         workflow_service: WorkflowService,
-        workflow_state_repository: WorkflowStateRepository,
+        workflow_state_repository_mock: MagicMock,
         workflow_mock: MagicMock,
     ):
         """get_context should call WorkflowStateRepository.get_by_session_id with the given session_id."""
         session_id = 123
-        workflow_state_repository.get_by_session_id = AsyncMock(return_value=None)
+        workflow_state_repository_mock.get_by_session_id = AsyncMock(return_value=None)
         workflow_mock._timeout = 10.0
 
         await workflow_service.get_context(session_id, workflow_mock)
 
-        workflow_state_repository.get_by_session_id.assert_called_once_with(session_id)
+        workflow_state_repository_mock.get_by_session_id.assert_called_once_with(session_id)
 
     async def test_save_context_persists_state(
         self,
         workflow_service: WorkflowService,
-        workflow_state_repository: WorkflowStateRepository,
+        workflow_state_repository_mock: MagicMock,
         workflow_mock: MagicMock,
     ):
         """Should persist the Context state via the repository."""
@@ -82,26 +84,26 @@ class TestWorkflowService:
         # Context constructor does not take timeout
         context = Context(workflow_mock)
 
-        workflow_state_repository.save_state = AsyncMock()
+        workflow_state_repository_mock.save_state = AsyncMock()
 
         await workflow_service.save_context(session_id, context)
 
-        workflow_state_repository.save_state.assert_called_once()
-        args = workflow_state_repository.save_state.call_args
+        workflow_state_repository_mock.save_state.assert_called_once()
+        args = workflow_state_repository_mock.save_state.call_args
         assert args[0][0] == session_id
         assert isinstance(args[0][1], dict)
 
     async def test_save_context_propagates_repository_errors(
         self,
         workflow_service: WorkflowService,
-        workflow_state_repository: WorkflowStateRepository,
+        workflow_state_repository_mock: MagicMock,
         workflow_mock: MagicMock,
     ):
         """save_context should surface exceptions raised by WorkflowStateRepository.save_state."""
         session_id = 1
         workflow_mock._timeout = 10.0
         context = Context(workflow_mock)
-        workflow_state_repository.save_state = AsyncMock(side_effect=ValueError("DB Error"))
+        workflow_state_repository_mock.save_state = AsyncMock(side_effect=ValueError("DB Error"))
 
         with pytest.raises(ValueError, match="DB Error"):
             await workflow_service.save_context(session_id, context)

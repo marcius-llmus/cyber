@@ -15,6 +15,7 @@ from app.llms.repositories import LLMSettingsRepository
 from app.llms.models import LLMSettings
 from app.settings.schemas import LLMSettingsUpdate
 from app.settings.exceptions import ContextWindowExceededException, LLMSettingsNotFoundException
+from app.llms.exceptions import MissingLLMApiKeyException
 
 
 logger = logging.getLogger(__name__)
@@ -101,6 +102,8 @@ class LLMService:
 
         if not db_obj:
             logger.warning("No LLM assigned as CODER. Attempting to set default (GPT-4.1-mini).")
+            # let's make default gpt_4_1 explicitly o.o
+            # I am not an openai fanboy, but gemini is too unstable xdd
             db_obj = await self.llm_settings_repo.get_by_model_name(LLMModel.GPT_4_1_MINI)
             
             if not db_obj:
@@ -124,7 +127,7 @@ class LLMService:
                 )
 
         if settings_in.api_key is not None:
-             await self.llm_settings_repo.update_api_key_for_provider(
+            await self.llm_settings_repo.update_api_key_for_provider(
                 provider=db_obj.provider, api_key=settings_in.api_key
             )
 
@@ -143,6 +146,11 @@ class LLMService:
         """
         llm_metadata = await self.llm_factory.get_llm(model_name)
         api_key = await self.llm_settings_repo.get_api_key_for_provider(llm_metadata.provider)
+
+        if not api_key:
+            raise MissingLLMApiKeyException(
+                f"Missing API key for provider {llm_metadata.provider}. Please configure it in settings."
+            )
         
         return await self._get_client_instance(model_name, temperature, api_key)
 

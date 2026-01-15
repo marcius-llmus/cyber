@@ -1,0 +1,2 @@
+class MissingLLMApiKeyException(ValueError):
+    pass

@@ -42,6 +42,7 @@ class ChatSessionRepository(BaseRepository[ChatSession]):
         )
         for session in sessions.scalars().all():
             session.is_active = False
+        await self.db.flush()
 
     async def activate(self, session: ChatSession) -> ChatSession:
         session.is_active = True

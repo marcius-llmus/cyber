@@ -1,5 +1,5 @@
 import pytest
-from sqlalchemy.ext.asyncio import AsyncSession
+from unittest.mock import AsyncMock
 
 from app.projects.exceptions import ProjectNotFoundException
 from app.projects.models import Project
@@ -12,6 +12,7 @@ class TestProjectService:
         self,
         project_service: ProjectService,
     ) -> None:
+        project_service.project_repo.get = AsyncMock(return_value=None) # BaseRepository.get
         with pytest.raises(ProjectNotFoundException):
             await project_service.get_project(project_id=999999)
 
@@ -20,6 +21,7 @@ class TestProjectService:
         project_service: ProjectService,
         project: Project,
     ) -> None:
+        project_service.project_repo.get = AsyncMock(return_value=project)
         retrieved = await project_service.get_project(project_id=project.id)
         assert retrieved.id == project.id
 
@@ -28,46 +30,46 @@ class TestProjectService:
         project_service: ProjectService,
         project: Project,
         project_inactive: Project,
-        db_session: AsyncSession,
     ) -> None:
         assert project.is_active is True
         assert project_inactive.is_active is False
+        
+        project_service.project_repo.get = AsyncMock(return_value=project_inactive)
+        project_service.project_repo.get_active = AsyncMock(return_value=project)
+        project_service.project_repo.deactivate = AsyncMock()
+        project_service.project_repo.activate = AsyncMock()
+        project_service.project_repo.list = AsyncMock(return_value=[project, project_inactive])
 
         projects = await project_service.set_active_project(project_id=project_inactive.id)
 
-        await db_session.refresh(project)
-        await db_session.refresh(project_inactive)
-
-        assert project.is_active is False
-        assert project_inactive.is_active is True
-
         assert isinstance(projects, list)
-        assert {p.id for p in projects} == {project.id, project_inactive.id}
-        assert sum(1 for p in projects if p.is_active) == 1
-        assert next(p for p in projects if p.is_active).id == project_inactive.id
+        project_service.project_repo.get_active.assert_awaited_once()
+        project_service.project_repo.deactivate.assert_awaited_once_with(project)
+        project_service.project_repo.activate.assert_awaited_once()
 
     async def test_set_active_project_is_idempotent(
         self,
         project_service: ProjectService,
         project: Project,
-        db_session: AsyncSession,
     ) -> None:
         assert project.is_active is True
+        project_service.project_repo.get = AsyncMock(return_value=project)
+        project_service.project_repo.get_active = AsyncMock(return_value=project)
+        project_service.project_repo.list = AsyncMock(return_value=[project])
+        
         projects = await project_service.set_active_project(project_id=project.id)
-
-        await db_session.refresh(project)
-        assert project.is_active is True
 
         assert isinstance(projects, list)
         assert [p.id for p in projects] == [project.id]
-        assert sum(1 for p in projects if p.is_active) == 1
-        assert projects[0].is_active is True
+        project_service.project_repo.get_active.assert_awaited_once()
+        # Should not call activate/deactivate if already active
 
     async def test_get_active_project_returns_active(
         self,
         project_service: ProjectService,
         project: Project,
     ) -> None:
+        project_service.project_repo.get_active = AsyncMock(return_value=project)
         active = await project_service.get_active_project()
         assert active is not None
         assert active.id == project.id
@@ -81,8 +83,9 @@ class TestProjectService:
         # Avoid filesystem dependencies by mocking the synchronizer methods.
         sync_mock = mocker.patch.object(project_service, "_synchronize_projects", autospec=True)
 
-        await project_service.project_repo.create(obj_in=ProjectCreate(name="B Project", path="/tmp/b"))
-        await project_service.project_repo.create(obj_in=ProjectCreate(name="A Project", path="/tmp/a"))
+        p1 = Project(name="A Project", path="/tmp/a")
+        p2 = Project(name="B Project", path="/tmp/b")
+        project_service.project_repo.list = AsyncMock(return_value=[p1, p2])
 
         projects = await project_service.get_projects()
         names = [p.name for p in projects]

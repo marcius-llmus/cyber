@@ -1,8 +1,11 @@
 import uuid
+from unittest.mock import MagicMock
 
 import pytest
+from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.projects.dependencies import get_project_service
 from app.projects.models import Project
 from app.projects.repositories import ProjectRepository
 from app.projects.services import ProjectService
@@ -35,5 +38,25 @@ def project_repository(db_session: AsyncSession) -> ProjectRepository:
 
 
 @pytest.fixture
-def project_service(project_repository: ProjectRepository) -> ProjectService:
-    return ProjectService(project_repo=project_repository)
+def project_repository_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.create_autospec(ProjectRepository, instance=True)
+
+
+@pytest.fixture
+def project_service(project_repository_mock: MagicMock) -> ProjectService:
+    """Provides a ProjectService instance with a MOCKED repository for unit testing."""
+    return ProjectService(project_repo=project_repository_mock)
+
+
+@pytest.fixture
+def project_service_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.create_autospec(ProjectService, instance=True)
+
+
+@pytest.fixture
+def override_get_project_service(project_service_mock: MagicMock):
+    from app.main import app
+
+    app.dependency_overrides[get_project_service] = lambda: project_service_mock
+    yield
+    app.dependency_overrides.clear()

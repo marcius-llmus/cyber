@@ -63,7 +63,7 @@ class TestAgentsFactories:
         assert service1 is not service2
 
     async def test_build_agent_includes_read_only_tools_for_ask_mode(
-        self, db_session, chat_session: ChatSession, settings, llm_settings
+        self, db_session, chat_session: ChatSession, settings, llm_settings_openai_coder
     ):
         """ASK mode should include search/file tools but not patcher tools."""
         # Update session mode
@@ -83,7 +83,7 @@ class TestAgentsFactories:
         assert "apply_diff" not in agent_tool_names
 
     async def test_build_agent_includes_read_only_tools_for_planner_mode(
-        self, db_session, chat_session: ChatSession, settings, llm_settings
+        self, db_session, chat_session: ChatSession, settings, llm_settings_openai_coder
     ):
         """PLANNER mode should include search/file tools but not patcher tools."""
         # Update session mode
@@ -104,7 +104,7 @@ class TestAgentsFactories:
         assert "apply_diff" not in agent_tool_names
 
     async def test_build_agent_includes_write_tools_for_coding_mode(
-        self, db_session, chat_session: ChatSession, settings, llm_settings
+        self, db_session, chat_session: ChatSession, settings, llm_settings_openai_coder
     ):
         """CODING mode should include patcher tools in addition to read-only tools."""
         # Update session mode
@@ -123,7 +123,7 @@ class TestAgentsFactories:
         assert "apply_diff" in agent_tool_names
 
     async def test_build_agent_includes_search_tools_and_file_tools_in_coding_mode(
-        self, db_session, chat_session: ChatSession, settings, llm_settings
+        self, db_session, chat_session: ChatSession, settings, llm_settings_openai_coder
     ):
         """CODING mode should include SearchTools and FileTools in addition to patcher tools."""
         # Update session mode
@@ -143,7 +143,7 @@ class TestAgentsFactories:
         assert "read_files" in agent_tool_names
 
     async def test_build_agent_has_no_tools_in_chat_mode(
-        self, db_session, chat_session: ChatSession, settings, llm_settings
+        self, db_session, chat_session: ChatSession, settings, llm_settings_openai_coder
     ):
         """CHAT mode should have no tools and a minimal system prompt."""
         # Update session mode
@@ -160,7 +160,7 @@ class TestAgentsFactories:
         assert len(agent.tools) == 0
 
     async def test_build_agent_has_no_tools_in_single_shot_mode(
-        self, db_session, chat_session: ChatSession, settings, llm_settings
+        self, db_session, chat_session: ChatSession, settings, llm_settings_openai_coder
     ):
         """SINGLE_SHOT mode should have no tools and should use the single-shot identity."""
         # Update session mode
@@ -179,7 +179,7 @@ class TestAgentsFactories:
         assert "Single-shot mode" in agent.system_prompt
 
     async def test_build_agent_builds_system_prompt_from_agent_context_service(
-        self, db_session, chat_session: ChatSession, settings, llm_settings
+        self, db_session, chat_session: ChatSession, settings, llm_settings_openai_coder
     ):
         """build_agent should obtain system_prompt from AgentContextService.build_system_prompt."""
         agent = await build_agent(db_session, chat_session.id)
@@ -187,7 +187,7 @@ class TestAgentsFactories:
         assert "<IDENTITY>" in agent.system_prompt
 
     async def test_build_agent_uses_coding_llm_settings_for_llm_client(
-        self, db_session, chat_session: ChatSession, settings, llm_settings
+        self, db_session, chat_session: ChatSession, settings, llm_settings_openai_coder
     ):
         """build_agent should use LLM settings (model, temperature) to build an LLM client."""
         # We rely on default settings here.
@@ -197,7 +197,7 @@ class TestAgentsFactories:
         # but successful construction implies it worked.
 
     async def test_build_agent_temperature_comes_from_settings_service(
-        self, db_session, chat_session: ChatSession, settings, llm_settings
+        self, db_session, chat_session: ChatSession, settings, llm_settings_openai_coder
     ):
         """build_agent should use Settings.coding_llm_temperature for LLM temperature."""
         # This is an integration test, we assume defaults.
@@ -207,7 +207,7 @@ class TestAgentsFactories:
             assert agent.llm.temperature is not None
 
     async def test_build_agent_uses_operational_mode_from_session_service(
-        self, db_session, chat_session: ChatSession, settings, llm_settings
+        self, db_session, chat_session: ChatSession, settings, llm_settings_openai_coder
     ):
         """build_agent should read OperationalMode from SessionService.get_operational_mode."""
         # Update session mode
@@ -224,7 +224,7 @@ class TestAgentsFactories:
         assert len(agent.tools) == 0
 
     async def test_build_agent_passes_turn_id_to_file_and_patcher_tools(
-        self, db_session, chat_session: ChatSession, settings, llm_settings
+        self, db_session, chat_session: ChatSession, settings, llm_settings_openai_coder
     ):
         """build_agent should pass turn_id into file/patcher tools to support per-turn behavior."""
         # We can verify the factory accepts it and runs.
@@ -233,14 +233,14 @@ class TestAgentsFactories:
         assert isinstance(agent, CoderAgent)
 
     async def test_build_agent_passes_session_id_to_tool_constructors(
-        self, db_session, chat_session: ChatSession, settings, llm_settings
+        self, db_session, chat_session: ChatSession, settings, llm_settings_openai_coder
     ):
         """build_agent should pass session_id into SearchTools/FileTools/PatcherTools constructors."""
         agent = await build_agent(db_session, chat_session.id)
         assert isinstance(agent, CoderAgent)
 
     async def test_build_agent_passes_session_id_and_mode_to_system_prompt_builder(
-        self, db_session, chat_session: ChatSession, settings, llm_settings
+        self, db_session, chat_session: ChatSession, settings, llm_settings_openai_coder
     ):
         """build_agent should call AgentContextService.build_system_prompt(session_id, operational_mode=...)."""
         # Update session mode
@@ -258,7 +258,7 @@ class TestAgentsFactories:
         assert "iterating over a TODO list" in agent.system_prompt
 
     async def test_build_agent_does_not_construct_any_tools_in_chat_mode(
-        self, db_session, chat_session: ChatSession, settings, llm_settings
+        self, db_session, chat_session: ChatSession, settings, llm_settings_openai_coder
     ):
         """CHAT mode should skip constructing SearchTools/FileTools/PatcherTools entirely."""
         # Update session mode
@@ -274,7 +274,7 @@ class TestAgentsFactories:
         assert len(agent.tools) == 0
 
     async def test_build_agent_does_not_construct_any_tools_in_single_shot_mode(
-        self, db_session, chat_session: ChatSession, settings, llm_settings
+        self, db_session, chat_session: ChatSession, settings, llm_settings_openai_coder
     ):
         """SINGLE_SHOT mode should skip constructing SearchTools/FileTools/PatcherTools entirely."""
         # Update session mode
@@ -290,7 +290,7 @@ class TestAgentsFactories:
         assert len(agent.tools) == 0
 
     async def test_build_agent_does_not_include_file_or_search_tools_outside_coding_ask_planner(
-        self, db_session, chat_session: ChatSession, settings, llm_settings
+        self, db_session, chat_session: ChatSession, settings, llm_settings_openai_coder
     ):
         """build_agent should not include SearchTools/FileTools for modes outside CODING/ASK/PLANNER."""
         # Update session mode
