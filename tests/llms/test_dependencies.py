@@ -15,16 +15,16 @@ def test_llms_dependencies__module_exposes_expected_dependency_factories(depende
     assert hasattr(dependencies, dependency_name)
 
 
-async def test_get_llm_service__returns_llm_service_instance(db_session):
+async def test_get_llm_service__returns_llm_service_instance(db_session_mock):
     """Scenario: resolve the llm service via dependency.
 
     Asserts:
         - returns an LLMService instance
         - service is wired to the provided AsyncSession
     """
-    service = await dependencies.get_llm_service(db_session)
+    service = await dependencies.get_llm_service(db_session_mock)
     assert isinstance(service, LLMService)
-    assert service.llm_settings_repo.db is db_session
+    assert service.llm_settings_repo.db is db_session_mock
 
 
 def test_get_llm_service__is_async_dependency():
@@ -36,7 +36,7 @@ def test_get_llm_service__is_async_dependency():
     assert inspect.iscoroutinefunction(dependencies.get_llm_service)
 
 
-async def test_get_llm_service__propagates_factory_errors(db_session, mocker):
+async def test_get_llm_service__propagates_factory_errors(db_session_mock, mocker):
     """Scenario: underlying build_llm_service raises.
 
     Asserts:
@@ -45,4 +45,4 @@ async def test_get_llm_service__propagates_factory_errors(db_session, mocker):
     mocker.patch("app.llms.dependencies.build_llm_service", side_effect=ValueError("Boom"))
     
     with pytest.raises(ValueError, match="Boom"):
-        await dependencies.get_llm_service(db_session)
+        await dependencies.get_llm_service(db_session_mock)

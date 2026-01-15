@@ -19,37 +19,37 @@ async def test_build_llm_factory_instance__returns_llm_factory_singleton():
     assert factory1 is factory2 # different from others. here, we WANT the same .-.
 
 
-async def test_build_llm_service__returns_llm_service(db_session):
+async def test_build_llm_service__returns_llm_service(db_session_mock):
     """Scenario: build_llm_service is called with a DB session.
 
     Asserts:
         - returns an LLMService instance
     """
-    service = await build_llm_service(db_session)
+    service = await build_llm_service(db_session_mock)
     assert isinstance(service, LLMService)
 
 
-async def test_build_llm_service__wires_repository_and_factory(db_session):
+async def test_build_llm_service__wires_repository_and_factory(db_session_mock):
     """Scenario: build_llm_service builds all dependencies.
 
     Asserts:
-        - service.llm_settings_repo is an LLMSettingsRepository bound to db_session
+        - service.llm_settings_repo is an LLMSettingsRepository bound to db_session_mock
         - service.llm_factory is an LLMFactory
     """
-    service = await build_llm_service(db_session)
-    assert service.llm_settings_repo.db is db_session
+    service = await build_llm_service(db_session_mock)
+    assert service.llm_settings_repo.db is db_session_mock
     assert isinstance(service.llm_factory, LLMFactory)
 
 
-async def test_build_llm_service__factory_is_cached_between_calls(db_session):
+async def test_build_llm_service__factory_is_cached_between_calls(db_session_mock):
     """Scenario: build_llm_service called multiple times.
 
     Asserts:
         - underlying LLMFactory instance is reused (cached)
         - repository instances are new per call (request-scoped)
     """
-    service1 = await build_llm_service(db_session)
-    service2 = await build_llm_service(db_session)
+    service1 = await build_llm_service(db_session_mock)
+    service2 = await build_llm_service(db_session_mock)
 
     assert service1.llm_factory is service2.llm_factory
     assert service1.llm_settings_repo is not service2.llm_settings_repo

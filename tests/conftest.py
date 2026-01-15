@@ -19,6 +19,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.pool import StaticPool
+from unittest.mock import create_autospec
 
 from app.commons.dependencies import get_db
 from app.core.db import Base
@@ -89,6 +90,12 @@ async def db_session(
             yield session
         finally:
             await session.rollback()
+
+
+@pytest.fixture(scope="function")
+def db_session_mock() -> AsyncSession:
+    """Lightweight AsyncSession mock for wiring/unit tests (deps/factories)."""
+    return create_autospec(AsyncSession, instance=True)
 
 
 @pytest.fixture(scope="function")
