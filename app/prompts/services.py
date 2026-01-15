@@ -39,7 +39,7 @@ class PromptService:
 
     async def create_project_prompt(self, prompt_in: PromptCreate) -> Prompt:
         """Creates a project-specific prompt, ensuring an active project exists."""
-        active_project = await self.project_service.project_repo.get_active()
+        active_project = await self.project_service.get_active_project()
         if not active_project:
             raise ActiveProjectRequiredException("An active project is required to create a project prompt.")
         internal_create = PromptInternalCreate(
@@ -81,7 +81,7 @@ class PromptService:
         for the currently active project.
         Returns the prompt and a boolean indicating if it was created (True) or updated (False).
         """
-        active_project = await self.project_service.project_repo.get_active()
+        active_project = await self.project_service.get_active_project()
         if not active_project:
             raise ActiveProjectRequiredException("An active project is required to create a blueprint prompt.")
 
@@ -107,14 +107,14 @@ class PromptService:
 
     async def get_project_blueprint_prompt(self) -> Prompt | None:
         """Retrieves the blueprint prompt for the currently active project."""
-        active_project = await self.project_service.project_repo.get_active()
+        active_project = await self.project_service.get_active_project()
         if not active_project:
             return None
         return await self.prompt_repo.find_project_blueprint_prompt(project_id=active_project.id)
 
     async def delete_project_blueprint_prompt(self) -> None:
         """Finds and deletes the blueprint prompt for the currently active project."""
-        active_project = await self.project_service.project_repo.get_active()
+        active_project = await self.project_service.get_active_project()
         if not active_project:
             raise ActiveProjectRequiredException("An active project is required to delete a blueprint prompt.")
 
@@ -126,7 +126,7 @@ class PromptService:
 
     async def toggle_active_attachment_for_current_project(self, prompt_id: int) -> tuple[Prompt, bool]:
         """Toggles the attachment of a prompt to the currently active project."""
-        active_project = await self.project_service.project_repo.get_active()
+        active_project = await self.project_service.get_active_project()
         if not active_project:
             raise ActiveProjectRequiredException("An active project is required to attach or detach prompts.")
 
@@ -158,7 +158,7 @@ class PromptPageService:
         return {"prompt_type": PromptType.GLOBAL}
 
     async def get_new_project_prompt_form_context(self) -> dict:
-        active_project = await self.project_service.project_repo.get_active()
+        active_project = await self.project_service.get_active_project()
         if not active_project:
             raise ActiveProjectRequiredException("An active project is required to create a project prompt.")
         return {"prompt_type": PromptType.PROJECT}
@@ -173,7 +173,7 @@ class PromptPageService:
 
     async def get_prompt_view_context(self, prompt_id: int) -> dict:
         prompt = await self.prompt_service.get_prompt(prompt_id=prompt_id)
-        active_project = await self.project_service.project_repo.get_active()
+        active_project = await self.project_service.get_active_project()
         attached_prompt_ids = await self._get_attached_prompt_ids(active_project)
         is_attached = prompt.id in attached_prompt_ids
         return {"prompt": prompt, "is_attached": is_attached}
@@ -187,7 +187,7 @@ class PromptPageService:
         }
 
     async def get_global_prompts_list_data(self) -> dict:
-        active_project = await self.project_service.project_repo.get_active()
+        active_project = await self.project_service.get_active_project()
         prompts = await self.prompt_service.get_global_prompts()
         attached_prompt_ids = await self._get_attached_prompt_ids(active_project)
         return {
@@ -198,7 +198,7 @@ class PromptPageService:
         }
 
     async def get_project_prompts_list_data(self) -> dict:
-        active_project = await self.project_service.project_repo.get_active()
+        active_project = await self.project_service.get_active_project()
         prompts = await self.prompt_service.get_project_prompts(project=active_project)
         attached_prompt_ids = await self._get_attached_prompt_ids(active_project)
         return {

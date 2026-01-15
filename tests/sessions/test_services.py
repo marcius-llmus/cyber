@@ -44,11 +44,7 @@ async def test_set_active_session_raises_when_session_not_found(
 
 async def test_delete_session_checks_active_project(session_service: SessionService, project_service_mock: MagicMock):
     """Verify error if no active project."""
-    # Setup
-    # Mock project_repo.get_active() to return None
-    project_repo_mock = MagicMock()
-    project_repo_mock.get_active = AsyncMock(return_value=None)
-    project_service_mock.project_repo = project_repo_mock
+    project_service_mock.get_active_project = AsyncMock(return_value=None)
 
     # Execute & Verify
     with pytest.raises(ActiveProjectRequiredException):
@@ -58,9 +54,7 @@ async def test_delete_session_checks_active_project(session_service: SessionServ
 async def test_delete_session_returns_active_status(session_service: SessionService, chat_session_repository_mock: MagicMock, project_service_mock: MagicMock):
     """Verify return value indicates if deleted session was active."""
     # Setup
-    project_repo_mock = MagicMock()
-    project_repo_mock.get_active = AsyncMock(return_value=MagicMock(id=1))
-    project_service_mock.project_repo = project_repo_mock
+    project_service_mock.get_active_project = AsyncMock(return_value=MagicMock(id=1))
 
     # Case 1: Session was active
     active_session = MagicMock(is_active=True)
@@ -125,16 +119,14 @@ async def test_session_page_service_logic(session_service_mock: MagicMock, proje
     page_service = SessionPageService(session_service=session_service_mock, project_service=project_service_mock)
 
     # Case 1: No active project
-    project_repo_mock = MagicMock()
-    project_repo_mock.get_active = AsyncMock(return_value=None)
-    project_service_mock.project_repo = project_repo_mock
+    project_service_mock.get_active_project = AsyncMock(return_value=None)
 
     data = await page_service.get_sessions_page_data()
     assert data == {"sessions": []}
 
     # Case 2: Active project
     mock_project = MagicMock(id=99)
-    project_repo_mock.get_active = AsyncMock(return_value=mock_project)
+    project_service_mock.get_active_project = AsyncMock(return_value=mock_project)
     session_service_mock.get_sessions_by_project = AsyncMock(return_value=["s1", "s2"])
 
     data = await page_service.get_sessions_page_data()
@@ -184,9 +176,7 @@ async def test_get_session_returns_session(
 
 async def test_delete_session_not_found(session_service: SessionService, chat_session_repository_mock: MagicMock, project_service_mock: MagicMock):
     """Verify delete raises exception if session not found."""
-    project_repo_mock = MagicMock()
-    project_repo_mock.get_active = AsyncMock(return_value=MagicMock(id=1))
-    project_service_mock.project_repo = project_repo_mock
+    project_service_mock.get_active_project = AsyncMock(return_value=MagicMock(id=1))
 
     chat_session_repository_mock.get.return_value = None
 

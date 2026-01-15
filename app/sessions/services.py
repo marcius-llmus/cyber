@@ -43,7 +43,7 @@ class SessionService:
         Returns:
             bool: True if the deleted session was the active one, False otherwise.
         """
-        active_project = await self.project_service.project_repo.get_active()
+        active_project = await self.project_service.get_active_project()
         if not active_project:
             raise ActiveProjectRequiredException("Cannot delete session without an active project.")
 
@@ -85,6 +85,6 @@ class SessionPageService:
         self.project_service = project_service
 
     async def get_sessions_page_data(self) -> dict:
-        active_project = await self.project_service.project_repo.get_active()
+        active_project = await self.project_service.get_active_project()
         sessions = await self.session_service.get_sessions_by_project(project_id=active_project.id) if active_project else []
         return {"sessions": sessions}

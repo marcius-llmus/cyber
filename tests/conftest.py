@@ -7,6 +7,7 @@ agents app can evolve independently without leaking fixtures across domains.
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator, Generator
+from contextlib import asynccontextmanager
 
 import pytest
 from fastapi.testclient import TestClient
@@ -24,13 +25,13 @@ from app.core.db import Base
 from app.main import app
 
 
-
 pytest_plugins = [
     "tests.agents.fixtures",
     "tests.projects.fixtures",
     "tests.sessions.fixtures",
     "tests.settings.fixtures",
     "tests.llms.fixtures",
+    "tests.chat.fixtures",
 ]
 
 @pytest.fixture(scope="session")
@@ -95,6 +96,14 @@ def client(db_session: AsyncSession) -> Generator[TestClient, None, None]:
     """
     Provides a TestClient with the database dependency overridden.
     """
+
+    # here I am mocking lifespan because it is not really needed for request
+    # in case in the future we start needing it, we can set up a semi-real one
+    @asynccontextmanager
+    async def mock_lifespan(_app):  # noqa: ANN001
+        yield
+
+    app.router.lifespan_context = mock_lifespan
 
     async def get_db_override() -> AsyncGenerator[AsyncSession, None]:
         yield db_session
