@@ -31,6 +31,7 @@ pytest_plugins = [
     "tests.sessions.fixtures",
     "tests.settings.fixtures",
     "tests.llms.fixtures",
+    "tests.chat.fixtures",
 ]
 
 @pytest.fixture(scope="session")
