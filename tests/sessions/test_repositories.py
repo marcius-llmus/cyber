@@ -1,9 +1,12 @@
 import datetime
+import pytest
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.projects.models import Project
 from app.sessions.repositories import ChatSessionRepository
 from app.sessions.models import ChatSession
+from app.core.enums import OperationalMode
 
 
 async def test_list_by_project_ordering(db_session: AsyncSession, chat_session_repository: ChatSessionRepository, project: Project):
@@ -77,3 +80,50 @@ async def test_activate(db_session: AsyncSession, chat_session_repository: ChatS
     # Verify persistence
     await db_session.refresh(chat_session)
     assert chat_session.is_active
+
+
+@pytest.mark.parametrize("has_loaded_instance", [True, False])
+async def test_chat_session_repository__deactivate_all_for_project__flushes_changes(
+    has_loaded_instance: bool,
+    db_session: AsyncSession,
+    project: Project,
+):
+    """deactivate_all_for_project should flush so subsequent reads see the changes.
+
+    Covers:
+        - instances already loaded in the identity map
+        - no pre-loaded instances
+
+    Asserts:
+        - after calling deactivate_all_for_project, a SELECT sees no active sessions
+    """
+    s1 = ChatSession(
+        name="S1",
+        project_id=project.id,
+        is_active=True,
+        operational_mode=OperationalMode.CODING,
+    )
+    s2 = ChatSession(
+        name="S2",
+        project_id=project.id,
+        is_active=True,
+        operational_mode=OperationalMode.CODING,
+    )
+    db_session.add_all([s1, s2])
+    await db_session.flush()
+
+    if has_loaded_instance:
+        loaded = await db_session.get(ChatSession, s1.id)
+        assert loaded is not None
+        assert loaded.is_active is True
+
+    repo = ChatSessionRepository(db_session)
+    await repo.deactivate_all_for_project(project.id)
+
+    result = await db_session.execute(
+        select(ChatSession).where(
+            ChatSession.project_id == project.id,
+            ChatSession.is_active.is_(True),
+        )
+    )
+    assert result.scalars().all() == []
