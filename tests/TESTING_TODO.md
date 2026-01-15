@@ -7,6 +7,7 @@ This file tracks which app test suites have been added under `tests/`.
 - [x] `agents`
 - [x] `projects`
 - [x] `llms`
+- [x] `sessions`
 
 ## Missing (not tested yet)
 
@@ -19,6 +20,5 @@ This file tracks which app test suites have been added under `tests/`.
 - [ ] `logs`
 - [ ] `patches`
 - [ ] `prompts`
-- [ ] `sessions`
 - [ ] `settings`
 - [ ] `usage`
