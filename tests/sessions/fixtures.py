@@ -43,7 +43,7 @@ def session_service(
     """Provides a SessionService instance with MOCKED dependencies."""
     return SessionService(
         session_repo=chat_session_repository_mock,
-        project_service=project_service_mock
+        project_service=project_service_mock,
     )
 
 
@@ -68,6 +68,7 @@ def override_get_session_service(session_service_mock: MagicMock):
 @pytest.fixture
 def override_get_session_page_service(session_page_service_mock: MagicMock):
     from app.main import app
+
     app.dependency_overrides[get_session_page_service] = lambda: session_page_service_mock
     yield
     app.dependency_overrides.clear()

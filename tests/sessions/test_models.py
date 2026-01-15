@@ -51,10 +51,10 @@ async def test_chat_session_relationships(db_session: AsyncSession, project: Pro
 
 async def test_chat_session_cascade_from_project(db_session: AsyncSession, project: Project):
     """Verify session is deleted when project is deleted."""
-    session = ChatSession(name="Cascade Test", project_id=project.id)
-    session_id = session.id
+    session = ChatSession(name="Cascade Test", project_id=project.id, operational_mode=OperationalMode.CODING)
     db_session.add(session)
     await db_session.flush()
+    session_id = session.id
 
     await db_session.delete(project)
     await db_session.flush()
