@@ -32,7 +32,12 @@ class TestMessageRepository:
 
     async def test_delete_by_session_id_deletes_all_messages_for_session(self, message_repository, chat_session, db_session):
         """delete_by_session_id removes all messages for the given session_id and flushes."""
-        msg = Message(session_id=chat_session.id, turn_id="t1", role=MessageRole.USER)
+        msg = Message(
+            session_id=chat_session.id,
+            turn_id="t1",
+            role=MessageRole.USER,
+            blocks=[{"type": "text", "content": "hi"}],
+        )
         db_session.add(msg)
         await db_session.flush()
 
