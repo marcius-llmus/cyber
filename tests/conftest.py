@@ -24,7 +24,6 @@ from app.core.db import Base
 from app.main import app
 
 
-
 pytest_plugins = [
     "tests.agents.fixtures",
     "tests.projects.fixtures",
