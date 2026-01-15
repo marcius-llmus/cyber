@@ -10,14 +10,14 @@ from app.projects.models import Project
 class TestChatService:
     async def test_get_or_create_active_session_raises_when_no_active_project(self, chat_service, project_service_mock):
         """Raises ActiveProjectRequiredException when there is no active project."""
-        project_service_mock.project_repo.get_active.return_value = None
+        project_service_mock.get_active_project.return_value = None
         with pytest.raises(ActiveProjectRequiredException):
             await chat_service.get_or_create_active_session()
 
     async def test_get_or_create_active_session_returns_session_for_active_project(self, chat_service, project_service_mock, session_service_mock):
         """Returns most-recent session for active project when it exists, otherwise creates a new one."""
         project = Project(id=1, name="P1")
-        project_service_mock.project_repo.get_active.return_value = project
+        project_service_mock.get_active_project.return_value = project
         
         expected_session = ChatSession(id=10, project_id=1)
         session_service_mock.get_most_recent_session_by_project.return_value = expected_session

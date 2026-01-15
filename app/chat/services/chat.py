@@ -25,7 +25,7 @@ class ChatService:
         self.project_service = project_service
 
     async def get_or_create_active_session(self) -> ChatSession:
-        active_project = await self.project_service.project_repo.get_active()
+        active_project = await self.project_service.get_active_project()
         if not active_project:
             raise ActiveProjectRequiredException("Cannot start a chat without an active project.")
         return await self.get_or_create_session_for_project(active_project.id)

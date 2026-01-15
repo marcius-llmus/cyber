@@ -1,5 +1,4 @@
 from unittest.mock import MagicMock
-from unittest.mock import AsyncMock
 import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -37,10 +36,6 @@ def chat_service(
     session_service_mock: MagicMock,
     project_service_mock: MagicMock,
 ) -> ChatService:
-    # Mock the project_repo attribute on the service mock since it's accessed directly
-    project_repo_mock = MagicMock()
-    project_repo_mock.get_active = AsyncMock()
-    project_service_mock.project_repo = project_repo_mock
     return ChatService(
         message_repo=message_repository_mock,
         session_service=session_service_mock,
