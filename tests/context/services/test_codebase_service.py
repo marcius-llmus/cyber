@@ -201,7 +201,6 @@ async def test_write_file(temp_codebase):
     assert (Path(temp_codebase.root) / "new_dir/new_file.txt").read_text() == "content"
 
 
-@pytest.mark.asyncio
 async def test_resolve_file_patterns_complex(temp_codebase):
     """Test complex glob pattern resolution."""
     service = CodebaseService()
