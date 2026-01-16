@@ -34,7 +34,7 @@ class TestWorkflowService:
         # Ensure workflow_mock has attributes expected by Context if any
         workflow_mock._timeout = 10.0
 
-        mocker.patch("app.agents.services.Context.from_dict", return_value=Context(workflow_mock))
+        mocker.patch("app.agents.services.workflows.Context.from_dict", return_value=Context(workflow_mock))
         context = await workflow_service.get_context(session_id, workflow_mock)
 
         assert isinstance(context, Context)
