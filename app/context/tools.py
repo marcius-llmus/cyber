@@ -55,6 +55,7 @@ NOTES:
 - Guideline: Avoid including files already in the active context to reduce redundant reads.
 - Provide specific paths or narrow globs to limit scope and noise.
 - Supports multiple patterns to target different areas simultaneously.
+- Important: Specificity. Provide specific paths or narrow globs to limit scope and noise.
 """
 
 
