@@ -36,11 +36,16 @@ class TestChatDependencies:
         assert service is chat_service_mock
         build_chat_service_mock.assert_awaited_once_with(db_session_mock)
 
-    async def test_get_chat_turn_service_wires_chat_turn_repository(self, db_session_mock):
-        """get_chat_turn_service returns ChatTurnService wired with ChatTurnRepository."""
-        service = await get_chat_turn_service(db=db_session_mock)
-        assert isinstance(service, ChatTurnService)
-        assert isinstance(service.turn_repo, ChatTurnRepository)
+    async def test_get_chat_turn_service_wires_chat_turn_repository(self, db_session_mock, chat_turn_service_mock):
+        """get_chat_turn_service delegates to build_chat_turn_service and returns its result."""
+        with patch(
+            "app.chat.dependencies.build_chat_turn_service",
+            new=AsyncMock(return_value=chat_turn_service_mock),
+        ) as build_chat_turn_service_mock:
+            service = await get_chat_turn_service(db=db_session_mock)
+
+        assert service is chat_turn_service_mock
+        build_chat_turn_service_mock.assert_awaited_once_with(db_session_mock)
 
     async def test_get_chat_service_propagates_factory_errors(self, db_session_mock):
         """get_chat_service surfaces exceptions raised by build_chat_service."""

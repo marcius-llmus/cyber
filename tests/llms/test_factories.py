@@ -21,7 +21,7 @@ async def test_build_llm_factory_instance__returns_llm_factory_singleton():
     assert factory1 is factory2 # different from others. here, we WANT the same .-. (lru cached)
 
 
-async def test_build_llm_service__returns_llm_service(db_session_mock, mocker):
+async def test_build_llm_service__returns_llm_service(db_session_mock, mocker, llm_factory_instance_mock):
     """Scenario: build_llm_service is called with a DB session.
 
     Asserts:
@@ -29,7 +29,7 @@ async def test_build_llm_service__returns_llm_service(db_session_mock, mocker):
     """
     build_factory_instance_mock = mocker.patch(
         "app.llms.factories.build_llm_factory_instance",
-        new=AsyncMock(return_value=LLMFactory()),
+        new=AsyncMock(return_value=llm_factory_instance_mock),
     )
 
     service = await build_llm_service(db_session_mock)
