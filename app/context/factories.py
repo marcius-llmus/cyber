@@ -23,12 +23,14 @@ async def build_codebase_service() -> CodebaseService:
 
 async def build_repo_map_service(db: AsyncSession) -> RepoMapService:
     context_service = await build_workspace_service(db)
+    project_service = await build_project_service(db)
     codebase_service = await build_codebase_service()
     settings_service = await build_settings_service(db)
     return RepoMapService(
         context_service=context_service,
         codebase_service=codebase_service,
-        settings_service=settings_service
+        settings_service=settings_service,
+        project_service=project_service,
     )
 
 async def build_search_service(db: AsyncSession) -> SearchService:

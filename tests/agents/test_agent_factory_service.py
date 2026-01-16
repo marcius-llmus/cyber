@@ -7,7 +7,6 @@ without touching the database.
 from __future__ import annotations
 
 from decimal import Decimal
-from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
@@ -15,6 +14,7 @@ import pytest
 from app.agents.services.agent_factory import AgentFactoryService
 from app.core.enums import OperationalMode
 from app.llms.enums import LLMModel
+from app.settings.models import Settings
 
 
 class TestAgentFactoryService:
@@ -26,16 +26,21 @@ class TestAgentFactoryService:
         session_service_mock,
         agent_context_service_mock,
         fake_llm_client,
+        llm_settings_coder_mock,
         coder_agent_mock,
         mocker,
     ):
         """Should request settings + coding llm settings and build llm client with expected args."""
 
-        settings = SimpleNamespace(coding_llm_temperature=Decimal("0.7"))
-        coder_llm_settings = SimpleNamespace(model_name=LLMModel.GPT_4O.value)
+        settings = Settings(
+            max_history_length=50,
+            coding_llm_temperature=float(Decimal("0.7")),
+            ast_token_limit=2000,
+            grep_token_limit=4000,
+        )
 
         settings_service_mock.get_settings = AsyncMock(return_value=settings)
-        llm_service_mock.get_coding_llm = AsyncMock(return_value=coder_llm_settings)
+        llm_service_mock.get_coding_llm = AsyncMock(return_value=llm_settings_coder_mock)
         llm_service_mock.get_client = AsyncMock(return_value=fake_llm_client)
         session_service_mock.get_operational_mode = AsyncMock(return_value=OperationalMode.CHAT)
         agent_context_service_mock.build_system_prompt = AsyncMock(return_value="PROMPT")
@@ -52,7 +57,7 @@ class TestAgentFactoryService:
         settings_service_mock.get_settings.assert_awaited_once_with()
         llm_service_mock.get_coding_llm.assert_awaited_once_with()
         llm_service_mock.get_client.assert_awaited_once_with(
-            model_name=LLMModel(coder_llm_settings.model_name),
+            model_name=LLMModel(llm_settings_coder_mock.model_name),
             temperature=settings.coding_llm_temperature,
         )
         session_service_mock.get_operational_mode.assert_awaited_once_with(123)
@@ -70,12 +75,20 @@ class TestAgentFactoryService:
         session_service_mock,
         agent_context_service_mock,
         fake_llm_client,
+        llm_settings_coder_mock,
         coder_agent_mock,
         mocker,
     ):
         """Should await SessionService.get_operational_mode(session_id) exactly once."""
-        settings_service_mock.get_settings = AsyncMock(return_value=SimpleNamespace(coding_llm_temperature=Decimal("0.1")))
-        llm_service_mock.get_coding_llm = AsyncMock(return_value=SimpleNamespace(model_name=LLMModel.GPT_4O.value))
+        settings_service_mock.get_settings = AsyncMock(
+            return_value=Settings(
+                max_history_length=50,
+                coding_llm_temperature=float(Decimal("0.1")),
+                ast_token_limit=2000,
+                grep_token_limit=4000,
+            )
+        )
+        llm_service_mock.get_coding_llm = AsyncMock(return_value=llm_settings_coder_mock)
         llm_service_mock.get_client = AsyncMock(return_value=fake_llm_client)
 
         session_service_mock.get_operational_mode = AsyncMock(return_value=OperationalMode.CHAT)
@@ -94,12 +107,20 @@ class TestAgentFactoryService:
         session_service_mock,
         agent_context_service_mock,
         fake_llm_client,
+        llm_settings_coder_mock,
         coder_agent_mock,
         mocker,
     ):
         """Should call AgentContextService.build_system_prompt(session_id, operational_mode=mode)."""
-        settings_service_mock.get_settings = AsyncMock(return_value=SimpleNamespace(coding_llm_temperature=Decimal("0.1")))
-        llm_service_mock.get_coding_llm = AsyncMock(return_value=SimpleNamespace(model_name=LLMModel.GPT_4O.value))
+        settings_service_mock.get_settings = AsyncMock(
+            return_value=Settings(
+                max_history_length=50,
+                coding_llm_temperature=float(Decimal("0.1")),
+                ast_token_limit=2000,
+                grep_token_limit=4000,
+            )
+        )
+        llm_service_mock.get_coding_llm = AsyncMock(return_value=llm_settings_coder_mock)
         llm_service_mock.get_client = AsyncMock(return_value=fake_llm_client)
 
         session_service_mock.get_operational_mode = AsyncMock(return_value=OperationalMode.PLANNER)
@@ -135,20 +156,29 @@ class TestAgentFactoryService:
         session_service_mock,
         agent_context_service_mock,
         fake_llm_client,
+        llm_settings_coder_mock,
         coder_agent_mock,
         mocker,
     ):
         """Should include tools based on operational mode (read-only vs patcher)."""
-        settings = SimpleNamespace(coding_llm_temperature=Decimal("0.1"))
+        settings = Settings(
+            max_history_length=50,
+            coding_llm_temperature=float(Decimal("0.1")),
+            ast_token_limit=2000,
+            grep_token_limit=4000,
+        )
         settings_service_mock.get_settings = AsyncMock(return_value=settings)
-        llm_service_mock.get_coding_llm = AsyncMock(return_value=SimpleNamespace(model_name=LLMModel.GPT_4O.value))
+        llm_service_mock.get_coding_llm = AsyncMock(return_value=llm_settings_coder_mock)
         llm_service_mock.get_client = AsyncMock(return_value=fake_llm_client)
         session_service_mock.get_operational_mode = AsyncMock(return_value=mode)
         agent_context_service_mock.build_system_prompt = AsyncMock(return_value="PROMPT")
 
-        search_tools_inst = SimpleNamespace(to_tool_list=lambda: ["S"])
-        file_tools_inst = SimpleNamespace(to_tool_list=lambda: ["F"])
-        patcher_tools_inst = SimpleNamespace(to_tool_list=lambda: ["P"])
+        search_tools_inst = mocker.MagicMock()
+        search_tools_inst.to_tool_list.return_value = ["S"]
+        file_tools_inst = mocker.MagicMock()
+        file_tools_inst.to_tool_list.return_value = ["F"]
+        patcher_tools_inst = mocker.MagicMock()
+        patcher_tools_inst.to_tool_list.return_value = ["P"]
 
         search_tools_cls_mock = mocker.patch(
             "app.agents.services.agent_factory.SearchTools",
@@ -207,20 +237,29 @@ class TestAgentFactoryService:
         session_service_mock,
         agent_context_service_mock,
         fake_llm_client,
+        llm_settings_coder_mock,
         coder_agent_mock,
         mocker,
     ):
         """Should pass turn_id into FileTools/PatcherTools constructors."""
-        settings = SimpleNamespace(coding_llm_temperature=Decimal("0.1"))
+        settings = Settings(
+            max_history_length=50,
+            coding_llm_temperature=float(Decimal("0.1")),
+            ast_token_limit=2000,
+            grep_token_limit=4000,
+        )
         settings_service_mock.get_settings = AsyncMock(return_value=settings)
-        llm_service_mock.get_coding_llm = AsyncMock(return_value=SimpleNamespace(model_name=LLMModel.GPT_4O.value))
+        llm_service_mock.get_coding_llm = AsyncMock(return_value=llm_settings_coder_mock)
         llm_service_mock.get_client = AsyncMock(return_value=fake_llm_client)
         session_service_mock.get_operational_mode = AsyncMock(return_value=OperationalMode.CODING)
         agent_context_service_mock.build_system_prompt = AsyncMock(return_value="PROMPT")
 
-        search_tools_inst = SimpleNamespace(to_tool_list=lambda: [])
-        file_tools_inst = SimpleNamespace(to_tool_list=lambda: [])
-        patcher_tools_inst = SimpleNamespace(to_tool_list=lambda: [])
+        search_tools_inst = mocker.MagicMock()
+        search_tools_inst.to_tool_list.return_value = []
+        file_tools_inst = mocker.MagicMock()
+        file_tools_inst.to_tool_list.return_value = []
+        patcher_tools_inst = mocker.MagicMock()
+        patcher_tools_inst.to_tool_list.return_value = []
 
         mocker.patch("app.agents.services.agent_factory.SearchTools", return_value=search_tools_inst)
         file_tools_cls_mock = mocker.patch(
@@ -257,10 +296,18 @@ class TestAgentFactoryService:
         agent_factory_service: AgentFactoryService,
         settings_service_mock,
         llm_service_mock,
+        llm_settings_coder_mock,
     ):
         """Should surface exceptions from LLMService.get_client."""
-        settings_service_mock.get_settings = AsyncMock(return_value=SimpleNamespace(coding_llm_temperature=Decimal("0.1")))
-        llm_service_mock.get_coding_llm = AsyncMock(return_value=SimpleNamespace(model_name=LLMModel.GPT_4O.value))
+        settings_service_mock.get_settings = AsyncMock(
+            return_value=Settings(
+                max_history_length=50,
+                coding_llm_temperature=float(Decimal("0.1")),
+                ast_token_limit=2000,
+                grep_token_limit=4000,
+            )
+        )
+        llm_service_mock.get_coding_llm = AsyncMock(return_value=llm_settings_coder_mock)
         llm_service_mock.get_client = AsyncMock(side_effect=ValueError("Boom"))
 
         with pytest.raises(ValueError, match="Boom"):
@@ -276,10 +323,18 @@ class TestAgentFactoryService:
         session_service_mock,
         agent_context_service_mock,
         fake_llm_client,
+        llm_settings_coder_mock,
     ):
         """Should surface exceptions from AgentContextService.build_system_prompt."""
-        settings_service_mock.get_settings = AsyncMock(return_value=SimpleNamespace(coding_llm_temperature=Decimal("0.1")))
-        llm_service_mock.get_coding_llm = AsyncMock(return_value=SimpleNamespace(model_name=LLMModel.GPT_4O.value))
+        settings_service_mock.get_settings = AsyncMock(
+            return_value=Settings(
+                max_history_length=50,
+                coding_llm_temperature=float(Decimal("0.1")),
+                ast_token_limit=2000,
+                grep_token_limit=4000,
+            )
+        )
+        llm_service_mock.get_coding_llm = AsyncMock(return_value=llm_settings_coder_mock)
         llm_service_mock.get_client = AsyncMock(return_value=fake_llm_client)
         session_service_mock.get_operational_mode = AsyncMock(return_value=OperationalMode.CHAT)
         agent_context_service_mock.build_system_prompt = AsyncMock(side_effect=ValueError("Boom"))

@@ -1,31 +1,32 @@
-from types import SimpleNamespace
 import pytest
-from unittest.mock import MagicMock
 from unittest.mock import AsyncMock
 from app.context.services.repomap import RepoMapService
 from app.projects.exceptions import ActiveProjectRequiredException
+from app.projects.models import Project
+from app.settings.models import Settings
 
 @pytest.fixture
-def service(workspace_service_mock, codebase_service_mock, settings_service_mock):
-    return RepoMapService(workspace_service_mock, codebase_service_mock, settings_service_mock)
+def service(workspace_service_mock, codebase_service_mock, settings_service_mock, project_service_mock):
+    return RepoMapService(workspace_service_mock, codebase_service_mock, settings_service_mock, project_service_mock)
 
-async def test_generate_repo_map_no_project(service, workspace_service_mock):
-    workspace_service_mock.project_service.get_active_project = AsyncMock(return_value=None)
+async def test_generate_repo_map_no_project(service, project_service_mock):
+    project_service_mock.get_active_project = AsyncMock(return_value=None)
     with pytest.raises(ActiveProjectRequiredException):
         await service.generate_repo_map(session_id=1)
 
-    workspace_service_mock.project_service.get_active_project.assert_awaited_once_with()
+    project_service_mock.get_active_project.assert_awaited_once_with()
 
 async def test_generate_repo_map_success(
     service, 
     workspace_service_mock, 
     codebase_service_mock, 
     settings_service_mock, 
+    project_service_mock,
     mocker
 ):
     # 1. Setup Mocks
-    project_mock = MagicMock(path="/tmp/proj")
-    workspace_service_mock.project_service.get_active_project = AsyncMock(return_value=project_mock)
+    project = Project(id=1, name="p", path="/tmp/proj")
+    project_service_mock.get_active_project = AsyncMock(return_value=project)
     
     # Codebase returns relative paths
     codebase_service_mock.resolve_file_patterns = AsyncMock(return_value=["src/main.py", "README.md"])
@@ -37,7 +38,7 @@ async def test_generate_repo_map_success(
     codebase_service_mock.filter_and_resolve_paths = AsyncMock(return_value={"/tmp/proj/other.py"})
     
     # Settings
-    settings_service_mock.get_settings = AsyncMock(return_value=SimpleNamespace(ast_token_limit=2000))
+    settings_service_mock.get_settings = AsyncMock(return_value=Settings(ast_token_limit=2000, max_history_length=0, grep_token_limit=0, diff_patches_auto_open=True, diff_patches_auto_apply=True, coding_llm_temperature=0.0))
     
     # Patch RepoMap
     repomap_cls = mocker.patch("app.context.services.repomap.RepoMap")
@@ -68,7 +69,7 @@ async def test_generate_repo_map_success(
     
     repomap_instance.generate.assert_awaited_once_with(include_active_content=False)
 
-    workspace_service_mock.project_service.get_active_project.assert_awaited_once_with()
+    project_service_mock.get_active_project.assert_awaited_once_with()
     codebase_service_mock.resolve_file_patterns.assert_awaited_once_with("/tmp/proj")
     workspace_service_mock.get_active_file_paths_abs.assert_awaited_once_with(1, "/tmp/proj")
     codebase_service_mock.filter_and_resolve_paths.assert_awaited_once_with("/tmp/proj", ["other.py"])

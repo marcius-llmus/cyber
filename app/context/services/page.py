@@ -2,17 +2,24 @@ from typing import Any, Dict, List
 from app.context.services.context import WorkspaceService
 from app.context.services.filesystem import FileSystemService
 from app.context.schemas import FileTreeNode
+from app.projects.services import ProjectService
 
 class ContextPageService:
     """
     Adapts domain data for HTML rendering.
     """
-    def __init__(self, context_service: WorkspaceService, fs_service: FileSystemService):
+    def __init__(
+        self,
+        context_service: WorkspaceService,
+        fs_service: FileSystemService,
+        project_service: ProjectService,
+    ):
         self.context_service = context_service
         self.fs_service = fs_service
+        self.project_service = project_service
 
     async def get_file_tree_page_data(self, session_id: int) -> dict:
-        project = await self.context_service.project_service.get_active_project()
+        project = await self.project_service.get_active_project()
         if not project:
             return {"file_tree": {}}
 

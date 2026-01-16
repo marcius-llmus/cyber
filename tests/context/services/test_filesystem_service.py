@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 from app.context.services.filesystem import FileSystemService
 from app.projects.exceptions import ActiveProjectRequiredException
 from app.context.schemas import FileTreeNode, FileReadResult, FileStatus
+from app.projects.models import Project
 
 
 @pytest.fixture
@@ -19,8 +20,8 @@ async def test_read_file_no_project(service, project_service_mock):
 
 
 async def test_read_file_success(service, project_service_mock, codebase_service_mock):
-    project_mock = MagicMock(path="/tmp/proj")
-    project_service_mock.get_active_project = AsyncMock(return_value=project_mock)
+    project = Project(id=1, name="p", path="/tmp/proj")
+    project_service_mock.get_active_project = AsyncMock(return_value=project)
     expected = FileReadResult(file_path="test.py", status=FileStatus.SUCCESS)
     codebase_service_mock.read_file = AsyncMock(return_value=expected)
 
@@ -40,8 +41,8 @@ async def test_read_files_no_project(service, project_service_mock):
 
 
 async def test_read_files_success(service, project_service_mock, codebase_service_mock):
-    project_mock = MagicMock(path="/tmp/proj")
-    project_service_mock.get_active_project = AsyncMock(return_value=project_mock)
+    project = Project(id=1, name="p", path="/tmp/proj")
+    project_service_mock.get_active_project = AsyncMock(return_value=project)
     
     # Mock resolution and reading
     codebase_service_mock.resolve_file_patterns = AsyncMock(return_value=["a.py", "b.py"])
@@ -63,8 +64,8 @@ async def test_list_files_no_project(service, project_service_mock):
 
 
 async def test_list_files_success(service, project_service_mock, codebase_service_mock):
-    project_mock = MagicMock(path="/tmp/proj")
-    project_service_mock.get_active_project = AsyncMock(return_value=project_mock)
+    project = Project(id=1, name="p", path="/tmp/proj")
+    project_service_mock.get_active_project = AsyncMock(return_value=project)
     codebase_service_mock.list_dir = AsyncMock(return_value=["file.txt"])
     
     result = await service.list_files("subdir")
@@ -83,9 +84,7 @@ async def test_write_file_no_project(service, project_service_mock):
 
 
 async def test_write_file_success(service, project_service_mock, codebase_service_mock):
-    project_service_mock.get_active_project = AsyncMock(
-        return_value=type("P", (), {"path": "/tmp/proj"})()
-    )
+    project_service_mock.get_active_project = AsyncMock(return_value=Project(id=1, name="p", path="/tmp/proj"))
     
     await service.write_file("test.py", "content")
     
@@ -101,9 +100,7 @@ async def test_get_project_file_tree_no_project(service, project_service_mock):
 
 
 async def test_get_project_file_tree_success(service, project_service_mock, codebase_service_mock):
-    project_service_mock.get_active_project = AsyncMock(
-        return_value=type("P", (), {"path": "/tmp/proj"})()
-    )
+    project_service_mock.get_active_project = AsyncMock(return_value=Project(id=1, name="p", path="/tmp/proj"))
     tree = [FileTreeNode(name="root", path="root", is_dir=True)]
     codebase_service_mock.build_file_tree = AsyncMock(return_value=tree)
     

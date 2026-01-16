@@ -140,6 +140,18 @@ def override_get_llm_service(client, llm_service_mock: MagicMock):
 
 
 @pytest.fixture
+def llm_settings_coder_mock() -> LLMSettings:
+    return LLMSettings(
+        id=100,
+        model_name=LLMModel.GPT_4O,
+        provider=LLMProvider.OPENAI,
+        api_key="sk-openai",
+        context_window=128000,
+        active_role=LLMRole.CODER,
+    )
+
+
+@pytest.fixture
 async def llm_settings_seed_many(db_session) -> list[LLMSettings]:
     rows = [
         LLMSettings(

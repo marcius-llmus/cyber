@@ -1,28 +1,28 @@
 import pytest
-from unittest.mock import MagicMock
 from unittest.mock import AsyncMock
+from app.projects.models import Project
 from app.context.services.page import ContextPageService
 from app.context.schemas import FileTreeNode
+from app.context.models import ContextFile
 
 @pytest.fixture
-def service(workspace_service_mock, file_system_service_mock):
-    return ContextPageService(workspace_service_mock, file_system_service_mock)
+def service(workspace_service_mock, file_system_service_mock, project_service_mock):
+    return ContextPageService(workspace_service_mock, file_system_service_mock, project_service_mock)
 
-async def test_get_file_tree_no_project(service, workspace_service_mock):
+async def test_get_file_tree_no_project(service, project_service_mock):
     """Should return empty tree if no active project."""
-    workspace_service_mock.project_service.get_active_project = AsyncMock(return_value=None)
+    project_service_mock.get_active_project = AsyncMock(return_value=None)
     
     data = await service.get_file_tree_page_data(session_id=1)
     assert data == {"file_tree": {}}
 
-    workspace_service_mock.project_service.get_active_project.assert_awaited_once_with()
+    project_service_mock.get_active_project.assert_awaited_once_with()
 
-async def test_get_file_tree_success(service, workspace_service_mock, file_system_service_mock):
+async def test_get_file_tree_success(service, project_service_mock, workspace_service_mock, file_system_service_mock):
     """Should return transformed tree with selection state."""
     # 1. Setup Project
-    project_mock = MagicMock()
-    project_mock.name = "MyProject"
-    workspace_service_mock.project_service.get_active_project = AsyncMock(return_value=project_mock)
+    project_mock = Project(id=1, name="MyProject", path="/tmp/proj")
+    project_service_mock.get_active_project = AsyncMock(return_value=project_mock)
 
     # 2. Setup File System Tree
     # Structure:
@@ -37,9 +37,8 @@ async def test_get_file_tree_success(service, workspace_service_mock, file_syste
     ])
 
     # 3. Setup Active Context (Selected files)
-    context_file_mock = MagicMock()
-    context_file_mock.file_path = "src/main.py"
-    workspace_service_mock.get_active_context = AsyncMock(return_value=[context_file_mock])
+    context_file = ContextFile(session_id=1, file_path="src/main.py")
+    workspace_service_mock.get_active_context = AsyncMock(return_value=[context_file])
 
     # Execute
     data = await service.get_file_tree_page_data(session_id=1)
@@ -68,11 +67,11 @@ async def test_get_file_tree_success(service, workspace_service_mock, file_syste
     # Verify interactions
     file_system_service_mock.get_project_file_tree.assert_awaited_once_with()
     workspace_service_mock.get_active_context.assert_awaited_once_with(1)
-    workspace_service_mock.project_service.get_active_project.assert_awaited_once_with()
+    project_service_mock.get_active_project.assert_awaited_once_with()
 
 async def test_get_context_files_page_data(service, workspace_service_mock):
     """Should return active context files."""
-    files = [MagicMock(id=1), MagicMock(id=2)]
+    files = [ContextFile(id=1, session_id=99, file_path="a.py"), ContextFile(id=2, session_id=99, file_path="b.py")]
     workspace_service_mock.get_active_context = AsyncMock(return_value=files)
     
     data = await service.get_context_files_page_data(session_id=99)

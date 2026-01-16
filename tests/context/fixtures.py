@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from types import SimpleNamespace
 import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -250,7 +249,6 @@ def workspace_service(
 @pytest.fixture
 def workspace_service_mock(mocker: MockerFixture) -> MagicMock:
     service = mocker.create_autospec(WorkspaceService, instance=True)
-    service.project_service = mocker.create_autospec(ProjectService, instance=True)
     return service
 
 
@@ -291,6 +289,7 @@ def search_service_mock(mocker: MockerFixture) -> MagicMock:
 @pytest.fixture
 def repomap_service(
     workspace_service_mock: MagicMock,
+    project_service_mock: MagicMock,
     codebase_service_mock: MagicMock,
     settings_service_mock: MagicMock,
 ) -> RepoMapService:
@@ -298,6 +297,7 @@ def repomap_service(
         context_service=workspace_service_mock,
         codebase_service=codebase_service_mock,
         settings_service=settings_service_mock,
+        project_service=project_service_mock,
     )
 
 
@@ -309,7 +309,7 @@ def repomap_service_mock(mocker: MockerFixture) -> MagicMock:
 @pytest.fixture
 def settings_service_mock(mocker: MockerFixture) -> MagicMock:
     service = mocker.create_autospec(SettingsService, instance=True)
-    service.get_settings = AsyncMock(return_value=SimpleNamespace())
+    service.get_settings = AsyncMock()
     return service
 
 
@@ -317,10 +317,12 @@ def settings_service_mock(mocker: MockerFixture) -> MagicMock:
 def context_page_service(
     workspace_service_mock: MagicMock,
     file_system_service_mock: MagicMock,
+    project_service_mock: MagicMock,
 ) -> ContextPageService:
     return ContextPageService(
         context_service=workspace_service_mock,
         fs_service=file_system_service_mock,
+        project_service=project_service_mock,
     )
 
 
