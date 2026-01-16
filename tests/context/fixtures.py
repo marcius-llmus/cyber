@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from unittest.mock import MagicMock
 import pytest
+from pathlib import Path
 from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 from unittest.mock import AsyncMock
@@ -11,12 +12,17 @@ from app.context.services import WorkspaceService, CodebaseService, FileSystemSe
 from app.context.dependencies import get_context_service, get_context_page_service
 from app.projects.services import ProjectService
 from app.settings.services import SettingsService
+from app.context.services.search import SearchService
+from app.projects.models import Project
+from app.sessions.models import ChatSession
+from app.settings.services import SettingsService
 
 
 @dataclass
 class TempCodebase:
     root: str
     src_dir: str
+    grep_playground: str
     readme: str
     main_py: str
     utils_py: str
@@ -25,6 +31,8 @@ class TempCodebase:
     binary_file: str
     binary_file_ignored: str
     outside_file: str
+    glob_dir: str
+    regex_file: str
 
 
 @pytest.fixture
@@ -58,6 +66,104 @@ def temp_codebase(tmp_path):
     utils_py = src_dir / "utils.py"
     utils_py.write_text("def add(a, b): return a + b", encoding="utf-8")
 
+    grep_playground = src_dir / "grep_playground.py"
+    grep_playground.write_text(
+        """\
+\"\"\"Grep playground file.
+
+This file is intentionally ~50 lines to make grep_ast.TreeContext context behavior
+stable and realistic.
+\"\"\"
+
+from __future__ import annotations
+
+import os
+import re
+from dataclasses import dataclass
+
+API_KEY = \"sk-test_123\"
+WINDOWS_PATH = r\"C:\\Users\\name\\file.txt\"
+
+
+class MyClass:
+    pass
+
+
+def my_func(arg1: int, arg2: int) -> int:
+    return arg1 + arg2
+
+
+def alpha(value: int) -> str:
+    \"\"\"Alpha function.
+
+    Contains special chars and a literal dotted token.
+    \"\"\"
+    # Special chars: [](){}.*+?^$|\\
+    msg = "[ERROR] Something went wrong"
+    token = "foo.bar"
+    return f"{msg} :: {token} :: {value}"
+
+
+@dataclass
+class Worker:
+    name: str
+
+    def run(self) -> None:
+        # parentheses + braces below
+        text = "(parentheses) and {braces}"
+        _ = text
+
+    def unicode(self) -> str:
+        return "café"
+
+
+def omega() -> str:
+    \"\"\"Omega function far away.
+
+    Contains a similar-but-not-equal token.
+    \"\"\"
+    token = "fooXbar"
+    # Multiline markers:
+    begin = "BEGIN"
+    end = "END"
+    return f"{token} {begin} {end}"
+""",
+        encoding="utf-8",
+    )
+
+    # Regex Playground File
+    regex_content = (
+        "def my_func(arg1, arg2):\n"
+        "    return arg1 + arg2\n\n"
+        "class MyClass:\n"
+        "    pass\n\n"
+        "# Special chars\n"
+        "[ERROR] Something went wrong\n"
+        "Path: C:\\Users\\name\\file.txt\n"
+        "(parentheses)\n"
+        "{braces}\n"
+        "foo.bar\n"
+        "fooXbar\n\n"
+        "# Unicode\n"
+        "café\n"
+        "naïve\n\n"
+        "# Multiline\n"
+        "BEGIN\n"
+        "content\n"
+        "END\n"
+    )
+    # Keep .txt for CodebaseService reading tests, but also create a .py variant
+    # because grep_ast TreeContext requires a known language (based on file extension).
+    (src_dir / "regex_cases.txt").write_text(regex_content, encoding="utf-8")
+    (src_dir / "regex_cases.py").write_text(regex_content, encoding="utf-8")
+
+    # Glob Playground Directory
+    glob_dir = src_dir / "glob_cases"
+    glob_dir.mkdir()
+    (glob_dir / "normal.txt").write_text("normal", encoding="utf-8")
+    (glob_dir / "weird[name].txt").write_text("weird", encoding="utf-8")
+    (glob_dir / ".hidden").write_text("hidden", encoding="utf-8")
+
     logs_dir = project_root / "logs"
     logs_dir.mkdir()
     (logs_dir / "app.log").write_text("error log", encoding="utf-8")
@@ -83,6 +189,7 @@ def temp_codebase(tmp_path):
     return TempCodebase(
         root=str(project_root),
         src_dir=str(src_dir),
+        grep_playground=str(grep_playground),
         readme=str(readme),
         main_py=str(main_py),
         utils_py=str(utils_py),
@@ -91,6 +198,8 @@ def temp_codebase(tmp_path):
         binary_file=str(binary_file),
         binary_file_ignored=str(binary_file_ignored),
         outside_file=str(outside_file),
+        glob_dir=str(glob_dir),
+        regex_file=str(src_dir / "regex_cases.txt"),
     )
 
 

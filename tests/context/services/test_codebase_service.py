@@ -155,21 +155,25 @@ async def test_build_file_tree(temp_codebase):
 
     tree = await service.build_file_tree(root)
     
-    # Verify structure
     # Root should contain src/, bin/, README.md
     names = [node.name for node in tree]
     assert "src" in names
     assert "bin" in names
     assert "README.md" in names
-    assert "logs" not in names  # Ignored
+    # logs directory itself is not ignored by current patterns, but its .log file is.
+    # build_file_tree includes directories only if they have non-ignored children.
+    assert "logs" not in names
     
     # Check recursion
     src_node = next(n for n in tree if n.name == "src")
     assert src_node.is_dir
-    assert len(src_node.children) == 2
+    # src contains more than just main.py/utils.py in our fixture (regex_cases.txt, glob_cases/)
+    assert len(src_node.children) >= 2
     src_children = [c.name for c in src_node.children]
     assert "main.py" in src_children
     assert "utils.py" in src_children
+    assert "regex_cases.txt" in src_children
+    assert "glob_cases" in src_children
 
 async def test_write_file(temp_codebase):
     """Test writing files."""
@@ -190,3 +194,55 @@ async def test_write_file(temp_codebase):
     await service.write_file(root, "nested/dir/test.txt", "Deep")
     result = await service.read_file(root, "nested/dir/test.txt")
     assert result.content == "Deep"
+
+    # 4. Create nested directories and file
+    await service.write_file(temp_codebase.root, "new_dir/new_file.txt", "content")
+    assert (Path(temp_codebase.root) / "new_dir/new_file.txt").exists()
+    assert (Path(temp_codebase.root) / "new_dir/new_file.txt").read_text() == "content"
+
+
+@pytest.mark.asyncio
+async def test_resolve_file_patterns_complex(temp_codebase):
+    """Test complex glob pattern resolution."""
+    service = CodebaseService()
+    root = temp_codebase.root
+
+    # 1. Directory expansion (should find files inside)
+    files = await service.resolve_file_patterns(root, ["src/glob_cases"])
+    assert any("normal.txt" in f for f in files)
+    assert any("weird[name].txt" in f for f in files)
+
+    # 2. Recursive wildcard
+    files = await service.resolve_file_patterns(root, ["src/**/*.py"])
+    assert any("main.py" in f for f in files)
+    assert any("utils.py" in f for f in files)
+    
+    # 3. Literal vs Escaped Glob
+    # "weird[name].txt" contains special glob chars [].
+    # If passed literally, glob might treat [name] as character class.
+
+    # Literal attempt (likely fails to match specific file, might match nothing or wrong thing)
+    files_literal = await service.resolve_file_patterns(root, ["src/glob_cases/weird[name].txt"])
+    assert len(files_literal) == 0
+
+    # Escaped attempt (Python glob uses [[] to escape [)
+    files_escaped = await service.resolve_file_patterns(root, ["src/glob_cases/weird[[]name].txt"])
+    assert len(files_escaped) == 1
+    assert files_escaped[0].endswith("weird[name].txt")
+
+    # 4. Mixed valid and ignored
+    # *.log is ignored. src/regex_cases.txt is valid.
+    files = await service.resolve_file_patterns(root, ["src/regex_cases.txt", "logs/*.log"])
+    assert len(files) == 1
+    assert "regex_cases.txt" in files[0]
+    
+    # 5. Non-existent file (should be ignored or handled gracefully)
+    files = await service.resolve_file_patterns(root, ["nonexistent.txt"])
+    assert len(files) == 0
+
+    # 6. Absolute path input (should work if within root)
+    # resolve_file_patterns returns relative paths
+    abs_path = temp_codebase.regex_file
+    files = await service.resolve_file_patterns(root, [abs_path])
+    assert len(files) == 1
+    assert files[0] == "src/regex_cases.txt"
