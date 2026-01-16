@@ -1,104 +1,135 @@
 import pytest
 from pathlib import Path
 from app.context.services.codebase import CodebaseService
-from app.context.schemas import FileStatus
+from app.context.schemas import FileStatus, FileTreeNode
 
 
-async def test_is_ignored_true(tmp_path):
+async def test_is_ignored(temp_codebase):
     """Test is_ignored returns True for ignored files."""
     service = CodebaseService()
-    gitignore = tmp_path / ".gitignore"
-    gitignore.write_text("*.ignored")
-    
-    ignored_file = tmp_path / "test.ignored"
-    ignored_file.touch()
-    
-    assert await service.is_ignored(tmp_path, "test.ignored") is True
+    root = temp_codebase.root
+
+    # 1. Explicitly ignored file
+    assert await service.is_ignored(root, "ignore_me.txt") is True
+    # 2. Ignored by extension
+    assert await service.is_ignored(root, "logs/app.log") is True
+    # 3. Ignored directory
+    assert await service.is_ignored(root, "secret/config.json") is True
+    # 4. Not ignored
+    assert await service.is_ignored(root, "src/main.py") is False
+    assert await service.is_ignored(root, "README.md") is False
 
 
-async def test_is_ignored_false(tmp_path):
-    """Test is_ignored returns False for non-ignored files."""
+async def test_validate_file_path(temp_codebase):
+    """Test validate_file_path behavior."""
     service = CodebaseService()
-    # No gitignore, or empty
-    
-    normal_file = tmp_path / "test.txt"
-    normal_file.touch()
-    
-    assert await service.is_ignored(tmp_path, "test.txt") is False
+    root = temp_codebase.root
 
+    # 1. Valid file
+    path = await service.validate_file_path(root, "src/main.py")
+    assert path == Path(temp_codebase.main_py)
 
-async def test_validate_file_path_valid(tmp_path):
-    """Test validate_file_path with valid path."""
-    service = CodebaseService()
-    file_path = tmp_path / "valid.txt"
-    file_path.touch()
-    
-    result = await service.validate_file_path(str(tmp_path), "valid.txt")
-    assert result == file_path.resolve()
-
-
-async def test_validate_file_path_outside_root(tmp_path):
-    """Test validate_file_path raises error for paths outside root."""
-    service = CodebaseService()
-    outside_file = tmp_path.parent / "outside.txt"
-    
-    # We pass '..' to try to go up
+    # 2. Ignored file -> Raises ValueError
     with pytest.raises(ValueError, match="Access denied"):
-        await service.validate_file_path(str(tmp_path), "../outside.txt")
+        await service.validate_file_path(root, "ignore_me.txt")
 
-
-async def test_validate_file_path_ignored(tmp_path):
-    """Test validate_file_path raises error for ignored files."""
-    service = CodebaseService()
-    gitignore = tmp_path / ".gitignore"
-    gitignore.write_text("*.secret")
-    
-    secret_file = tmp_path / "config.secret"
-    secret_file.touch()
-    
+    # 3. Outside file -> Raises ValueError
     with pytest.raises(ValueError, match="Access denied"):
-        await service.validate_file_path(str(tmp_path), "config.secret")
+        await service.validate_file_path(root, "../outside.txt")
 
+    # 4. Directory -> Raises ValueError (expects file)
+    with pytest.raises(ValueError, match="Path is not a file"):
+        await service.validate_file_path(root, "src")
 
-async def test_validate_file_path_not_exist(tmp_path):
-    """Test validate_file_path raises error if file does not exist."""
-    service = CodebaseService()
+    # 5. Non-existent -> Raises ValueError (if must_exist=True)
     with pytest.raises(ValueError, match="File not found"):
-        await service.validate_file_path(str(tmp_path), "non_existent.txt", must_exist=True)
+        await service.validate_file_path(root, "ghost.py", must_exist=True)
+
+    # 6. Non-existent -> OK (if must_exist=False)
+    path = await service.validate_file_path(root, "new_file.py", must_exist=False)
+    assert str(path).endswith("new_file.py")
 
 
-async def test_list_dir(tmp_path):
+async def test_list_dir(temp_codebase):
     """Test list_dir returns filtered file list."""
     service = CodebaseService()
-    (tmp_path / "file1.txt").touch()
-    (tmp_path / "file2.ignored").touch()
-    (tmp_path / "subdir").mkdir()
-    (tmp_path / ".gitignore").write_text("*.ignored")
-    
-    results = await service.list_dir(str(tmp_path), ".")
-    assert "file1.txt" in results
-    assert "subdir/" in results
-    assert "file2.ignored" not in results
+    root = temp_codebase.root
 
+    # Root listing
+    results = await service.list_dir(root, ".")
+    assert "README.md" in results
+    assert "src/" in results
+    assert "bin/" in results
+    assert "ignore_me.txt" not in results
+    assert "logs/" in results  # Directories are listed even if contents are ignored, unless dir is ignored
 
-async def test_read_file_success(tmp_path):
+    # Subdir listing
+    results = await service.list_dir(root, "src")
+    assert "main.py" in results
+    assert "utils.py" in results
+
+async def test_read_file(temp_codebase):
     """Test read_file returns content."""
     service = CodebaseService()
-    file_path = tmp_path / "read_me.txt"
-    file_path.write_text("Hello World", encoding="utf-8")
-    
-    result = await service.read_file(str(tmp_path), "read_me.txt")
+    root = temp_codebase.root
+
+    # 1. Text file
+    result = await service.read_file(root, "src/main.py")
     assert result.status == FileStatus.SUCCESS
-    assert result.content == "Hello World"
+    assert "print" in result.content
 
-
-async def test_read_file_binary(tmp_path):
-    """Test read_file handles binary files."""
-    service = CodebaseService()
-    file_path = tmp_path / "binary.bin"
-    with open(file_path, "wb") as f:
-        f.write(b"\x80\x81")
-        
-    result = await service.read_file(str(tmp_path), "binary.bin")
+    # 2. Binary file
+    result = await service.read_file(root, "bin/data.bin")
     assert result.status == FileStatus.BINARY
     assert result.content is None
+
+    # 3. Ignored file -> Error
+    result = await service.read_file(root, "ignore_me.txt")
+    assert result.status == FileStatus.ERROR
+    assert "Access denied" in result.error_message
+
+    # 4. Missing file -> Success (empty)
+    result = await service.read_file(root, "missing.py", must_exist=False)
+    assert result.status == FileStatus.SUCCESS
+    assert result.content == ""
+
+async def test_filter_and_resolve_paths(temp_codebase):
+    """Test filtering of paths."""
+    service = CodebaseService()
+    root = temp_codebase.root
+
+    inputs = [
+        "src/main.py",          # Valid
+        "ignore_me.txt",        # Ignored
+        "../outside.txt",       # Outside
+        "ghost.py"              # Missing
+    ]
+    
+    # Note: filter_and_resolve_paths uses must_exist=True internally
+    results = await service.filter_and_resolve_paths(root, inputs)
+    
+    assert len(results) == 1
+    assert Path(temp_codebase.main_py).resolve() in [Path(p) for p in results]
+
+async def test_build_file_tree(temp_codebase):
+    """Test tree building."""
+    service = CodebaseService()
+    root = temp_codebase.root
+
+    tree = await service.build_file_tree(root)
+    
+    # Verify structure
+    # Root should contain src/, bin/, README.md
+    names = [node.name for node in tree]
+    assert "src" in names
+    assert "bin" in names
+    assert "README.md" in names
+    assert "logs" not in names  # Ignored
+    
+    # Check recursion
+    src_node = next(n for n in tree if n.name == "src")
+    assert src_node.is_dir
+    assert len(src_node.children) == 2
+    src_children = [c.name for c in src_node.children]
+    assert "main.py" in src_children
+    assert "utils.py" in src_children
