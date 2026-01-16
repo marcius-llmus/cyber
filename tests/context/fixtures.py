@@ -29,7 +29,12 @@ class TempCodebase:
 
 @pytest.fixture
 def temp_codebase(tmp_path):
-    """Creates a temporary file structure for testing CodebaseService."""
+    """Creates a temporary file structure for testing CodebaseService.
+    Return a temporary directory path TempCodebase object which is unique to each test
+    function invocation, created as a subdirectory of the base temporary
+    directory.
+    """
+
     # 1. Project Root
     project_root = tmp_path / "project"
     project_root.mkdir()
