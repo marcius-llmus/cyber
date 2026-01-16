@@ -33,6 +33,20 @@ async def project_inactive(db_session: AsyncSession) -> Project:
 
 
 @pytest.fixture
+def project_mock() -> Project:
+    uid = uuid.uuid4()
+    unique_path = f"/tmp/test_project_{uid}"
+    return Project(name=f"Test Project {uid}", path=unique_path, is_active=True)
+
+
+@pytest.fixture
+def project_inactive_mock() -> Project:
+    uid = uuid.uuid4()
+    unique_path = f"/tmp/test_project_inactive_{uid}"
+    return Project(name=f"Inactive Project {uid}", path=unique_path, is_active=False)
+
+
+@pytest.fixture
 def project_repository(db_session: AsyncSession) -> ProjectRepository:
     return ProjectRepository(db=db_session)
 

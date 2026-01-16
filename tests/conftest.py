@@ -99,7 +99,7 @@ def db_session_mock() -> AsyncSession:
 
 
 @pytest.fixture(scope="function")
-def client(db_session: AsyncSession) -> Generator[TestClient, None, None]:
+def client(db_session_mock: AsyncSession) -> Generator[TestClient, None, None]:
     """
     Provides a TestClient with the database dependency overridden.
     """
@@ -113,7 +113,7 @@ def client(db_session: AsyncSession) -> Generator[TestClient, None, None]:
     app.router.lifespan_context = mock_lifespan
 
     async def get_db_override() -> AsyncGenerator[AsyncSession, None]:
-        yield db_session
+        yield db_session_mock
 
     app.dependency_overrides[get_db] = get_db_override
     with TestClient(app) as c:
