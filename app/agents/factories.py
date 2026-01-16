@@ -1,20 +1,12 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.core.db import sessionmanager
 from app.context.factories import build_repo_map_service, build_workspace_service, build_codebase_service
 from app.settings.factories import build_settings_service
 from app.llms.factories import build_llm_service
-from app.llms.enums import LLMModel
 from app.projects.factories import build_project_service
 from app.prompts.factories import build_prompt_service
-from app.coder.agent import CoderAgent
-from llama_index.core.tools import BaseTool
-from app.context.tools import SearchTools, FileTools
-from app.patches.tools import PatcherTools
 from app.agents.repositories import WorkflowStateRepository
-from app.agents.services import WorkflowService, AgentContextService
+from app.agents.services import WorkflowService, AgentContextService, AgentFactoryService
 from app.sessions.factories import build_session_service
-from app.core.enums import OperationalMode
 
 
 async def build_workflow_service(db: AsyncSession) -> WorkflowService:
@@ -38,38 +30,20 @@ async def build_agent_context_service(db: AsyncSession) -> AgentContextService:
     )
 
 
-async def build_agent(db: AsyncSession, session_id: int, turn_id: str | None = None) -> CoderAgent:
-    """Creates a CoderAgent (FunctionAgent) with the currently configured LLM."""
+async def build_agent_factory_service(db: AsyncSession) -> AgentFactoryService:
     settings_service = await build_settings_service(db)
     llm_service = await build_llm_service(db)
     session_service = await build_session_service(db)
     agent_context_service = await build_agent_context_service(db)
 
-    settings = await settings_service.get_settings()
-    coder_settings = await llm_service.get_coding_llm()
-    
-    llm = await llm_service.get_client(
-        model_name=LLMModel(coder_settings.model_name),
-        temperature=settings.coding_llm_temperature
+    return AgentFactoryService(
+        settings_service=settings_service,
+        llm_service=llm_service,
+        session_service=session_service,
+        agent_context_service=agent_context_service,
     )
 
-    operational_mode = await session_service.get_operational_mode(session_id)
 
-    tools: list[BaseTool] = []
-
-    # Read-only tools: CODING, ASK, PLANNER
-    if operational_mode in [OperationalMode.CODING, OperationalMode.ASK, OperationalMode.PLANNER]:
-        search_tools = SearchTools(db=sessionmanager, settings=settings, session_id=session_id)
-        tools.extend(search_tools.to_tool_list())
-
-        file_tools = FileTools(db=sessionmanager, settings=settings, session_id=session_id, turn_id=turn_id)
-        tools.extend(file_tools.to_tool_list())
-
-    # Write tools (patcher): CODING only
-    if operational_mode == OperationalMode.CODING:
-        patcher_tools = PatcherTools(db=sessionmanager, settings=settings, session_id=session_id, turn_id=turn_id)
-        tools.extend(patcher_tools.to_tool_list())
-
-    system_prompt = await agent_context_service.build_system_prompt(session_id, operational_mode=operational_mode)
-
-    return CoderAgent(tools=tools, llm=llm, system_prompt=system_prompt)
+async def build_agent(db: AsyncSession, session_id: int, turn_id: str | None = None):
+    agent_factory_service = await build_agent_factory_service(db)
+    return await agent_factory_service.build_agent(session_id=session_id, turn_id=turn_id)

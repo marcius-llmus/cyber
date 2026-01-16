@@ -23,15 +23,6 @@ def _fake_llm_model_name_for_provider(provider: LLMProvider) -> LLMModel:
     raise ValueError(f"Unsupported provider in test fixture: {provider}")
 
 
-@pytest.fixture(autouse=True)
-async def _clear_llm_caches():
-    build_llm_factory_instance.cache_clear()
-    LLMService._get_client_instance.cache_clear()
-    yield
-    build_llm_factory_instance.cache_clear()
-    LLMService._get_client_instance.cache_clear()
-
-
 @pytest.fixture
 async def llm_settings(db_session):
     obj = LLMSettings(
@@ -132,6 +123,16 @@ def llm_service_mock(mocker: MockerFixture) -> MagicMock:
 
 
 @pytest.fixture
+def llm_factory_instance() -> LLMFactory:
+    return LLMFactory()
+
+
+@pytest.fixture
+def llm_factory_instance_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.create_autospec(LLMFactory, instance=True)
+
+
+@pytest.fixture
 def override_get_llm_service(llm_service_mock: MagicMock):
     from app.main import app
 
@@ -168,3 +169,81 @@ async def llm_settings_seed_many(db_session) -> list[LLMSettings]:
     db_session.add_all(rows)
     await db_session.flush()
     return rows
+
+
+@pytest.fixture
+def llm_settings_mock() -> LLMSettings:
+    return LLMSettings(
+        id=1,
+        model_name=LLMModel.GPT_4O,
+        provider=LLMProvider.OPENAI,
+        api_key="sk-openai",
+        context_window=128000,
+        active_role=None,
+    )
+
+
+@pytest.fixture
+def llm_settings_openai_no_role_mock() -> LLMSettings:
+    return LLMSettings(
+        id=2,
+        model_name=LLMModel.GPT_4_1_MINI,
+        provider=LLMProvider.OPENAI,
+        api_key="sk-openai",
+        context_window=128000,
+        active_role=None,
+    )
+
+
+@pytest.fixture
+def llm_settings_anthropic_mock() -> LLMSettings:
+    return LLMSettings(
+        id=3,
+        model_name=LLMModel.CLAUDE_OPUS_4_1,
+        provider=LLMProvider.ANTHROPIC,
+        api_key="sk-anthropic",
+        context_window=200000,
+        active_role=None,
+    )
+
+
+@pytest.fixture
+def llm_settings_openai_coder_mock() -> LLMSettings:
+    return LLMSettings(
+        id=4,
+        model_name=LLMModel.GPT_4O,
+        provider=LLMProvider.OPENAI,
+        api_key="sk-openai",
+        context_window=128000,
+        active_role=LLMRole.CODER,
+    )
+
+
+@pytest.fixture
+def llm_settings_seed_many_mock() -> list[LLMSettings]:
+    return [
+        LLMSettings(
+            id=10,
+            model_name=LLMModel.GPT_4_1_MINI,
+            provider=LLMProvider.OPENAI,
+            api_key="sk-openai",
+            context_window=128000,
+            active_role=LLMRole.CODER,
+        ),
+        LLMSettings(
+            id=11,
+            model_name=LLMModel.CLAUDE_OPUS_4_1,
+            provider=LLMProvider.ANTHROPIC,
+            api_key="sk-anthropic",
+            context_window=200000,
+            active_role=None,
+        ),
+        LLMSettings(
+            id=12,
+            model_name=LLMModel.GEMINI_2_5_FLASH,
+            provider=LLMProvider.GOOGLE,
+            api_key="sk-google",
+            context_window=1000000,
+            active_role=None,
+        ),
+    ]

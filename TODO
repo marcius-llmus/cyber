@@ -8,6 +8,7 @@ Fix:
 - Apply patch should be able analyse if patch was applied correctly and raise if not
 - On page load, scroll to the end
 - Check the amount of events received by usage handler (seems spammy)
+- SHALL MAKE EXPLICIT THAT ASK CANNOT WRITE
 
 --------
 Roadmap

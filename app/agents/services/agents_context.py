@@ -1,7 +1,3 @@
-import logging
-from llama_index.core.workflow import Context, Workflow
-
-from app.agents.repositories import WorkflowStateRepository
 from app.context.services import RepoMapService, WorkspaceService, CodebaseService
 from app.projects.services import ProjectService
 from app.core.enums import OperationalMode
@@ -22,36 +18,20 @@ from app.agents.constants import (
 from app.projects.exceptions import ActiveProjectRequiredException
 from app.projects.models import Project
 
-logger = logging.getLogger(__name__)
-
-class WorkflowService:
-    def __init__(self, workflow_repo: WorkflowStateRepository):
-        self.workflow_repo = workflow_repo
-
-    async def get_context(self, session_id: int, workflow: Workflow) -> Context:
-        """Hydrates a Context from the DB or creates a new one if none exists."""
-        state_record = await self.workflow_repo.get_by_session_id(session_id)
-        if state_record and state_record.state:
-            return Context.from_dict(workflow, state_record.state)
-        return Context(workflow)
-
-    async def save_context(self, session_id: int, context: Context) -> None:
-        """Persists the current Context state to the DB."""
-        await self.workflow_repo.save_state(session_id, context.to_dict())
-
 
 class AgentContextService:
     """
     Service responsible for assembling the context and system prompt for the Agent.
     It orchestrates the retrieval of the Repo Map (Tier 1) and Active File Content (Tier 2).
     """
+
     def __init__(
-        self,
-        repo_map_service: RepoMapService,
-        workspace_service: WorkspaceService,
-        codebase_service: CodebaseService,
-        project_service: ProjectService,
-        prompt_service: PromptService,
+            self,
+            repo_map_service: RepoMapService,
+            workspace_service: WorkspaceService,
+            codebase_service: CodebaseService,
+            project_service: ProjectService,
+            prompt_service: PromptService,
     ):
         self.repo_map_service = repo_map_service
         self.workspace_service = workspace_service
@@ -59,7 +39,8 @@ class AgentContextService:
         self.project_service = project_service
         self.prompt_service = prompt_service
 
-    async def build_system_prompt(self, session_id: int, operational_mode: OperationalMode = OperationalMode.CODING) -> str:
+    async def build_system_prompt(self, session_id: int,
+                                  operational_mode: OperationalMode = OperationalMode.CODING) -> str:
         project = await self.project_service.get_active_project()
         if not project:
             raise ActiveProjectRequiredException("Active project required to build system prompt.")
@@ -115,15 +96,16 @@ class AgentContextService:
 
         if rules:
             parts.append(f"<RULES>\n{rules}\n</RULES>")
-        
+
         if guidelines:
             parts.append(f"<GUIDELINES>\n{guidelines}\n</GUIDELINES>")
-        
+
         if custom_prompts_xml:
             parts.append(f"<CUSTOM_INSTRUCTIONS>\n{custom_prompts_xml}\n</CUSTOM_INSTRUCTIONS>")
 
         if active_context_xml:
-            parts.append(f"<ACTIVE_CONTEXT>\n<!-- {ACTIVE_CONTEXT_DESCRIPTION} -->\n{active_context_xml}\n</ACTIVE_CONTEXT>")
+            parts.append(
+                f"<ACTIVE_CONTEXT>\n<!-- {ACTIVE_CONTEXT_DESCRIPTION} -->\n{active_context_xml}\n</ACTIVE_CONTEXT>")
 
         if repo_map:
             parts.append(f"<REPOSITORY_MAP>\n<!-- {REPO_MAP_DESCRIPTION} -->\n{repo_map}\n</REPOSITORY_MAP>")

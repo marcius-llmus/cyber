@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import AsyncMock
 from app.llms.factories import build_llm_factory_instance, build_llm_service
 from app.llms.services import LLMService
 from app.llms.registry import LLMFactory
@@ -13,46 +14,66 @@ async def test_build_llm_factory_instance__returns_llm_factory_singleton():
         - returns an LLMFactory
         - returns the same instance due to caching
     """
+    # no mock here as we are checking for the real deal, cj! I am genius
     factory1 = await build_llm_factory_instance()
     factory2 = await build_llm_factory_instance()
     assert isinstance(factory1, LLMFactory)
-    assert factory1 is factory2 # different from others. here, we WANT the same .-.
+    assert factory1 is factory2 # different from others. here, we WANT the same .-. (lru cached)
 
 
-async def test_build_llm_service__returns_llm_service(db_session):
+async def test_build_llm_service__returns_llm_service(db_session_mock, mocker, llm_factory_instance_mock):
     """Scenario: build_llm_service is called with a DB session.
 
     Asserts:
         - returns an LLMService instance
     """
-    service = await build_llm_service(db_session)
+    build_factory_instance_mock = mocker.patch(
+        "app.llms.factories.build_llm_factory_instance",
+        new=AsyncMock(return_value=llm_factory_instance_mock),
+    )
+
+    service = await build_llm_service(db_session_mock)
     assert isinstance(service, LLMService)
+    build_factory_instance_mock.assert_awaited_once()
 
 
-async def test_build_llm_service__wires_repository_and_factory(db_session):
+async def test_build_llm_service__wires_repository_and_factory(db_session_mock, mocker, llm_factory_instance_mock):
     """Scenario: build_llm_service builds all dependencies.
 
     Asserts:
-        - service.llm_settings_repo is an LLMSettingsRepository bound to db_session
+        - service.llm_settings_repo is an LLMSettingsRepository bound to db_session_mock
         - service.llm_factory is an LLMFactory
     """
-    service = await build_llm_service(db_session)
-    assert service.llm_settings_repo.db is db_session
-    assert isinstance(service.llm_factory, LLMFactory)
+    build_factory_instance_mock = mocker.patch(
+        "app.llms.factories.build_llm_factory_instance",
+        new=AsyncMock(return_value=llm_factory_instance_mock),
+    )
+
+    service = await build_llm_service(db_session_mock)
+    assert service.llm_settings_repo.db is db_session_mock
+    assert service.llm_factory is llm_factory_instance_mock
+    build_factory_instance_mock.assert_awaited_once()
 
 
-async def test_build_llm_service__factory_is_cached_between_calls(db_session):
+async def test_build_llm_service__factory_is_cached_between_calls(db_session_mock, mocker, llm_factory_instance_mock):
     """Scenario: build_llm_service called multiple times.
 
     Asserts:
         - underlying LLMFactory instance is reused (cached)
         - repository instances are new per call (request-scoped)
     """
-    service1 = await build_llm_service(db_session)
-    service2 = await build_llm_service(db_session)
+    build_factory_instance_mock = mocker.patch(
+        "app.llms.factories.build_llm_factory_instance",
+        new=AsyncMock(return_value=llm_factory_instance_mock),
+    )
+
+    service1 = await build_llm_service(db_session_mock)
+    service2 = await build_llm_service(db_session_mock)
 
     assert service1.llm_factory is service2.llm_factory
     assert service1.llm_settings_repo is not service2.llm_settings_repo
+
+    assert build_factory_instance_mock.await_count == 2
 
 
 @pytest.mark.parametrize(

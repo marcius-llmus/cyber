@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.projects.dependencies import get_project_service
 from app.projects.models import Project
 from app.projects.repositories import ProjectRepository
-from app.projects.services import ProjectService
+from app.projects.services import ProjectPageService, ProjectService
 
 
 @pytest.fixture
@@ -33,6 +33,20 @@ async def project_inactive(db_session: AsyncSession) -> Project:
 
 
 @pytest.fixture
+def project_mock() -> Project:
+    uid = uuid.uuid4()
+    unique_path = f"/tmp/test_project_{uid}"
+    return Project(name=f"Test Project {uid}", path=unique_path, is_active=True)
+
+
+@pytest.fixture
+def project_inactive_mock() -> Project:
+    uid = uuid.uuid4()
+    unique_path = f"/tmp/test_project_inactive_{uid}"
+    return Project(name=f"Inactive Project {uid}", path=unique_path, is_active=False)
+
+
+@pytest.fixture
 def project_repository(db_session: AsyncSession) -> ProjectRepository:
     return ProjectRepository(db=db_session)
 
@@ -51,6 +65,11 @@ def project_service(project_repository_mock: MagicMock) -> ProjectService:
 @pytest.fixture
 def project_service_mock(mocker: MockerFixture) -> MagicMock:
     return mocker.create_autospec(ProjectService, instance=True)
+
+
+@pytest.fixture
+def project_page_service_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.create_autospec(ProjectPageService, instance=True)
 
 
 @pytest.fixture

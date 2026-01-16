@@ -19,6 +19,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.pool import StaticPool
+from unittest.mock import create_autospec
 
 from app.commons.dependencies import get_db
 from app.core.db import Base
@@ -92,7 +93,13 @@ async def db_session(
 
 
 @pytest.fixture(scope="function")
-def client(db_session: AsyncSession) -> Generator[TestClient, None, None]:
+def db_session_mock() -> AsyncSession:
+    """Lightweight AsyncSession mock for wiring/unit tests (deps/factories)."""
+    return create_autospec(AsyncSession, instance=True)
+
+
+@pytest.fixture(scope="function")
+def client(db_session_mock: AsyncSession) -> Generator[TestClient, None, None]:
     """
     Provides a TestClient with the database dependency overridden.
     """
@@ -106,7 +113,7 @@ def client(db_session: AsyncSession) -> Generator[TestClient, None, None]:
     app.router.lifespan_context = mock_lifespan
 
     async def get_db_override() -> AsyncGenerator[AsyncSession, None]:
-        yield db_session
+        yield db_session_mock
 
     app.dependency_overrides[get_db] = get_db_override
     with TestClient(app) as c:
