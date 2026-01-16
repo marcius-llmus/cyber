@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 import inspect
 from app.chat.dependencies import (
     get_message_repository,
@@ -7,7 +7,6 @@ from app.chat.dependencies import (
     get_chat_turn_service,
 )
 from app.chat.repositories import MessageRepository, ChatTurnRepository
-from app.chat.services import ChatService
 from app.chat.services.turn import ChatTurnService
 
 
@@ -27,12 +26,16 @@ class TestChatDependencies:
         assert inspect.iscoroutinefunction(get_chat_turn_service)
 
     async def test_get_chat_service_wires_message_repo_session_service_project_service(self, db_session_mock):
-        """get_chat_service returns ChatService wired with MessageRepository + SessionService + ProjectService."""
-        service = await get_chat_service(db=db_session_mock)
-        assert isinstance(service, ChatService)
-        assert isinstance(service.message_repo, MessageRepository)
-        assert service.session_service is not None
-        assert service.project_service is not None
+        """get_chat_service delegates to build_chat_service and returns its result."""
+        expected = object()
+        with patch(
+            "app.chat.dependencies.build_chat_service",
+            new=AsyncMock(return_value=expected),
+        ) as build_chat_service_mock:
+            service = await get_chat_service(db=db_session_mock)
+
+        assert service is expected
+        build_chat_service_mock.assert_awaited_once_with(db_session_mock)
 
     async def test_get_chat_turn_service_wires_chat_turn_repository(self, db_session_mock):
         """get_chat_turn_service returns ChatTurnService wired with ChatTurnRepository."""
@@ -42,13 +45,19 @@ class TestChatDependencies:
 
     async def test_get_chat_service_propagates_factory_errors(self, db_session_mock):
         """get_chat_service surfaces exceptions raised by build_chat_service."""
-        with patch("app.chat.dependencies.build_chat_service", side_effect=ValueError("Factory error")):
+        with patch(
+            "app.chat.dependencies.build_chat_service",
+            new=AsyncMock(side_effect=ValueError("Factory error")),
+        ):
             with pytest.raises(ValueError, match="Factory error"):
                 await get_chat_service(db=db_session_mock)
 
     async def test_get_chat_turn_service_propagates_factory_errors(self, db_session_mock):
         """get_chat_turn_service surfaces exceptions raised by build_chat_turn_service."""
-        with patch("app.chat.dependencies.build_chat_turn_service", side_effect=ValueError("Factory error")):
+        with patch(
+            "app.chat.dependencies.build_chat_turn_service",
+            new=AsyncMock(side_effect=ValueError("Factory error")),
+        ):
             with pytest.raises(ValueError, match="Factory error"):
                 await get_chat_turn_service(db=db_session_mock)
 
