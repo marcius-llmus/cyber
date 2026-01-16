@@ -52,16 +52,18 @@ GLOB ESCAPING / SPECIAL CHARACTERS:
 
 NOTES:
 - Resolved file paths are project-relative (e.g., 'src/main.py'), and downstream read/grep operates on those paths.
-- Exclusion: Do not include files that are already in the active context as parameters.
+- Guideline: Avoid including files already in the active context to reduce redundant reads.
 - Provide specific paths or narrow globs to limit scope and noise.
-- Supports multiple patterns to target different areas simultaneously. Use it as needed.
+- Supports multiple patterns to target different areas simultaneously.
 """
+
 
 GREP_PATTERN_DESCRIPTION = """
 The regular expression (regex) pattern to search for inside selected files.
 
 This is a true regex search executed line-by-line using Python's 're' engine:
 - Each line is tested independently with re.search(pattern, line, flags).
+- Patterns do not match across multiple lines (even if you use dotall flags), because matching is per-line.
 - Case sensitivity is controlled by 'ignore_case' (re.IGNORECASE when enabled).
 - The pattern can be:
   - a single regex string, OR
@@ -75,12 +77,15 @@ REGEX SYNTAX & ESCAPING:
     Unescaped 'foo.bar' also matches strings like 'fooXbar' because '.' means “any character”.
   - Literal backslash (Windows paths): r'Users\\\\name' matches 'Users\\name'
 
+LIST PATTERNS (OR-JOIN) NOTE:
+- List patterns are joined literally with '|' and are not auto-grouped.
+  If a subpattern contains '|', wrap it in a non-capturing group '(?:...)' to preserve intent.
+
 STRUCTURAL / PRECISE PATTERNS:
 - Anchors and boundaries work as expected with Python re:
   - '^def\\s+my_func\\(' matches a function definition at the start of a line
   - '(?i)\\bclass\\s+myclass\\b' matches a class definition regardless of case
   - '^\\s+pass$' matches an indented line that is exactly 'pass'
-  (These are validated against our dedicated ~50-line grep playground file.)
 
 OUTPUT IS CONTEXTUAL (AST-aware excerpt):
 - The grep output is NOT just the matching line. After matches are found, the tool produces a formatted excerpt
@@ -89,10 +94,7 @@ OUTPUT IS CONTEXTUAL (AST-aware excerpt):
   - Context-only lines are marked with a leading '│'
   - Omitted sections are marked with '⋮'
 - Because context is included, unrelated code (including other function/class definitions) can appear in the output
-  even if it did not match:
-  - In a small file, adjacent 'def goodbye()' can appear when searching for 'Hello'.
-  - In a larger file, 'def omega()' can appear as context while not being marked as a match.
-  To identify what actually matched, look for the '█' lines.
+  even if it did not match. To identify what actually matched, look for the '█' lines.
 
 FILE EXTENSION / LANGUAGE PARSING:
 - Context rendering requires a supported language inferred from the filename extension.
@@ -104,14 +106,18 @@ ERROR HANDLING FOR INVALID REGEX:
   Instead, the output includes a per-file error message:
   'Error processing <file>: <regex error>'
 
+OUTPUT SIZE LIMIT:
+- Grep output may be truncated if it exceeds the configured token limit (grep_token_limit). When this happens,
+  the output includes a truncation marker and stops adding more matches/files.
+
 DEFAULT FILE SELECTION WHEN file_patterns IS OMITTED:
 - If file_patterns is not provided to grep (None), the implementation delegates to file resolution with None.
   The resolver’s default scan-all behavior (SCAN_ALL_PATTERN=['.']) applies.
-  
+
 NOTES:
-- Must be specific Avoid broad patterns like '.*' or single common words without specifying file scopes.
-- The tool returns the AST context (surrounding code), so you don't need to match the whole block.
-- Format: Can be a single string or a list of strings (which will be joined with OR).
+- Must be specific. Avoid broad patterns like '.*' or single common words without specifying file scopes.
+- The tool returns surrounding context, so you typically do not need to match the entire block.
+- Format: Can be a single string or a list of strings (joined with OR).
 """
 
 
