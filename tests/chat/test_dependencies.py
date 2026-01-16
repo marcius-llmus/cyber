@@ -25,16 +25,15 @@ class TestChatDependencies:
         """get_chat_turn_service remains an async dependency (coroutine function)."""
         assert inspect.iscoroutinefunction(get_chat_turn_service)
 
-    async def test_get_chat_service_wires_message_repo_session_service_project_service(self, db_session_mock):
+    async def test_get_chat_service_wires_message_repo_session_service_project_service(self, db_session_mock, chat_service_mock):
         """get_chat_service delegates to build_chat_service and returns its result."""
-        expected = object()
         with patch(
             "app.chat.dependencies.build_chat_service",
-            new=AsyncMock(return_value=expected),
+            new=AsyncMock(return_value=chat_service_mock),
         ) as build_chat_service_mock:
             service = await get_chat_service(db=db_session_mock)
 
-        assert service is expected
+        assert service is chat_service_mock
         build_chat_service_mock.assert_awaited_once_with(db_session_mock)
 
     async def test_get_chat_turn_service_wires_chat_turn_repository(self, db_session_mock):

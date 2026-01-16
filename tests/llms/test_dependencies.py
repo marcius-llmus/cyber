@@ -1,7 +1,7 @@
 import pytest
 import inspect
+from unittest.mock import AsyncMock
 from app.llms import dependencies
-from app.llms.services import LLMService
 
 
 @pytest.mark.parametrize(
@@ -15,16 +15,22 @@ def test_llms_dependencies__module_exposes_expected_dependency_factories(depende
     assert hasattr(dependencies, dependency_name)
 
 
-async def test_get_llm_service__returns_llm_service_instance(db_session_mock):
+async def test_get_llm_service__returns_llm_service_instance(db_session_mock, mocker, llm_service_mock):
     """Scenario: resolve the llm service via dependency.
 
     Asserts:
-        - returns an LLMService instance
-        - service is wired to the provided AsyncSession
+        - delegates to build_llm_service(db=...)
+        - returns the exact object returned by the factory
     """
+    build_llm_service_mock = mocker.patch(
+        "app.llms.dependencies.build_llm_service",
+        new=AsyncMock(return_value=llm_service_mock),
+    )
+
     service = await dependencies.get_llm_service(db_session_mock)
-    assert isinstance(service, LLMService)
-    assert service.llm_settings_repo.db is db_session_mock
+
+    assert service is llm_service_mock
+    build_llm_service_mock.assert_awaited_once_with(db_session_mock)
 
 
 def test_get_llm_service__is_async_dependency():
@@ -42,7 +48,12 @@ async def test_get_llm_service__propagates_factory_errors(db_session_mock, mocke
     Asserts:
         - the exception propagates (dependency does not swallow)
     """
-    mocker.patch("app.llms.dependencies.build_llm_service", side_effect=ValueError("Boom"))
-    
+    build_llm_service_mock = mocker.patch(
+        "app.llms.dependencies.build_llm_service",
+        new=AsyncMock(side_effect=ValueError("Boom")),
+    )
+
     with pytest.raises(ValueError, match="Boom"):
         await dependencies.get_llm_service(db_session_mock)
+
+    build_llm_service_mock.assert_awaited_once_with(db_session_mock)

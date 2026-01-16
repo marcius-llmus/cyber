@@ -7,15 +7,21 @@ from app.chat.repositories import MessageRepository, ChatTurnRepository
 
 
 class TestChatFactories:
-    async def test_build_chat_service_returns_chat_service(self, mocker, db_session_mock):
+    async def test_build_chat_service_returns_chat_service(
+        self,
+        mocker,
+        db_session_mock,
+        session_service_mock,
+        project_service_mock,
+    ):
         """build_chat_service returns a ChatService instance."""
         build_session_service_mock = mocker.patch(
             "app.chat.factories.build_session_service",
-            new=AsyncMock(return_value=object()),
+            new=AsyncMock(return_value=session_service_mock),
         )
         build_project_service_mock = mocker.patch(
             "app.chat.factories.build_project_service",
-            new=AsyncMock(return_value=object()),
+            new=AsyncMock(return_value=project_service_mock),
         )
 
         service = await build_chat_service(db=db_session_mock)
@@ -23,15 +29,21 @@ class TestChatFactories:
         build_session_service_mock.assert_awaited_once_with(db_session_mock)
         build_project_service_mock.assert_awaited_once_with(db_session_mock)
 
-    async def test_build_chat_service_wires_message_repository_with_db(self, mocker, db_session_mock):
+    async def test_build_chat_service_wires_message_repository_with_db(
+        self,
+        mocker,
+        db_session_mock,
+        session_service_mock,
+        project_service_mock,
+    ):
         """build_chat_service binds MessageRepository to the provided AsyncSession."""
         build_session_service_mock = mocker.patch(
             "app.chat.factories.build_session_service",
-            new=AsyncMock(return_value=object()),
+            new=AsyncMock(return_value=session_service_mock),
         )
         build_project_service_mock = mocker.patch(
             "app.chat.factories.build_project_service",
-            new=AsyncMock(return_value=object()),
+            new=AsyncMock(return_value=project_service_mock),
         )
 
         service = await build_chat_service(db=db_session_mock)
@@ -40,24 +52,27 @@ class TestChatFactories:
         build_session_service_mock.assert_awaited_once_with(db_session_mock)
         build_project_service_mock.assert_awaited_once_with(db_session_mock)
 
-    async def test_build_chat_service_wires_session_service_and_project_service(self, mocker, db_session_mock):
+    async def test_build_chat_service_wires_session_service_and_project_service(
+        self,
+        mocker,
+        db_session_mock,
+        session_service_mock,
+        project_service_mock,
+    ):
         """build_chat_service awaits and wires SessionService + ProjectService."""
-        expected_session_service = object()
-        expected_project_service = object()
-
         build_session_service_mock = mocker.patch(
             "app.chat.factories.build_session_service",
-            new=AsyncMock(return_value=expected_session_service),
+            new=AsyncMock(return_value=session_service_mock),
         )
         build_project_service_mock = mocker.patch(
             "app.chat.factories.build_project_service",
-            new=AsyncMock(return_value=expected_project_service),
+            new=AsyncMock(return_value=project_service_mock),
         )
 
         service = await build_chat_service(db=db_session_mock)
 
-        assert service.session_service is expected_session_service
-        assert service.project_service is expected_project_service
+        assert service.session_service is session_service_mock
+        assert service.project_service is project_service_mock
         build_session_service_mock.assert_awaited_once_with(db_session_mock)
         build_project_service_mock.assert_awaited_once_with(db_session_mock)
 

@@ -132,6 +132,16 @@ def llm_service_mock(mocker: MockerFixture) -> MagicMock:
 
 
 @pytest.fixture
+def llm_factory_instance() -> LLMFactory:
+    return LLMFactory()
+
+
+@pytest.fixture
+def llm_factory_instance_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.create_autospec(LLMFactory, instance=True)
+
+
+@pytest.fixture
 def override_get_llm_service(llm_service_mock: MagicMock):
     from app.main import app
 
