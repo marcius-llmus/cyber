@@ -246,3 +246,40 @@ async def test_resolve_file_patterns_complex(temp_codebase):
     files = await service.resolve_file_patterns(root, [abs_path])
     assert len(files) == 1
     assert files[0] == "src/regex_cases.txt"
+
+
+async def test_resolve_file_patterns_defaults_to_scan_all_pattern(temp_codebase):
+    """If patterns is None or empty, CodebaseService uses SCAN_ALL_PATTERN=['.'].
+
+    This should return at least a few known non-ignored files from the project.
+    """
+    service = CodebaseService()
+    root = temp_codebase.root
+
+    # None => scan all
+    files_none = await service.resolve_file_patterns(root, None)
+    assert "README.md" in files_none
+    assert "src/main.py" in files_none
+
+    # [] => scan all
+    files_empty = await service.resolve_file_patterns(root, [])
+    assert "README.md" in files_empty
+    assert "src/main.py" in files_empty
+
+
+async def test_resolve_file_patterns_rejects_outside_root(temp_codebase):
+    """Patterns attempting to resolve outside project root are rejected."""
+    service = CodebaseService()
+    root = temp_codebase.root
+
+    with pytest.raises(ValueError, match=r"targets outside project root"):
+        await service.resolve_file_patterns(root, ["../outside.txt"])
+
+
+async def test_resolve_file_patterns_supports_deep_wildcard_segments(temp_codebase):
+    """Verify glob patterns with deep wildcard segments like 'src/**/utils.py' work."""
+    service = CodebaseService()
+    root = temp_codebase.root
+
+    files = await service.resolve_file_patterns(root, ["src/**/utils.py"])
+    assert files == ["src/utils.py"]

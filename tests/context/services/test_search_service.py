@@ -291,3 +291,58 @@ async def test_grep_skips_ignored_and_binary_via_read_file_status(
 
     result = await service.grep(r".", file_patterns=["bin/data.bin", "logs/app.log"])
     assert result == "No matches found."
+
+
+async def test_grep_defaults_to_scan_all_pattern_when_file_patterns_none(
+    mocker, temp_codebase, project_service_mock, codebase_service_mock, settings_service_mock
+):
+    """If file_patterns is None, SearchService delegates to resolve_file_patterns with None.
+
+    CodebaseService.resolve_file_patterns will then apply SCAN_ALL_PATTERN=['.'].
+    """
+    mocker.patch("tiktoken.get_encoding")
+    service = SearchService(project_service_mock, codebase_service_mock, settings_service_mock)
+
+    project_service_mock.get_active_project.return_value = MagicMock(path=temp_codebase.root)
+    settings_service_mock.get_settings.return_value = MagicMock(grep_token_limit=100_000)
+
+    codebase_service_mock.resolve_file_patterns.return_value = ["src/main.py"]
+    codebase_service_mock.read_file.return_value = FileReadResult(
+        file_path="src/main.py",
+        content=Path(temp_codebase.main_py).read_text(encoding="utf-8"),
+        status=FileStatus.SUCCESS,
+    )
+
+    service.encoding = MagicMock()
+    service.encoding.encode.return_value = [1]
+
+    await service.grep("print")
+    codebase_service_mock.resolve_file_patterns.assert_awaited_once_with(temp_codebase.root, None)
+
+
+async def test_grep_unknown_language_reports_error_per_file(
+    mocker, temp_codebase, project_service_mock, codebase_service_mock, settings_service_mock
+):
+    """Grep uses grep_ast.TreeContext which can error on unknown extensions (e.g. .txt).
+
+    SearchService should catch and report this as an 'Error processing <file>: ...' entry.
+    """
+    mocker.patch("tiktoken.get_encoding")
+    service = SearchService(project_service_mock, codebase_service_mock, settings_service_mock)
+
+    project_service_mock.get_active_project.return_value = MagicMock(path=temp_codebase.root)
+    settings_service_mock.get_settings.return_value = MagicMock(grep_token_limit=100_000)
+
+    codebase_service_mock.resolve_file_patterns.return_value = ["src/regex_cases.txt"]
+    codebase_service_mock.read_file.return_value = FileReadResult(
+        file_path="src/regex_cases.txt",
+        content=Path(temp_codebase.regex_file).read_text(encoding="utf-8"),
+        status=FileStatus.SUCCESS,
+    )
+
+    service.encoding = MagicMock()
+    service.encoding.encode.return_value = [1]
+
+    result = await service.grep(r"\\[ERROR\\]")
+    assert "Error processing src/regex_cases.txt:" in result
+    assert "Unknown language" in result
