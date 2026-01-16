@@ -7,7 +7,7 @@ without touching the database.
 from __future__ import annotations
 
 from decimal import Decimal
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -15,6 +15,8 @@ from app.agents.services.agent_factory import AgentFactoryService
 from app.core.enums import OperationalMode
 from app.llms.enums import LLMModel
 from app.settings.models import Settings
+from app.context.tools import FileTools, SearchTools
+from app.patches.tools import PatcherTools
 
 
 class TestAgentFactoryService:
@@ -151,6 +153,9 @@ class TestAgentFactoryService:
         expect_file: bool,
         expect_patcher: bool,
         agent_factory_service: AgentFactoryService,
+        search_tools_inst,
+        file_tools_inst,
+        patcher_tools_inst,
         settings_service_mock,
         llm_service_mock,
         session_service_mock,
@@ -172,13 +177,6 @@ class TestAgentFactoryService:
         llm_service_mock.get_client = AsyncMock(return_value=fake_llm_client)
         session_service_mock.get_operational_mode = AsyncMock(return_value=mode)
         agent_context_service_mock.build_system_prompt = AsyncMock(return_value="PROMPT")
-
-        search_tools_inst = mocker.MagicMock()
-        search_tools_inst.to_tool_list.return_value = ["S"]
-        file_tools_inst = mocker.MagicMock()
-        file_tools_inst.to_tool_list.return_value = ["F"]
-        patcher_tools_inst = mocker.MagicMock()
-        patcher_tools_inst.to_tool_list.return_value = ["P"]
 
         search_tools_cls_mock = mocker.patch(
             "app.agents.services.agent_factory.SearchTools",
@@ -232,6 +230,9 @@ class TestAgentFactoryService:
     async def test_build_agent_passes_turn_id_to_file_and_patcher_tools(
         self,
         agent_factory_service: AgentFactoryService,
+        search_tools_inst,
+        file_tools_inst,
+        patcher_tools_inst,
         settings_service_mock,
         llm_service_mock,
         session_service_mock,
@@ -253,13 +254,6 @@ class TestAgentFactoryService:
         llm_service_mock.get_client = AsyncMock(return_value=fake_llm_client)
         session_service_mock.get_operational_mode = AsyncMock(return_value=OperationalMode.CODING)
         agent_context_service_mock.build_system_prompt = AsyncMock(return_value="PROMPT")
-
-        search_tools_inst = mocker.MagicMock()
-        search_tools_inst.to_tool_list.return_value = []
-        file_tools_inst = mocker.MagicMock()
-        file_tools_inst.to_tool_list.return_value = []
-        patcher_tools_inst = mocker.MagicMock()
-        patcher_tools_inst.to_tool_list.return_value = []
 
         mocker.patch("app.agents.services.agent_factory.SearchTools", return_value=search_tools_inst)
         file_tools_cls_mock = mocker.patch(
