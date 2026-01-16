@@ -58,17 +58,14 @@ def session_page_service_mock(mocker: MockerFixture) -> MagicMock:
 
 
 @pytest.fixture
-def override_get_session_service(session_service_mock: MagicMock):
-    from app.main import app
-    app.dependency_overrides[get_session_service] = lambda: session_service_mock
+def override_get_session_service(client, session_service_mock: MagicMock):
+    client.app.dependency_overrides[get_session_service] = lambda: session_service_mock
     yield
-    app.dependency_overrides.clear()
+    client.app.dependency_overrides.clear()
 
 
 @pytest.fixture
-def override_get_session_page_service(session_page_service_mock: MagicMock):
-    from app.main import app
-
-    app.dependency_overrides[get_session_page_service] = lambda: session_page_service_mock
+def override_get_session_page_service(client, session_page_service_mock: MagicMock):
+    client.app.dependency_overrides[get_session_page_service] = lambda: session_page_service_mock
     yield
-    app.dependency_overrides.clear()
+    client.app.dependency_overrides.clear()

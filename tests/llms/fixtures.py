@@ -133,12 +133,10 @@ def llm_factory_instance_mock(mocker: MockerFixture) -> MagicMock:
 
 
 @pytest.fixture
-def override_get_llm_service(llm_service_mock: MagicMock):
-    from app.main import app
-
-    app.dependency_overrides[get_llm_service] = lambda: llm_service_mock
+def override_get_llm_service(client, llm_service_mock: MagicMock):
+    client.app.dependency_overrides[get_llm_service] = lambda: llm_service_mock
     yield
-    app.dependency_overrides.clear()
+    client.app.dependency_overrides.clear()
 
 
 @pytest.fixture

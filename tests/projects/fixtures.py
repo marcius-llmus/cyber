@@ -73,9 +73,7 @@ def project_page_service_mock(mocker: MockerFixture) -> MagicMock:
 
 
 @pytest.fixture
-def override_get_project_service(project_service_mock: MagicMock):
-    from app.main import app
-
-    app.dependency_overrides[get_project_service] = lambda: project_service_mock
+def override_get_project_service(client, project_service_mock: MagicMock):
+    client.app.dependency_overrides[get_project_service] = lambda: project_service_mock
     yield
-    app.dependency_overrides.clear()
+    client.app.dependency_overrides.clear()

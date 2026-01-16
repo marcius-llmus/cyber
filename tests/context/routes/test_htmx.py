@@ -4,21 +4,23 @@ from unittest.mock import AsyncMock
 class TestContextHtmxRoutes:
     
     @pytest.mark.usefixtures("override_get_context_page_service")
-    async def test_get_file_tree(self, client, context_page_service_mock):
+    async def test_get_file_tree(self, client, context_page_service_mock, get_file_tree_page_data_mock):
         """GET /session/{id}/file-tree returns the file tree."""
-        # Setup
-        context_page_service_mock.get_file_tree_page_data = AsyncMock(return_value={
-            "file_tree": {"name": "root", "children": []}
-        })
-
-        # Execute
+        context_page_service_mock.get_file_tree_page_data = AsyncMock(return_value=get_file_tree_page_data_mock)
         response = client.get("/context/session/1/file-tree", headers={"HX-Request": "true"})
-
-        # Assert
         assert response.status_code == 200
+
+        html = response.text
+        assert 'ul class="w-full"' in html
+        assert '>root<' in html
+        assert '>src<' in html
+        assert '>main.py<' in html
+        assert 'name="filepaths[]"' in html
+        assert 'value="src/main.py"' in html
+        assert "checked" in html
+
         context_page_service_mock.get_file_tree_page_data.assert_awaited_once_with(session_id=1)
-        # Since we use templates, checking the exact HTML is hard without rendering, 
-        # but the response should be successful.
+
 
     @pytest.mark.usefixtures("override_get_context_service", "override_get_context_page_service")
     async def test_batch_update_context_files(

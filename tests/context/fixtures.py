@@ -151,19 +151,43 @@ def context_page_service_mock(mocker: MockerFixture) -> MagicMock:
 
 
 @pytest.fixture
-def override_get_context_service(workspace_service_mock: MagicMock):
-    from app.main import app
-    app.dependency_overrides[get_context_service] = lambda: workspace_service_mock
-    yield
-    app.dependency_overrides.pop(get_context_service, None)
+def get_file_tree_page_data_mock() -> dict:
+    return {
+        "file_tree": {
+            "type": "folder",
+            "name": "root",
+            "path": ".",
+            "children": [
+                {
+                    "type": "folder",
+                    "name": "src",
+                    "path": "src",
+                    "children": [
+                        {
+                            "type": "file",
+                            "name": "main.py",
+                            "path": "src/main.py",
+                            "selected": True,
+                        },
+                    ],
+                },
+            ],
+        }
+    }
 
 
 @pytest.fixture
-def override_get_context_page_service(context_page_service_mock: MagicMock):
-    from app.main import app
-    app.dependency_overrides[get_context_page_service] = lambda: context_page_service_mock
+def override_get_context_service(client, workspace_service_mock: MagicMock):
+    client.app.dependency_overrides[get_context_service] = lambda: workspace_service_mock
     yield
-    app.dependency_overrides.pop(get_context_page_service, None)
+    client.app.dependency_overrides.pop(get_context_service, None)
+
+
+@pytest.fixture
+def override_get_context_page_service(client, context_page_service_mock: MagicMock):
+    client.app.dependency_overrides[get_context_page_service] = lambda: context_page_service_mock
+    yield
+    client.app.dependency_overrides.pop(get_context_page_service, None)
 
 
 @pytest.fixture
