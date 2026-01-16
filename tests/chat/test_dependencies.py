@@ -46,19 +46,23 @@ class TestChatDependencies:
         """get_chat_service surfaces exceptions raised by build_chat_service."""
         with patch(
             "app.chat.dependencies.build_chat_service",
-            new=AsyncMock(side_effect=ValueError("Factory error")),
-        ):
-            with pytest.raises(ValueError, match="Factory error"):
+            new=AsyncMock(side_effect=ValueError("Boom")),
+        ) as build_chat_service_mock:
+            with pytest.raises(ValueError, match="Boom"):
                 await get_chat_service(db=db_session_mock)
+
+        build_chat_service_mock.assert_awaited_once_with(db_session_mock)
 
     async def test_get_chat_turn_service_propagates_factory_errors(self, db_session_mock):
         """get_chat_turn_service surfaces exceptions raised by build_chat_turn_service."""
         with patch(
             "app.chat.dependencies.build_chat_turn_service",
-            new=AsyncMock(side_effect=ValueError("Factory error")),
-        ):
-            with pytest.raises(ValueError, match="Factory error"):
+            new=AsyncMock(side_effect=ValueError("Boom")),
+        ) as build_chat_turn_service_mock:
+            with pytest.raises(ValueError, match="Boom"):
                 await get_chat_turn_service(db=db_session_mock)
+
+        build_chat_turn_service_mock.assert_awaited_once_with(db_session_mock)
 
     async def test_get_message_repository_is_async_dependency(self):
         """get_message_repository remains an async dependency (coroutine function)."""
