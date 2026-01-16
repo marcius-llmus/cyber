@@ -15,6 +15,8 @@ async def test_get_file_tree_no_project(service, workspace_service_mock):
     data = await service.get_file_tree_page_data(session_id=1)
     assert data == {"file_tree": {}}
 
+    workspace_service_mock.project_service.get_active_project.assert_awaited_once_with()
+
 async def test_get_file_tree_success(service, workspace_service_mock, file_system_service_mock):
     """Should return transformed tree with selection state."""
     # 1. Setup Project
@@ -66,6 +68,7 @@ async def test_get_file_tree_success(service, workspace_service_mock, file_syste
     # Verify interactions
     file_system_service_mock.get_project_file_tree.assert_awaited_once_with()
     workspace_service_mock.get_active_context.assert_awaited_once_with(1)
+    workspace_service_mock.project_service.get_active_project.assert_awaited_once_with()
 
 async def test_get_context_files_page_data(service, workspace_service_mock):
     """Should return active context files."""

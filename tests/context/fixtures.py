@@ -1,20 +1,21 @@
 from dataclasses import dataclass
-from unittest.mock import MagicMock
+from types import SimpleNamespace
 import pytest
-from pathlib import Path
 from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
-from unittest.mock import AsyncMock
-
-from app.context.models import ContextFile
+from unittest.mock import AsyncMock, MagicMock
 from app.context.repositories import ContextRepository
-from app.context.services import WorkspaceService, CodebaseService, FileSystemService, ContextPageService
+from app.context.models import ContextFile
+from app.context.services import (
+    WorkspaceService,
+    CodebaseService,
+    FileSystemService,
+    ContextPageService,
+    SearchService,
+    RepoMapService,
+)
 from app.context.dependencies import get_context_service, get_context_page_service
 from app.projects.services import ProjectService
-from app.settings.services import SettingsService
-from app.context.services.search import SearchService
-from app.projects.models import Project
-from app.sessions.models import ChatSession
 from app.settings.services import SettingsService
 
 
@@ -215,18 +216,12 @@ def context_repository_mock(mocker: MockerFixture) -> MagicMock:
 
 @pytest.fixture
 async def context_file(db_session: AsyncSession, chat_session) -> ContextFile:
-    context_file = ContextFile(
-        session_id=chat_session.id, file_path="src/main.py", hit_count=1
-    )
-    db_session.add(context_file)
+    """DB-backed ContextFile fixture (repository tests only)."""
+    obj = ContextFile(session_id=chat_session.id, file_path="src/main.py", hit_count=1)
+    db_session.add(obj)
     await db_session.flush()
-    await db_session.refresh(context_file)
-    return context_file
-
-
-@pytest.fixture
-def codebase_service_mock(mocker: MockerFixture) -> MagicMock:
-    return mocker.create_autospec(CodebaseService, instance=True)
+    await db_session.refresh(obj)
+    return obj
 
 
 @pytest.fixture
@@ -235,33 +230,103 @@ def project_service_mock(mocker: MockerFixture) -> MagicMock:
 
 
 @pytest.fixture
+def codebase_service_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.create_autospec(CodebaseService, instance=True)
+
+
+@pytest.fixture
+def workspace_service(
+    project_service_mock: MagicMock,
+    context_repository_mock: MagicMock,
+    codebase_service_mock: MagicMock,
+) -> WorkspaceService:
+    return WorkspaceService(
+        project_service=project_service_mock,
+        context_repo=context_repository_mock,
+        codebase_service=codebase_service_mock,
+    )
+
+
+@pytest.fixture
 def workspace_service_mock(mocker: MockerFixture) -> MagicMock:
     service = mocker.create_autospec(WorkspaceService, instance=True)
     service.project_service = mocker.create_autospec(ProjectService, instance=True)
-    service.project_service.get_active_project = AsyncMock()
     return service
 
 
 @pytest.fixture
+def file_system_service(
+    project_service_mock: MagicMock,
+    codebase_service_mock: MagicMock,
+) -> FileSystemService:
+    return FileSystemService(
+        project_service=project_service_mock,
+        codebase_service=codebase_service_mock,
+    )
+
+
+@pytest.fixture
 def file_system_service_mock(mocker: MockerFixture) -> MagicMock:
-    service = mocker.create_autospec(FileSystemService, instance=True)
-    service.get_project_file_tree = AsyncMock()
-    return service
+    return mocker.create_autospec(FileSystemService, instance=True)
+
+
+@pytest.fixture
+def search_service(
+    project_service_mock: MagicMock,
+    codebase_service_mock: MagicMock,
+    settings_service_mock: MagicMock,
+) -> SearchService:
+    return SearchService(
+        project_service=project_service_mock,
+        codebase_service=codebase_service_mock,
+        settings_service=settings_service_mock,
+    )
+
+
+@pytest.fixture
+def search_service_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.create_autospec(SearchService, instance=True)
+
+
+@pytest.fixture
+def repomap_service(
+    workspace_service_mock: MagicMock,
+    codebase_service_mock: MagicMock,
+    settings_service_mock: MagicMock,
+) -> RepoMapService:
+    return RepoMapService(
+        context_service=workspace_service_mock,
+        codebase_service=codebase_service_mock,
+        settings_service=settings_service_mock,
+    )
+
+
+@pytest.fixture
+def repomap_service_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.create_autospec(RepoMapService, instance=True)
 
 
 @pytest.fixture
 def settings_service_mock(mocker: MockerFixture) -> MagicMock:
     service = mocker.create_autospec(SettingsService, instance=True)
-    service.get_settings = AsyncMock()
+    service.get_settings = AsyncMock(return_value=SimpleNamespace())
     return service
 
 
 @pytest.fixture
+def context_page_service(
+    workspace_service_mock: MagicMock,
+    file_system_service_mock: MagicMock,
+) -> ContextPageService:
+    return ContextPageService(
+        context_service=workspace_service_mock,
+        fs_service=file_system_service_mock,
+    )
+
+
+@pytest.fixture
 def context_page_service_mock(mocker: MockerFixture) -> MagicMock:
-    service = mocker.create_autospec(ContextPageService, instance=True)
-    service.get_file_tree_page_data = AsyncMock()
-    service.get_context_files_page_data = AsyncMock()
-    return service
+    return mocker.create_autospec(ContextPageService, instance=True)
 
 
 @pytest.fixture

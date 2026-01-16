@@ -1,6 +1,8 @@
 import pytest
 from unittest.mock import MagicMock
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import AsyncMock
 
 from app.projects.exceptions import ActiveProjectRequiredException
 from app.context.services.search import SearchService
@@ -17,27 +19,30 @@ def service(project_service_mock, codebase_service_mock, settings_service_mock, 
     return SearchService(project_service_mock, codebase_service_mock, settings_service_mock)
 
 async def test_grep_no_project(service, project_service_mock):
-    project_service_mock.get_active_project.return_value = None
+    project_service_mock.get_active_project = AsyncMock(return_value=None)
     with pytest.raises(ActiveProjectRequiredException):
         await service.grep("pattern")
 
 async def test_grep_empty_pattern_list(service, project_service_mock, settings_service_mock):
-    project_service_mock.get_active_project.return_value = MagicMock()
-    settings_service_mock.get_settings.return_value = MagicMock(grep_token_limit=1000)
+    project_service_mock.get_active_project = AsyncMock(return_value=MagicMock(path="/tmp"))
+    settings_service_mock.get_settings = AsyncMock(return_value=SimpleNamespace(grep_token_limit=1000))
     
     result = await service.grep([])
     assert result == "Error: Empty search pattern."
 
+    project_service_mock.get_active_project.assert_awaited_once_with()
+    settings_service_mock.get_settings.assert_awaited_once_with()
+
 async def test_grep_success(service, project_service_mock, codebase_service_mock, settings_service_mock, mocker):
     # 1. Setup
     project_mock = MagicMock(path="/tmp")
-    project_service_mock.get_active_project.return_value = project_mock
-    settings_service_mock.get_settings.return_value = MagicMock(grep_token_limit=1000)
+    project_service_mock.get_active_project = AsyncMock(return_value=project_mock)
+    settings_service_mock.get_settings = AsyncMock(return_value=SimpleNamespace(grep_token_limit=1000))
     
-    codebase_service_mock.resolve_file_patterns.return_value = ["file.py"]
-    codebase_service_mock.read_file.return_value = FileReadResult(
+    codebase_service_mock.resolve_file_patterns = AsyncMock(return_value=["file.py"])
+    codebase_service_mock.read_file = AsyncMock(return_value=FileReadResult(
         file_path="file.py", content="def foo(): pass", status=FileStatus.SUCCESS
-    )
+    ))
 
     # 2. Patch TreeContext
     tree_cls = mocker.patch("app.context.services.search.TreeContext")
@@ -53,14 +58,19 @@ async def test_grep_success(service, project_service_mock, codebase_service_mock
     assert "def foo(): pass" in result
     tree_instance.grep.assert_called_with("foo", ignore_case=True)
 
+    project_service_mock.get_active_project.assert_awaited_once_with()
+    settings_service_mock.get_settings.assert_awaited_once_with()
+    codebase_service_mock.resolve_file_patterns.assert_awaited_once_with("/tmp", None)
+    codebase_service_mock.read_file.assert_awaited_once_with("/tmp", "file.py")
+
 async def test_grep_no_matches(service, project_service_mock, codebase_service_mock, settings_service_mock, mocker):
     # 1. Setup
-    project_service_mock.get_active_project.return_value = MagicMock(path="/tmp")
-    settings_service_mock.get_settings.return_value = MagicMock(grep_token_limit=1000)
-    codebase_service_mock.resolve_file_patterns.return_value = ["file.py"]
-    codebase_service_mock.read_file.return_value = FileReadResult(
+    project_service_mock.get_active_project = AsyncMock(return_value=MagicMock(path="/tmp"))
+    settings_service_mock.get_settings = AsyncMock(return_value=SimpleNamespace(grep_token_limit=1000))
+    codebase_service_mock.resolve_file_patterns = AsyncMock(return_value=["file.py"])
+    codebase_service_mock.read_file = AsyncMock(return_value=FileReadResult(
         file_path="file.py", content="content", status=FileStatus.SUCCESS
-    )
+    ))
 
     # 2. Patch TreeContext to return no matches
     tree_cls = mocker.patch("app.context.services.search.TreeContext")
@@ -73,16 +83,23 @@ async def test_grep_no_matches(service, project_service_mock, codebase_service_m
     # 4. Assert
     assert result == "No matches found."
 
+    project_service_mock.get_active_project.assert_awaited_once_with()
+    settings_service_mock.get_settings.assert_awaited_once_with()
+    codebase_service_mock.resolve_file_patterns.assert_awaited_once_with("/tmp", None)
+    codebase_service_mock.read_file.assert_awaited_once_with("/tmp", "file.py")
+
 async def test_grep_token_limit(service, project_service_mock, codebase_service_mock, settings_service_mock, mocker):
     # 1. Setup
-    project_service_mock.get_active_project.return_value = MagicMock(path="/tmp")
-    settings_service_mock.get_settings.return_value = MagicMock(grep_token_limit=10) # Very small limit
+    project_service_mock.get_active_project = AsyncMock(return_value=MagicMock(path="/tmp"))
+    settings_service_mock.get_settings = AsyncMock(return_value=SimpleNamespace(grep_token_limit=10))  # Very small limit
     
-    codebase_service_mock.resolve_file_patterns.return_value = ["file1.py", "file2.py"]
-    codebase_service_mock.read_file.side_effect = [
-        FileReadResult(file_path="file1.py", content="content1", status=FileStatus.SUCCESS),
-        FileReadResult(file_path="file2.py", content="content2", status=FileStatus.SUCCESS)
-    ]
+    codebase_service_mock.resolve_file_patterns = AsyncMock(return_value=["file1.py", "file2.py"])
+    codebase_service_mock.read_file = AsyncMock(
+        side_effect=[
+            FileReadResult(file_path="file1.py", content="content1", status=FileStatus.SUCCESS),
+            FileReadResult(file_path="file2.py", content="content2", status=FileStatus.SUCCESS),
+        ]
+    )
 
     # 2. Patch TreeContext
     tree_cls = mocker.patch("app.context.services.search.TreeContext")
@@ -102,19 +119,24 @@ async def test_grep_token_limit(service, project_service_mock, codebase_service_
     # 4. Assert
     assert "truncated due to token limit" in result
 
+    project_service_mock.get_active_project.assert_awaited_once_with()
+    settings_service_mock.get_settings.assert_awaited_once_with()
+    codebase_service_mock.resolve_file_patterns.assert_awaited_once_with("/tmp", None)
+    assert codebase_service_mock.read_file.await_count == 1
+
 async def test_grep_integration_patterns(service, temp_codebase, project_service_mock, codebase_service_mock, settings_service_mock, mocker):
     """
     Integration-style test using real TreeContext to verify regex pattern matching.
     """
     # 1. Setup
-    project_service_mock.get_active_project.return_value = MagicMock(path="/tmp")
-    settings_service_mock.get_settings.return_value = MagicMock(grep_token_limit=10000)
+    project_service_mock.get_active_project = AsyncMock(return_value=MagicMock(path="/tmp"))
+    settings_service_mock.get_settings = AsyncMock(return_value=SimpleNamespace(grep_token_limit=10000))
     
-    codebase_service_mock.resolve_file_patterns.return_value = ["src/grep_playground.py"]
+    codebase_service_mock.resolve_file_patterns = AsyncMock(return_value=["src/grep_playground.py"])
     content = Path(temp_codebase.grep_playground).read_text(encoding="utf-8")
-    codebase_service_mock.read_file.return_value = FileReadResult(
+    codebase_service_mock.read_file = AsyncMock(return_value=FileReadResult(
         file_path="src/grep_playground.py", content=content, status=FileStatus.SUCCESS
-    )
+    ))
 
     # We do NOT patch TreeContext here. We want to use the real one.
     # Ensure tiktoken encoding is mocked (already done in fixture)
@@ -139,11 +161,11 @@ async def test_grep_integration_context_can_include_adjacent_function(
     When two functions are adjacent, searching for a match inside the first function can
     include the next function's definition as part of context.
     """
-    project_service_mock.get_active_project.return_value = MagicMock(path="/tmp")
-    settings_service_mock.get_settings.return_value = MagicMock(grep_token_limit=10000)
+    project_service_mock.get_active_project = AsyncMock(return_value=MagicMock(path="/tmp"))
+    settings_service_mock.get_settings = AsyncMock(return_value=SimpleNamespace(grep_token_limit=10000))
 
-    codebase_service_mock.resolve_file_patterns.return_value = ["test_file.py"]
-    codebase_service_mock.read_file.return_value = FileReadResult(
+    codebase_service_mock.resolve_file_patterns = AsyncMock(return_value=["test_file.py"])
+    codebase_service_mock.read_file = AsyncMock(return_value=FileReadResult(
         file_path="test_file.py",
         content=(
             "def hello():\n"
@@ -152,7 +174,7 @@ async def test_grep_integration_context_can_include_adjacent_function(
             "    print('Goodbye World')\n"
         ),
         status=FileStatus.SUCCESS,
-    )
+    ))
 
     service.encoding = MagicMock()
     service.encoding.encode.return_value = [1]
@@ -172,15 +194,15 @@ async def test_grep_integration_context_does_not_include_distant_function(
     as context lines even when they do not match. Matches are marked with a "█" prefix,
     while non-matching context lines are prefixed with "│".
     """
-    project_service_mock.get_active_project.return_value = MagicMock(path="/tmp")
-    settings_service_mock.get_settings.return_value = MagicMock(grep_token_limit=10000)
+    project_service_mock.get_active_project = AsyncMock(return_value=MagicMock(path="/tmp"))
+    settings_service_mock.get_settings = AsyncMock(return_value=SimpleNamespace(grep_token_limit=10000))
 
-    codebase_service_mock.resolve_file_patterns.return_value = ["src/grep_playground.py"]
-    codebase_service_mock.read_file.return_value = FileReadResult(
+    codebase_service_mock.resolve_file_patterns = AsyncMock(return_value=["src/grep_playground.py"])
+    codebase_service_mock.read_file = AsyncMock(return_value=FileReadResult(
         file_path="src/grep_playground.py",
         content=Path(temp_codebase.grep_playground).read_text(encoding="utf-8"),
         status=FileStatus.SUCCESS,
-    )
+    ))
 
     service.encoding = MagicMock()
     service.encoding.encode.return_value = [1]
@@ -225,17 +247,17 @@ async def test_grep_regex_complexity_real_tree_context(
     mocker.patch("tiktoken.get_encoding")
     service = SearchService(project_service_mock, codebase_service_mock, settings_service_mock)
 
-    project_service_mock.get_active_project.return_value = MagicMock(path=temp_codebase.root)
-    settings_service_mock.get_settings.return_value = MagicMock(grep_token_limit=100_000)
+    project_service_mock.get_active_project = AsyncMock(return_value=MagicMock(path=temp_codebase.root))
+    settings_service_mock.get_settings = AsyncMock(return_value=SimpleNamespace(grep_token_limit=100_000))
 
     # Use a .py file to avoid grep_ast "Unknown language" errors for .txt.
     # Use a larger playground file to make context inclusion stable.
-    codebase_service_mock.resolve_file_patterns.return_value = ["src/grep_playground.py"]
-    codebase_service_mock.read_file.return_value = FileReadResult(
+    codebase_service_mock.resolve_file_patterns = AsyncMock(return_value=["src/grep_playground.py"])
+    codebase_service_mock.read_file = AsyncMock(return_value=FileReadResult(
         file_path="src/grep_playground.py",
         content=Path(temp_codebase.grep_playground).read_text(encoding="utf-8"),
         status=FileStatus.SUCCESS,
-    )
+    ))
 
     service.encoding = MagicMock()
     service.encoding.encode.return_value = [1]
@@ -256,14 +278,14 @@ async def test_grep_invalid_regex_best_effort_per_file(
     mocker.patch("tiktoken.get_encoding")
     service = SearchService(project_service_mock, codebase_service_mock, settings_service_mock)
 
-    project_service_mock.get_active_project.return_value = MagicMock(path=temp_codebase.root)
-    settings_service_mock.get_settings.return_value = MagicMock(grep_token_limit=100_000)
-    codebase_service_mock.resolve_file_patterns.return_value = ["src/regex_cases.py"]
-    codebase_service_mock.read_file.return_value = FileReadResult(
+    project_service_mock.get_active_project = AsyncMock(return_value=MagicMock(path=temp_codebase.root))
+    settings_service_mock.get_settings = AsyncMock(return_value=SimpleNamespace(grep_token_limit=100_000))
+    codebase_service_mock.resolve_file_patterns = AsyncMock(return_value=["src/regex_cases.py"])
+    codebase_service_mock.read_file = AsyncMock(return_value=FileReadResult(
         file_path="src/regex_cases.py",
         content=Path(temp_codebase.regex_file).read_text(encoding="utf-8"),
         status=FileStatus.SUCCESS,
-    )
+    ))
 
     service.encoding = MagicMock()
     service.encoding.encode.return_value = [1]
@@ -280,10 +302,10 @@ async def test_grep_skips_ignored_and_binary_via_read_file_status(
     mocker.patch("tiktoken.get_encoding")
     service = SearchService(project_service_mock, codebase_service_mock, settings_service_mock)
 
-    project_service_mock.get_active_project.return_value = MagicMock(path="/tmp/project")
-    settings_service_mock.get_settings.return_value = MagicMock(grep_token_limit=100_000)
+    project_service_mock.get_active_project = AsyncMock(return_value=MagicMock(path="/tmp/project"))
+    settings_service_mock.get_settings = AsyncMock(return_value=SimpleNamespace(grep_token_limit=100_000))
 
-    codebase_service_mock.resolve_file_patterns.return_value = ["bin/data.bin", "logs/app.log"]
+    codebase_service_mock.resolve_file_patterns = AsyncMock(return_value=["bin/data.bin", "logs/app.log"])
     codebase_service_mock.read_file.side_effect = [
         FileReadResult(file_path="bin/data.bin", content=None, status=FileStatus.BINARY),
         FileReadResult(file_path="logs/app.log", content=None, status=FileStatus.ERROR),
@@ -303,15 +325,15 @@ async def test_grep_defaults_to_scan_all_pattern_when_file_patterns_none(
     mocker.patch("tiktoken.get_encoding")
     service = SearchService(project_service_mock, codebase_service_mock, settings_service_mock)
 
-    project_service_mock.get_active_project.return_value = MagicMock(path=temp_codebase.root)
-    settings_service_mock.get_settings.return_value = MagicMock(grep_token_limit=100_000)
+    project_service_mock.get_active_project = AsyncMock(return_value=MagicMock(path=temp_codebase.root))
+    settings_service_mock.get_settings = AsyncMock(return_value=SimpleNamespace(grep_token_limit=100_000))
 
-    codebase_service_mock.resolve_file_patterns.return_value = ["src/main.py"]
-    codebase_service_mock.read_file.return_value = FileReadResult(
+    codebase_service_mock.resolve_file_patterns = AsyncMock(return_value=["src/main.py"])
+    codebase_service_mock.read_file = AsyncMock(return_value=FileReadResult(
         file_path="src/main.py",
         content=Path(temp_codebase.main_py).read_text(encoding="utf-8"),
         status=FileStatus.SUCCESS,
-    )
+    ))
 
     service.encoding = MagicMock()
     service.encoding.encode.return_value = [1]
@@ -330,15 +352,15 @@ async def test_grep_unknown_language_reports_error_per_file(
     mocker.patch("tiktoken.get_encoding")
     service = SearchService(project_service_mock, codebase_service_mock, settings_service_mock)
 
-    project_service_mock.get_active_project.return_value = MagicMock(path=temp_codebase.root)
-    settings_service_mock.get_settings.return_value = MagicMock(grep_token_limit=100_000)
+    project_service_mock.get_active_project = AsyncMock(return_value=MagicMock(path=temp_codebase.root))
+    settings_service_mock.get_settings = AsyncMock(return_value=SimpleNamespace(grep_token_limit=100_000))
 
-    codebase_service_mock.resolve_file_patterns.return_value = ["src/regex_cases.txt"]
-    codebase_service_mock.read_file.return_value = FileReadResult(
+    codebase_service_mock.resolve_file_patterns = AsyncMock(return_value=["src/regex_cases.txt"])
+    codebase_service_mock.read_file = AsyncMock(return_value=FileReadResult(
         file_path="src/regex_cases.txt",
         content=Path(temp_codebase.regex_file).read_text(encoding="utf-8"),
         status=FileStatus.SUCCESS,
-    )
+    ))
 
     service.encoding = MagicMock()
     service.encoding.encode.return_value = [1]
