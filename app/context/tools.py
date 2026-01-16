@@ -236,17 +236,41 @@ class SearchTools(BaseToolSet):
         ] = True,
     ) -> str:
         """
-        Searches for a pattern in the specified files and returns the AST context 
-        (surrounding classes/functions) for matches.
+        Search for `search_pattern` inside files selected by `file_patterns` and return an
+        AST-aware contextual excerpt around matches.
 
-        EXPLORATION TOOL:
-        Use this tool to locate code definitions (classes, functions) across the project.
-        It provides AST-aware context, showing you the structure around matches.
-        
-        WORKFLOW:
-        1. Search: Use `grep` to find where a symbol is defined or used.
-        2. Locate: Identify the relevant file paths from the results.
-        3. Read: Use `read_files` to examine the full content of those files.
+        WHAT IT DOES
+        - `search_pattern` is a Python regular expression (regex) applied line-by-line.
+          It may be provided as:
+            - a single regex string, or
+            - a list of regex strings (combined with OR by joining with '|').
+        - `file_patterns` is a list of glob patterns (NOT regex) resolved relative to the active project root.
+          Globs support recursive `**` and deep wildcard segments like `/**/`.
+          If `file_patterns` is omitted/None, the search defaults to scanning the entire project (equivalent to ['.']).
+
+        OUTPUT FORMAT
+        The output is not limited to the exact matching line. It is produced by an AST-based context builder and
+        includes surrounding code for readability and structure.
+        - Lines prefixed with '█' are matching “lines of interest” (actual regex matches).
+        - Lines prefixed with '│' are surrounding context.
+        - '⋮' indicates omitted sections.
+
+        Because context is included, unrelated functions/classes may appear in the output even if they did not match.
+        To determine what truly matched, look for the '█' lines.
+
+        FILE TYPE / LANGUAGE NOTE
+        Context rendering relies on a language parser inferred from the file extension. Unsupported/unknown extensions
+        may yield per-file errors such as “Unknown language for <file>”.
+
+        ERROR HANDLING
+        - Invalid regex patterns and per-file parsing errors do not crash the whole request. Instead, the output
+          includes per-file “Error processing <file>: <error>” entries where applicable.
+        - Output may be truncated if it exceeds the configured token limit.
+
+        EXPLORATION WORKFLOW
+        1. Search: Use `grep` to locate likely definitions/usages and get structured context.
+        2. Locate: Extract the relevant file paths and sections from the output.
+        3. Read: Use `read_files` to fetch the full file contents for detailed inspection/editing.
         """
         try:
             async with self.db.session() as session:
