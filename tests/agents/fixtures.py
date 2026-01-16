@@ -8,6 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.agents.dependencies import get_workflow_service
 from app.agents.repositories import WorkflowStateRepository
 from app.agents.services import AgentContextService, WorkflowService
+from app.agents.services.agent_factory import AgentFactoryService
+from app.coder.agent import CoderAgent
 from app.context.services import CodebaseService, RepoMapService, WorkspaceService
 from app.projects.services import ProjectService
 from app.prompts.services import PromptService
@@ -67,6 +69,16 @@ def agent_context_service_mock(mocker: MockerFixture) -> MagicMock:
 
 
 @pytest.fixture
+def agent_factory_service_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.create_autospec(AgentFactoryService, instance=True)
+
+
+@pytest.fixture
+def coder_agent_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.create_autospec(CoderAgent, instance=True)
+
+
+@pytest.fixture
 def workflow_mock(mocker: MockerFixture) -> MagicMock:
     return mocker.create_autospec(Workflow, instance=True)
 
@@ -85,6 +97,21 @@ def agent_context_service(
         codebase_service=codebase_service_mock,
         project_service=project_service_mock,
         prompt_service=prompt_service_mock,
+    )
+
+
+@pytest.fixture
+def agent_factory_service(
+    settings_service_mock: MagicMock,
+    llm_service_mock: MagicMock,
+    session_service_mock: MagicMock,
+    agent_context_service_mock: MagicMock,
+) -> AgentFactoryService:
+    return AgentFactoryService(
+        settings_service=settings_service_mock,
+        llm_service=llm_service_mock,
+        session_service=session_service_mock,
+        agent_context_service=agent_context_service_mock,
     )
 
 
