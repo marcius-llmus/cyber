@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.projects.dependencies import get_project_service
 from app.projects.models import Project
 from app.projects.repositories import ProjectRepository
-from app.projects.services import ProjectService
+from app.projects.services import ProjectPageService, ProjectService
 
 
 @pytest.fixture
@@ -51,6 +51,11 @@ def project_service(project_repository_mock: MagicMock) -> ProjectService:
 @pytest.fixture
 def project_service_mock(mocker: MockerFixture) -> MagicMock:
     return mocker.create_autospec(ProjectService, instance=True)
+
+
+@pytest.fixture
+def project_page_service_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.create_autospec(ProjectPageService, instance=True)
 
 
 @pytest.fixture

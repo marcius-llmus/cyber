@@ -1,6 +1,7 @@
 import pytest
-from unittest.mock import AsyncMock, patch
 import inspect
+from unittest.mock import AsyncMock
+
 from app.chat.dependencies import (
     get_message_repository,
     get_chat_service,
@@ -25,47 +26,47 @@ class TestChatDependencies:
         """get_chat_turn_service remains an async dependency (coroutine function)."""
         assert inspect.iscoroutinefunction(get_chat_turn_service)
 
-    async def test_get_chat_service_wires_message_repo_session_service_project_service(self, db_session_mock, chat_service_mock):
+    async def test_get_chat_service_wires_message_repo_session_service_project_service(self, db_session_mock, mocker, chat_service_mock):
         """get_chat_service delegates to build_chat_service and returns its result."""
-        with patch(
+        build_chat_service_mock = mocker.patch(
             "app.chat.dependencies.build_chat_service",
             new=AsyncMock(return_value=chat_service_mock),
-        ) as build_chat_service_mock:
-            service = await get_chat_service(db=db_session_mock)
+        )
+        service = await get_chat_service(db=db_session_mock)
 
         assert service is chat_service_mock
         build_chat_service_mock.assert_awaited_once_with(db_session_mock)
 
-    async def test_get_chat_turn_service_wires_chat_turn_repository(self, db_session_mock, chat_turn_service_mock):
+    async def test_get_chat_turn_service_wires_chat_turn_repository(self, db_session_mock, mocker, chat_turn_service_mock):
         """get_chat_turn_service delegates to build_chat_turn_service and returns its result."""
-        with patch(
+        build_chat_turn_service_mock = mocker.patch(
             "app.chat.dependencies.build_chat_turn_service",
             new=AsyncMock(return_value=chat_turn_service_mock),
-        ) as build_chat_turn_service_mock:
-            service = await get_chat_turn_service(db=db_session_mock)
+        )
+        service = await get_chat_turn_service(db=db_session_mock)
 
         assert service is chat_turn_service_mock
         build_chat_turn_service_mock.assert_awaited_once_with(db_session_mock)
 
-    async def test_get_chat_service_propagates_factory_errors(self, db_session_mock):
+    async def test_get_chat_service_propagates_factory_errors(self, db_session_mock, mocker):
         """get_chat_service surfaces exceptions raised by build_chat_service."""
-        with patch(
+        build_chat_service_mock = mocker.patch(
             "app.chat.dependencies.build_chat_service",
             new=AsyncMock(side_effect=ValueError("Boom")),
-        ) as build_chat_service_mock:
-            with pytest.raises(ValueError, match="Boom"):
-                await get_chat_service(db=db_session_mock)
+        )
+        with pytest.raises(ValueError, match="Boom"):
+            await get_chat_service(db=db_session_mock)
 
         build_chat_service_mock.assert_awaited_once_with(db_session_mock)
 
-    async def test_get_chat_turn_service_propagates_factory_errors(self, db_session_mock):
+    async def test_get_chat_turn_service_propagates_factory_errors(self, db_session_mock, mocker):
         """get_chat_turn_service surfaces exceptions raised by build_chat_turn_service."""
-        with patch(
+        build_chat_turn_service_mock = mocker.patch(
             "app.chat.dependencies.build_chat_turn_service",
             new=AsyncMock(side_effect=ValueError("Boom")),
-        ) as build_chat_turn_service_mock:
-            with pytest.raises(ValueError, match="Boom"):
-                await get_chat_turn_service(db=db_session_mock)
+        )
+        with pytest.raises(ValueError, match="Boom"):
+            await get_chat_turn_service(db=db_session_mock)
 
         build_chat_turn_service_mock.assert_awaited_once_with(db_session_mock)
 
