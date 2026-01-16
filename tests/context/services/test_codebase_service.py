@@ -49,6 +49,26 @@ async def test_validate_file_path(temp_codebase):
     path = await service.validate_file_path(root, "new_file.py", must_exist=False)
     assert str(path).endswith("new_file.py")
 
+async def test_validate_directory_path(temp_codebase):
+    """Test validate_directory_path behavior."""
+    service = CodebaseService()
+    root = temp_codebase.root
+
+    # 1. Valid dir
+    path = await service.validate_directory_path(root, "src")
+    assert path == Path(temp_codebase.src_dir)
+
+    # 2. Ignored dir -> Raises ValueError
+    with pytest.raises(ValueError, match="Access denied"):
+        await service.validate_directory_path(root, "secret")
+
+    # 3. Not a directory -> Raises ValueError
+    with pytest.raises(ValueError, match="Path is not a directory"):
+        await service.validate_directory_path(root, "src/main.py")
+
+    # 4. Non-existent -> Raises ValueError
+    with pytest.raises(ValueError, match="Directory not found"):
+        await service.validate_directory_path(root, "ghost_dir")
 
 async def test_list_dir(temp_codebase):
     """Test list_dir returns filtered file list."""
@@ -111,6 +131,21 @@ async def test_filter_and_resolve_paths(temp_codebase):
     assert len(results) == 1
     assert Path(temp_codebase.main_py).resolve() in [Path(p) for p in results]
 
+async def test_resolve_file_patterns(temp_codebase):
+    """Test resolving glob patterns."""
+    service = CodebaseService()
+    root = temp_codebase.root
+
+    # 1. Exact match
+    results = await service.resolve_file_patterns(root, ["src/main.py"])
+    assert len(results) == 1
+    assert "src/main.py" in results
+
+    # 2. Glob match
+    results = await service.resolve_file_patterns(root, ["src/*.py"])
+    assert "src/main.py" in results
+    assert "src/utils.py" in results
+
 async def test_build_file_tree(temp_codebase):
     """Test tree building."""
     service = CodebaseService()
@@ -133,3 +168,23 @@ async def test_build_file_tree(temp_codebase):
     src_children = [c.name for c in src_node.children]
     assert "main.py" in src_children
     assert "utils.py" in src_children
+
+async def test_write_file(temp_codebase):
+    """Test writing files."""
+    service = CodebaseService()
+    root = temp_codebase.root
+
+    # 1. Write new file
+    await service.write_file(root, "new_file.txt", "Hello")
+    result = await service.read_file(root, "new_file.txt")
+    assert result.content == "Hello"
+
+    # 2. Overwrite existing
+    await service.write_file(root, "new_file.txt", "Updated")
+    result = await service.read_file(root, "new_file.txt")
+    assert result.content == "Updated"
+
+    # 3. Create parent directories
+    await service.write_file(root, "nested/dir/test.txt", "Deep")
+    result = await service.read_file(root, "nested/dir/test.txt")
+    assert result.content == "Deep"

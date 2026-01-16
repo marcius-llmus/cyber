@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import MagicMock
 from app.context.services import WorkspaceService
 from app.context.models import ContextFile
+from app.context.schemas import ContextFileUpdate
 from app.patches.schemas import ParsedDiffPatch
 from app.projects.exceptions import ActiveProjectRequiredException
 
@@ -194,3 +195,116 @@ async def test_get_active_file_paths_abs(
     
     assert len(result) == 1
     assert result[0] == "/root/f1.py"
+
+async def test_delete_context_for_session(
+    context_repository_mock, codebase_service_mock, project_service_mock, chat_session_mock
+):
+    """Test deleting all context for a session."""
+    service = WorkspaceService(project_service_mock, context_repository_mock, codebase_service_mock)
+    await service.delete_context_for_session(chat_session_mock.id)
+    context_repository_mock.delete_all_by_session.assert_awaited_once_with(chat_session_mock.id)
+
+async def test_get_active_context(
+    context_repository_mock, codebase_service_mock, project_service_mock, chat_session_mock
+):
+    """Test getting active context."""
+    service = WorkspaceService(project_service_mock, context_repository_mock, codebase_service_mock)
+    await service.get_active_context(chat_session_mock.id)
+    context_repository_mock.list_by_session.assert_awaited_once_with(chat_session_mock.id)
+
+async def test_add_context_files(
+    context_repository_mock, codebase_service_mock, project_service_mock, chat_session_mock, project_mock
+):
+    """Test adding multiple files, handling errors gracefully."""
+    project_service_mock.get_active_project.return_value = project_mock
+    context_repository_mock.get_by_session_and_path.return_value = None
+    
+    # Mock validate to fail for second file
+    async def _validate(root, path, must_exist=True):
+        if "bad" in path:
+            raise ValueError("Bad path")
+        return f"{root}/{path}"
+    
+    codebase_service_mock.validate_file_path.side_effect = _validate
+    
+    service = WorkspaceService(project_service_mock, context_repository_mock, codebase_service_mock)
+    await service.add_context_files(chat_session_mock.id, ["good.py", "bad.py", "good2.py"])
+    
+    # Should have tried to create 2 files (good.py and good2.py)
+    assert context_repository_mock.create.await_count == 2
+
+async def test_remove_context_files_by_path(
+    context_repository_mock, codebase_service_mock, project_service_mock, chat_session_mock
+):
+    """Test removing multiple files by path."""
+    service = WorkspaceService(project_service_mock, context_repository_mock, codebase_service_mock)
+    await service.remove_context_files_by_path(chat_session_mock.id, ["f1.py", "f2.py"])
+    
+    assert context_repository_mock.delete_by_session_and_path.await_count == 2
+    # Verify calls
+    calls = context_repository_mock.delete_by_session_and_path.await_args_list
+    assert calls[0].args == (chat_session_mock.id, "f1.py")
+    assert calls[1].args == (chat_session_mock.id, "f2.py")
+
+async def test_sync_files_remove(
+    context_repository_mock, codebase_service_mock, project_service_mock, chat_session_mock, project_mock
+):
+    """Test sync_files removes files not in the list."""
+    project_service_mock.get_active_project.return_value = project_mock
+    
+    # Incoming list is empty (so remove everything)
+    codebase_service_mock.filter_and_resolve_paths.return_value = set()
+    
+    # Current context has 1 file
+    f1 = ContextFile(session_id=chat_session_mock.id, file_path="old.py")
+    context_repository_mock.list_by_session.return_value = [f1]
+    
+    service = WorkspaceService(project_service_mock, context_repository_mock, codebase_service_mock)
+    await service.sync_files(chat_session_mock.id, [])
+    
+    context_repository_mock.delete_by_session_and_path.assert_awaited_once_with(
+        chat_session_mock.id, "old.py"
+    )
+
+async def test_sync_files_no_project(
+    context_repository_mock, codebase_service_mock, project_service_mock, chat_session_mock
+):
+    """Test sync_files requires active project."""
+    project_service_mock.get_active_project.return_value = None
+    service = WorkspaceService(project_service_mock, context_repository_mock, codebase_service_mock)
+    with pytest.raises(ActiveProjectRequiredException):
+        await service.sync_files(chat_session_mock.id, [])
+
+async def test_sync_context_for_diff_no_project(
+    context_repository_mock, codebase_service_mock, project_service_mock, chat_session_mock
+):
+    """Test sync_context_for_diff requires active project."""
+    project_service_mock.get_active_project.return_value = None
+    patch = MagicMock(spec=ParsedDiffPatch)
+    patch.is_added_file = True
+    
+    service = WorkspaceService(project_service_mock, context_repository_mock, codebase_service_mock)
+    with pytest.raises(ActiveProjectRequiredException):
+        await service.sync_context_for_diff(session_id=chat_session_mock.id, patch=patch)
+
+async def test_sync_context_for_diff_add(
+    context_repository_mock, codebase_service_mock, project_service_mock, chat_session_mock, project_mock
+):
+    """Test sync_context_for_diff with added file."""
+    project_service_mock.get_active_project.return_value = project_mock
+    # Mock add_file internal call logic (it calls validate and create)
+    # Easier to just let it run since we mocked repo/codebase
+    context_repository_mock.get_by_session_and_path.return_value = None
+    
+    patch = MagicMock(spec=ParsedDiffPatch)
+    patch.is_added_file = True
+    patch.is_removed_file = False
+    patch.is_rename = False
+    patch.path = "added.py"
+
+    service = WorkspaceService(project_service_mock, context_repository_mock, codebase_service_mock)
+    await service.sync_context_for_diff(session_id=chat_session_mock.id, patch=patch)
+
+    # Should call add_file logic -> create
+    context_repository_mock.create.assert_awaited_once()
+    assert context_repository_mock.create.call_args.kwargs['obj_in'].file_path == "added.py"

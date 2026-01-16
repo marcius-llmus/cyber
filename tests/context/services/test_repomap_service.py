@@ -44,7 +44,8 @@ async def test_generate_repo_map_success(
     # 2. Execute
     result = await service.generate_repo_map(
         session_id=1,
-        mentioned_filenames={"other.py"},
+        mentioned_filenames={"other.py"}, 
+        mentioned_idents={"Foo", "Bar"},
         include_active_content=False
     )
 
@@ -59,6 +60,7 @@ async def test_generate_repo_map_success(
     assert "/tmp/proj/README.md" in kwargs["all_files"]
     assert kwargs["active_context_files"] == {"/tmp/proj/src/main.py"}
     assert kwargs["mentioned_filenames"] == {"/tmp/proj/other.py"}
+    assert kwargs["mentioned_idents"] == {"Foo", "Bar"}
     assert kwargs["token_limit"] == 2000
     
     repomap_instance.generate.assert_awaited_once_with(include_active_content=False)
