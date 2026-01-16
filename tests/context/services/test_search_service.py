@@ -102,7 +102,7 @@ async def test_grep_token_limit(service, project_service_mock, codebase_service_
     # 4. Assert
     assert "truncated due to token limit" in result
 
-async def test_grep_integration_patterns(service, project_service_mock, codebase_service_mock, settings_service_mock, mocker):
+async def test_grep_integration_patterns(service, temp_codebase, project_service_mock, codebase_service_mock, settings_service_mock, mocker):
     """
     Integration-style test using real TreeContext to verify regex pattern matching.
     """
@@ -126,9 +126,72 @@ async def test_grep_integration_patterns(service, project_service_mock, codebase
     # Case A: Simple String
     # grep_ast returns contextual blocks, so "Goodbye" can still appear as surrounding context.
     # We assert that the hello function is present.
-    result = await service.grep("\[ERROR\]")
+    result = await service.grep("\\[ERROR\\]")
     assert "src/grep_playground.py:" in result
     assert "[ERROR] Something went wrong" in result
+
+
+async def test_grep_integration_context_can_include_adjacent_function(
+    service, project_service_mock, codebase_service_mock, settings_service_mock, mocker
+):
+    """Demonstrate TreeContext context behavior on a small file.
+
+    When two functions are adjacent, searching for a match inside the first function can
+    include the next function's definition as part of context.
+    """
+    project_service_mock.get_active_project.return_value = MagicMock(path="/tmp")
+    settings_service_mock.get_settings.return_value = MagicMock(grep_token_limit=10000)
+
+    codebase_service_mock.resolve_file_patterns.return_value = ["test_file.py"]
+    codebase_service_mock.read_file.return_value = FileReadResult(
+        file_path="test_file.py",
+        content=(
+            "def hello():\n"
+            "    print('Hello World')\n\n"
+            "def goodbye():\n"
+            "    print('Goodbye World')\n"
+        ),
+        status=FileStatus.SUCCESS,
+    )
+
+    service.encoding = MagicMock()
+    service.encoding.encode.return_value = [1]
+
+    result = await service.grep("Hello")
+    assert "test_file.py:" in result
+    assert "Hello World" in result
+    assert "def goodbye():" in result
+
+
+async def test_grep_integration_context_does_not_include_distant_function(
+    service, temp_codebase, project_service_mock, codebase_service_mock, settings_service_mock, mocker
+):
+    """Demonstrate TreeContext context behavior on a larger file.
+
+    TreeContext output includes AST-aware context; other scopes (like `omega`) can appear
+    as context lines even when they do not match. Matches are marked with a "█" prefix,
+    while non-matching context lines are prefixed with "│".
+    """
+    project_service_mock.get_active_project.return_value = MagicMock(path="/tmp")
+    settings_service_mock.get_settings.return_value = MagicMock(grep_token_limit=10000)
+
+    codebase_service_mock.resolve_file_patterns.return_value = ["src/grep_playground.py"]
+    codebase_service_mock.read_file.return_value = FileReadResult(
+        file_path="src/grep_playground.py",
+        content=Path(temp_codebase.grep_playground).read_text(encoding="utf-8"),
+        status=FileStatus.SUCCESS,
+    )
+
+    service.encoding = MagicMock()
+    service.encoding.encode.return_value = [1]
+
+    result = await service.grep("\\[ERROR\\]")
+    assert "src/grep_playground.py:" in result
+    assert "[ERROR] Something went wrong" in result
+    assert "█" in result
+    assert "│def omega" in result
+    assert "█def omega" not in result
+    assert "█    msg = \"[ERROR] Something went wrong\"" in result
 
 @pytest.mark.parametrize(
     ("pattern", "expected_substrings", "unexpected_substrings", "ignore_case"),
