@@ -6,6 +6,8 @@ from app.context.schemas import FileStatus, FileTreeNode
 
 async def test_is_ignored(temp_codebase):
     """Test is_ignored returns True for ignored files."""
+    # IMPORTANT NOTE: we don't need a fixture for CodebaseService because it has no deps,
+    # and it don't need to have any internal machinery mocked.
     service = CodebaseService()
     root = temp_codebase.root
 
