@@ -7,7 +7,7 @@ without touching the database.
 from __future__ import annotations
 
 from decimal import Decimal
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -15,8 +15,6 @@ from app.agents.services.agent_factory import AgentFactoryService
 from app.core.enums import OperationalMode
 from app.llms.enums import LLMModel
 from app.settings.models import Settings
-from app.context.tools import FileTools, SearchTools
-from app.patches.tools import PatcherTools
 
 
 class TestAgentFactoryService:

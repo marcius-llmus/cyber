@@ -1,9 +1,9 @@
 import pytest
-from sqlalchemy.exc import IntegrityError
 from llama_index.core.llms import MessageRole
-from app.chat.models import Message, ChatTurn
+from sqlalchemy.exc import IntegrityError
+
 from app.chat.enums import ChatTurnStatus
-from app.sessions.models import ChatSession
+from app.chat.models import ChatTurn, Message
 
 
 class TestMessageModel:
@@ -96,12 +96,12 @@ class TestChatTurnModel:
         db_session.add(turn)
         await db_session.flush()
         await db_session.refresh(turn)
-        
+
         initial_updated_at = turn.updated_at
         assert initial_updated_at is not None
-        
+
         turn.status = ChatTurnStatus.SUCCEEDED
         await db_session.flush()
         await db_session.refresh(turn)
-        
+
         assert turn.updated_at >= initial_updated_at

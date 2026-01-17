@@ -1,28 +1,35 @@
 import logging
-from typing import Any, AsyncGenerator, AsyncIterator, Callable, Coroutine, Awaitable
+from collections.abc import (
+    AsyncGenerator,
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    Coroutine,
+)
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.context.services import WorkspaceService
-from app.context.schemas import ContextFileListItem
-from app.core.config import settings
-from app.core.db import DatabaseSessionManager
+from app.agents.services import WorkflowService
 from app.chat.services import ChatService, ChatTurnService
 from app.coder.schemas import (
-    CoderEvent,
-    WorkflowErrorEvent,
-    UsageMetricsUpdatedEvent,
     AgentStateEvent,
-    WorkflowLogEvent,
+    CoderEvent,
+    ContextFilesUpdatedEvent,
     LogLevel,
     SingleShotDiffAppliedEvent,
-    ContextFilesUpdatedEvent,
+    UsageMetricsUpdatedEvent,
+    WorkflowErrorEvent,
+    WorkflowLogEvent,
 )
-from app.agents.services import WorkflowService
-from app.usage.event_handlers import UsageCollector
 from app.coder.services.messaging import MessagingTurnEventHandler
-from app.sessions.services import SessionService
+from app.context.schemas import ContextFileListItem
+from app.context.services import WorkspaceService
+from app.core.config import settings
+from app.core.db import DatabaseSessionManager
 from app.core.enums import OperationalMode
+from app.sessions.services import SessionService
+from app.usage.event_handlers import UsageCollector
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +65,7 @@ class CoderService:
         # todo: turn_id and session_id will be refactored to support multiple simultaneous sessions
         turn_id = await self._start_turn(session_id=session_id, turn_id=turn_id)
 
-        async def _stream() -> AsyncGenerator[CoderEvent, None]:
+        async def _stream() -> AsyncGenerator[CoderEvent]:
             # 1. Init Event Handler (Stateful for this turn, includes Accumulator)
             messaging_turn_handler = await self.turn_handler_factory()
 
@@ -150,7 +157,7 @@ class CoderService:
         session_id: int,
         turn_id: str,
         blocks: list[dict[str, Any]],
-    ) -> AsyncGenerator[CoderEvent, None]:
+    ) -> AsyncGenerator[CoderEvent]:
         diff_patch_service = await self.diff_patch_service_factory()
 
         results: list[dict[str, Any]] = []
@@ -220,7 +227,7 @@ class CoderService:
             turn_service = await self.turn_service_factory(session)
             await turn_service.mark_succeeded(session_id=session_id, turn_id=turn_id)
 
-    async def _process_new_usage(self, session_id: int, collector: UsageCollector) -> AsyncGenerator[CoderEvent, None]:
+    async def _process_new_usage(self, session_id: int, collector: UsageCollector) -> AsyncGenerator[CoderEvent]:
         """Helper to consume new events from collector and yield metrics updates."""
         new_events = collector.consume()
         if not new_events:

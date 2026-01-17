@@ -1,9 +1,9 @@
 from unittest.mock import AsyncMock
 
 from app.chat.factories import build_chat_service, build_chat_turn_service
+from app.chat.repositories import ChatTurnRepository, MessageRepository
 from app.chat.services import ChatService
 from app.chat.services.turn import ChatTurnService
-from app.chat.repositories import MessageRepository, ChatTurnRepository
 
 
 class TestChatFactories:

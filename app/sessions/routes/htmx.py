@@ -1,13 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import HTMLResponse
+
 from app.commons.fastapi_htmx import htmx
 from app.projects.exceptions import ActiveProjectRequiredException
-from app.sessions.enums import SessionEventType
 from app.sessions.dependencies import get_session_page_service, get_session_service
+from app.sessions.enums import SessionEventType
 from app.sessions.exceptions import ChatSessionNotFoundException
-from app.sessions.services import SessionPageService, SessionService
 from app.sessions.schemas import UpdateSessionModeRequest
-
+from app.sessions.services import SessionPageService, SessionService
 
 router = APIRouter()
 

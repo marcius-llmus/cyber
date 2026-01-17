@@ -2,6 +2,7 @@ from pathlib import Path
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
 from app.core.enums import LogLevel
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent

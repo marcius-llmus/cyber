@@ -1,4 +1,5 @@
 import os
+
 import aiofiles.os
 
 from app.core.config import settings
@@ -36,13 +37,13 @@ class ProjectService:
         fs_project_paths = await self._get_fs_project_paths()
 
         db_projects = await self.project_repo.list()
-        
+
         # Ensure strict directory matching by appending separator
         root_prefix = os.path.join(settings.PROJECTS_ROOT_DIR, "")
-        
+
         db_projects_in_root = {
-            p.path: p 
-            for p in db_projects 
+            p.path: p
+            for p in db_projects
             if p.path.startswith(root_prefix)
         }
 

@@ -1,10 +1,11 @@
 import pytest
-from app.projects.exceptions import ActiveProjectRequiredException
-from app.sessions.models import ChatSession
-from app.chat.models import Message, ChatTurn
-from app.chat.enums import ChatTurnStatus
 from llama_index.core.llms import MessageRole
+
+from app.chat.enums import ChatTurnStatus
+from app.chat.models import ChatTurn, Message
+from app.projects.exceptions import ActiveProjectRequiredException
 from app.projects.models import Project
+from app.sessions.models import ChatSession
 
 
 class TestChatService:
@@ -18,10 +19,10 @@ class TestChatService:
         """Returns most-recent session for active project when it exists, otherwise creates a new one."""
         project = Project(id=1, name="P1")
         project_service_mock.get_active_project.return_value = project
-        
+
         expected_session = ChatSession(id=10, project_id=1)
         session_service_mock.get_most_recent_session_by_project.return_value = expected_session
-        
+
         session = await chat_service.get_or_create_active_session()
         assert session == expected_session
         session_service_mock.get_most_recent_session_by_project.assert_awaited_with(project_id=1)
@@ -30,7 +31,7 @@ class TestChatService:
         """get_or_create_session_for_project returns the most recent session if one exists."""
         expected_session = ChatSession(id=10, project_id=1)
         session_service_mock.get_most_recent_session_by_project.return_value = expected_session
-        
+
         session = await chat_service.get_or_create_session_for_project(project_id=1)
         assert session == expected_session
 
@@ -39,7 +40,7 @@ class TestChatService:
         session_service_mock.get_most_recent_session_by_project.return_value = None
         expected_session = ChatSession(id=11, project_id=1)
         session_service_mock.create_session.return_value = expected_session
-        
+
         session = await chat_service.get_or_create_session_for_project(project_id=1)
         assert session == expected_session
         session_service_mock.create_session.assert_awaited_once()
@@ -47,7 +48,7 @@ class TestChatService:
     async def test_add_user_message_creates_message_with_user_role_and_text_block(self, chat_service, message_repository_mock):
         """add_user_message should call message_repo.create with USER role and a single text block."""
         await chat_service.add_user_message(content="hi", session_id=1, turn_id="t1")
-        
+
         assert message_repository_mock.create.called
         call_args = message_repository_mock.create.call_args[1]
         obj_in = call_args["obj_in"]
@@ -62,7 +63,7 @@ class TestChatService:
         """add_ai_message should call message_repo.create with ASSISTANT role and provided blocks."""
         blocks = [{"type": "text", "content": "hello"}]
         await chat_service.add_ai_message(session_id=1, turn_id="t1", blocks=blocks)
-        
+
         assert message_repository_mock.create.called
         call_args = message_repository_mock.create.call_args[1]
         obj_in = call_args["obj_in"]
@@ -74,7 +75,7 @@ class TestChatService:
         msg1 = Message(role=MessageRole.USER, blocks=[{"type": "text", "content": "hi"}])
         msg2 = Message(role=MessageRole.ASSISTANT, blocks=[{"type": "text", "content": "hello"}])
         message_repository_mock.list_by_session_id.return_value = [msg1, msg2]
-        
+
         history = await chat_service.get_chat_history(session_id=1)
         assert len(history) == 2
         assert history[0].role == MessageRole.USER
@@ -146,9 +147,9 @@ class TestChatTurnService:
         """mark_succeeded calls turn_repo.update with status=SUCCEEDED."""
         turn = ChatTurn(id="t1", status=ChatTurnStatus.PENDING)
         chat_turn_repository_mock.get_by_id_and_session.return_value = turn
-        
+
         await chat_turn_service.mark_succeeded(session_id=1, turn_id="t1")
-        
+
         assert chat_turn_repository_mock.update.called
         call_args = chat_turn_repository_mock.update.call_args[1]
         assert call_args["obj_in"].status == ChatTurnStatus.SUCCEEDED

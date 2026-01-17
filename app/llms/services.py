@@ -1,22 +1,24 @@
-import logging
 import functools
-from typing import Union
+import logging
+
 from async_lru import alru_cache
 from llama_index.llms.anthropic import Anthropic
 from llama_index.llms.google_genai import GoogleGenAI
 from llama_index.llms.openai import OpenAI
 from llama_index_instrumentation.dispatcher import instrument_tags
 
-from app.llms.schemas import LLM
 from app.core.config import settings
 from app.llms.enums import LLMModel, LLMProvider, LLMRole
+from app.llms.exceptions import MissingLLMApiKeyException
+from app.llms.models import LLMSettings
 from app.llms.registry import LLMFactory
 from app.llms.repositories import LLMSettingsRepository
-from app.llms.models import LLMSettings
+from app.llms.schemas import LLM
+from app.settings.exceptions import (
+    ContextWindowExceededException,
+    LLMSettingsNotFoundException,
+)
 from app.settings.schemas import LLMSettingsUpdate
-from app.settings.exceptions import ContextWindowExceededException, LLMSettingsNotFoundException
-from app.llms.exceptions import MissingLLMApiKeyException
-
 
 logger = logging.getLogger(__name__)
 
@@ -27,13 +29,13 @@ def instrument_generator(func):
     async def wrapper(self, *args, **kwargs):
         # 1. Await the original method to get the actual generator
         stream = await func(self, *args, **kwargs)
-        
+
         # 2. Wrap the iteration in the instrumentation context
         async def wrapped_gen():
             with instrument_tags(self._get_instrumentation_tags()):
                 async for item in stream:
                     yield item
-        
+
         # 3. Return the wrapped generator (matching the original return type)
         return wrapped_gen()
     return wrapper
@@ -105,7 +107,7 @@ class LLMService:
             # let's make default gpt_4_1 explicitly o.o
             # I am not an openai fanboy, but gemini is too unstable xdd
             db_obj = await self.llm_settings_repo.get_by_model_name(LLMModel.GPT_4_1_MINI)
-            
+
             if not db_obj:
                 raise LLMSettingsNotFoundException("No LLM is currently assigned as the Coder and no models available.")
 
@@ -140,7 +142,7 @@ class LLMService:
         await self.llm_settings_repo.set_active_role(llm_id=llm_id, role=LLMRole.CODER)
         return await self.update_settings(llm_id=llm_id, settings_in=settings_in)
 
-    async def get_client(self, model_name: LLMModel, temperature: float) -> Union[OpenAI, Anthropic, GoogleGenAI]:
+    async def get_client(self, model_name: LLMModel, temperature: float) -> OpenAI | Anthropic | GoogleGenAI:
         """
         Hydrates a client using internal configuration.
         """
@@ -151,7 +153,7 @@ class LLMService:
             raise MissingLLMApiKeyException(
                 f"Missing API key for provider {llm_metadata.provider}. Please configure it in settings."
             )
-        
+
         return await self._get_client_instance(model_name, temperature, api_key)
 
     @alru_cache

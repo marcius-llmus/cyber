@@ -1,6 +1,6 @@
+from app.core.enums import OperationalMode
 from app.projects.exceptions import ActiveProjectRequiredException
 from app.projects.services import ProjectService
-from app.core.enums import OperationalMode
 from app.sessions.exceptions import ChatSessionNotFoundException
 from app.sessions.models import ChatSession
 from app.sessions.repositories import ChatSessionRepository

@@ -1,27 +1,27 @@
 import logging
 import re
+from collections.abc import Awaitable, Callable
 from datetime import datetime
-from typing import Any, Awaitable, Callable
+from typing import Any
 
 from llama_index.core.llms import ChatMessage
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.patches.constants import DIFF_PATCHER_PROMPT
-from app.patches.enums import PatchStrategy
 from app.context.schemas import FileStatus
 from app.context.services.codebase import CodebaseService
+from app.core.db import DatabaseSessionManager
 from app.llms.enums import LLMModel
 from app.llms.services import LLMService
-from app.projects.exceptions import ActiveProjectRequiredException
-from app.projects.services import ProjectService
-from app.patches.enums import DiffPatchStatus
+from app.patches.constants import DIFF_PATCHER_PROMPT
+from app.patches.enums import DiffPatchStatus, PatchStrategy
 from app.patches.repositories import DiffPatchRepository
 from app.patches.schemas import (
     DiffPatchApplyResult,
     DiffPatchCreate,
-    DiffPatchInternalCreate
+    DiffPatchInternalCreate,
 )
-from app.core.db import DatabaseSessionManager
+from app.projects.exceptions import ActiveProjectRequiredException
+from app.projects.services import ProjectService
 
 logger = logging.getLogger(__name__)
 

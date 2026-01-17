@@ -1,10 +1,12 @@
 import os
-from app.context.services.context import WorkspaceService
-from app.context.services.codebase import CodebaseService
-from app.settings.services import SettingsService
-from app.projects.services import ProjectService
-from app.projects.exceptions import ActiveProjectRequiredException
+
 from app.context.repomap import RepoMap
+from app.context.services.codebase import CodebaseService
+from app.context.services.context import WorkspaceService
+from app.projects.exceptions import ActiveProjectRequiredException
+from app.projects.services import ProjectService
+from app.settings.services import SettingsService
+
 
 class RepoMapService:
     """

@@ -1,22 +1,22 @@
-from app.context.services import RepoMapService, WorkspaceService, CodebaseService
-from app.projects.services import ProjectService
-from app.core.enums import OperationalMode
-from app.prompts.services import PromptService
-from app.context.schemas import FileStatus
 from app.agents.constants import (
+    ACTIVE_CONTEXT_DESCRIPTION,
     AGENT_IDENTITY,
     ASK_IDENTITY,
     CHAT_IDENTITY,
-    PROMPT_STRUCTURE_GUIDE,
-    TOOL_USAGE_RULES,
+    CODER_BEHAVIOR,
     PLANNER_IDENTITY,
-    SINGLE_SHOT_IDENTITY,
+    PROMPT_STRUCTURE_GUIDE,
     REPO_MAP_DESCRIPTION,
-    ACTIVE_CONTEXT_DESCRIPTION,
-    CODER_BEHAVIOR
+    SINGLE_SHOT_IDENTITY,
+    TOOL_USAGE_RULES,
 )
+from app.context.schemas import FileStatus
+from app.context.services import CodebaseService, RepoMapService, WorkspaceService
+from app.core.enums import OperationalMode
 from app.projects.exceptions import ActiveProjectRequiredException
 from app.projects.models import Project
+from app.projects.services import ProjectService
+from app.prompts.services import PromptService
 
 
 class AgentContextService:

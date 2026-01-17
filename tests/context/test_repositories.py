@@ -1,9 +1,6 @@
-import pytest
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.context.models import ContextFile
-from app.context.schemas import ContextFileCreate
 from app.context.repositories import ContextRepository
+from app.context.schemas import ContextFileCreate
 
 
 async def test_create_context_file(context_repository: ContextRepository, chat_session):

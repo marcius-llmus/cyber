@@ -4,9 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.commons.dependencies import get_db
 from app.projects.dependencies import get_project_service
 from app.projects.services import ProjectService
+from app.sessions.factories import build_session_service
 from app.sessions.repositories import ChatSessionRepository
 from app.sessions.services import SessionPageService, SessionService
-from app.sessions.factories import build_session_service
 
 
 async def get_session_repository(db: AsyncSession = Depends(get_db)) -> ChatSessionRepository:

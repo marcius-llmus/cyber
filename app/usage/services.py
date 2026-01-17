@@ -1,18 +1,18 @@
 import logging
-from typing import Any, List
 from decimal import Decimal
+from typing import Any
 
+# extract_usage is not in __all__ by some reason
+from genai_prices import calc_price, extract_usage  # noqa
+from llama_index.core.instrumentation.events import BaseEvent
 from pydantic import BaseModel
 from pydantic.alias_generators import to_camel
-from llama_index.core.instrumentation.events import BaseEvent
-# extract_usage is not in __all__ by some reason
-from genai_prices import extract_usage, calc_price # noqa
 
-from app.usage.exceptions import UsageTrackingException
-from app.usage.schemas import SessionMetrics
-from app.usage.repositories import UsageRepository, GlobalUsageRepository
 from app.llms.services import LLMService
 from app.settings.services import SettingsService
+from app.usage.exceptions import UsageTrackingException
+from app.usage.repositories import GlobalUsageRepository, UsageRepository
+from app.usage.schemas import SessionMetrics
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +55,7 @@ class UsageService:
         except Exception as e:
             raise UsageTrackingException(f"Failed to track usage event: {str(e)}") from e
 
-    async def process_batch(self, session_id: int, events: List[BaseEvent]) -> SessionMetrics:
+    async def process_batch(self, session_id: int, events: list[BaseEvent]) -> SessionMetrics:
         """
         Processes a batch of raw instrumentation events.
         Updates costs and returns the final calculated metrics for the session.
@@ -110,7 +110,7 @@ class UsageService:
         total_global_cost = await self.global_usage_repo.get_total_global_cost()
         if not usage:
             return SessionMetrics(monthly_cost=float(total_global_cost))
-            
+
         return SessionMetrics(
             session_cost=usage.cost,
             monthly_cost=float(total_global_cost),
@@ -135,11 +135,11 @@ class UsageService:
         price_data = calc_price(usage_data, model_ref=model_ref, provider_id=provider_id) # noqa
 
         cost = Decimal(str(price_data.total_price))
-        
+
         input_tokens = usage_data.input_tokens or 0
         output_tokens = usage_data.output_tokens or 0
         cached_tokens = usage_data.cache_read_tokens or 0
-        
+
         return cost, input_tokens, output_tokens, cached_tokens
 
     @staticmethod

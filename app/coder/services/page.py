@@ -1,9 +1,9 @@
 from app.chat.services import ChatService
 from app.context.services import WorkspaceService
-from app.usage.services import UsagePageService
-from app.sessions.enums import SessionEventType
 from app.prompts.enums import PromptEventType
+from app.sessions.enums import SessionEventType
 from app.settings.services import SettingsService
+from app.usage.services import UsagePageService
 
 
 class CoderPageService:

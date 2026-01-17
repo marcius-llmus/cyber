@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, status, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import HTMLResponse
-from app.commons.fastapi_htmx import htmx
 
 from app.chat.dependencies import get_chat_service
 from app.chat.services import ChatService
+from app.commons.fastapi_htmx import htmx
 from app.projects.dependencies import get_project_page_service, get_project_service
 from app.projects.exceptions import ProjectNotFoundException
 from app.projects.services import ProjectPageService, ProjectService

@@ -1,7 +1,9 @@
-import pytest
 from pathlib import Path
+
+import pytest
+
+from app.context.schemas import FileStatus
 from app.context.services.codebase import CodebaseService
-from app.context.schemas import FileStatus, FileTreeNode
 
 
 async def test_is_ignored(temp_codebase):
@@ -126,10 +128,10 @@ async def test_filter_and_resolve_paths(temp_codebase):
         "../outside.txt",       # Outside
         "ghost.py"              # Missing
     ]
-    
+
     # Note: filter_and_resolve_paths uses must_exist=True internally
     results = await service.filter_and_resolve_paths(root, inputs)
-    
+
     assert len(results) == 1
     assert Path(temp_codebase.main_py).resolve() in [Path(p) for p in results]
 
@@ -154,7 +156,7 @@ async def test_build_file_tree(temp_codebase):
     root = temp_codebase.root
 
     tree = await service.build_file_tree(root)
-    
+
     # Root should contain src/, bin/, README.md
     names = [node.name for node in tree]
     assert "src" in names
@@ -163,7 +165,7 @@ async def test_build_file_tree(temp_codebase):
     # logs directory itself is not ignored by current patterns, but its .log file is.
     # build_file_tree includes directories only if they have non-ignored children.
     assert "logs" not in names
-    
+
     # Check recursion
     src_node = next(n for n in tree if n.name == "src")
     assert src_node.is_dir
@@ -215,7 +217,7 @@ async def test_resolve_file_patterns_complex(temp_codebase):
     files = await service.resolve_file_patterns(root, ["src/**/*.py"])
     assert any("main.py" in f for f in files)
     assert any("utils.py" in f for f in files)
-    
+
     # 3. Literal vs Escaped Glob
     # "weird[name].txt" contains special glob chars [].
     # If passed literally, glob might treat [name] as character class.
@@ -234,7 +236,7 @@ async def test_resolve_file_patterns_complex(temp_codebase):
     files = await service.resolve_file_patterns(root, ["src/regex_cases.txt", "logs/*.log"])
     assert len(files) == 1
     assert "regex_cases.txt" in files[0]
-    
+
     # 5. Non-existent file (should be ignored or handled gracefully)
     files = await service.resolve_file_patterns(root, ["nonexistent.txt"])
     assert len(files) == 0

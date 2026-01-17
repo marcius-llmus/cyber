@@ -1,4 +1,5 @@
 from decimal import Decimal
+
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.llms.enums import LLMModel, LLMProvider

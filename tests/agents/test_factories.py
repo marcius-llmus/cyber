@@ -9,8 +9,12 @@ from app.agents.factories import (
     build_agent_factory_service,
     build_workflow_service,
 )
-from app.agents.services import AgentContextService, AgentFactoryService, WorkflowService
 from app.agents.repositories import WorkflowStateRepository
+from app.agents.services import (
+    AgentContextService,
+    AgentFactoryService,
+    WorkflowService,
+)
 
 
 class TestAgentsFactories:

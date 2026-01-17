@@ -1,6 +1,6 @@
 import pytest
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.context.models import ContextFile
 
@@ -30,6 +30,6 @@ async def test_context_file_unique_constraint(db_session: AsyncSession, chat_ses
 
     c2 = ContextFile(session_id=chat_session.id, file_path="dup.py")
     db_session.add(c2)
-    
+
     with pytest.raises(IntegrityError):
         await db_session.flush()

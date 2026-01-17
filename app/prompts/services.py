@@ -1,18 +1,17 @@
-from app.projects.models import Project
-from app.projects.exceptions import ActiveProjectRequiredException
 from app.blueprints.services import BlueprintService
+from app.projects.exceptions import ActiveProjectRequiredException
+from app.projects.models import Project
 from app.projects.services import ProjectService
+from app.prompts.enums import PromptType
 from app.prompts.exceptions import PromptNotFoundException
+from app.prompts.models import Prompt
 from app.prompts.repositories import PromptRepository
 from app.prompts.schemas import (
     PromptCreate,
     PromptInternalCreate,
     PromptRead,
-    PromptsPageContext,
     PromptUpdate,
 )
-from app.prompts.enums import PromptType
-from app.prompts.models import Prompt
 
 
 class PromptService:

@@ -1,10 +1,12 @@
-import pytest
 from unittest.mock import AsyncMock
-from app.llms.factories import build_llm_factory_instance, build_llm_service
-from app.llms.services import LLMService
-from app.llms.registry import LLMFactory
+
+import pytest
+
 from app.llms.enums import LLMModel
+from app.llms.factories import build_llm_factory_instance, build_llm_service
+from app.llms.registry import LLMFactory
 from app.llms.schemas import LLM
+from app.llms.services import LLMService
 
 
 async def test_build_llm_factory_instance__returns_llm_factory_singleton():

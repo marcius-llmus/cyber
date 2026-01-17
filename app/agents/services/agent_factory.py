@@ -1,18 +1,17 @@
 from __future__ import annotations
 
-from sqlalchemy.ext.asyncio import AsyncSession
+from llama_index.core.tools import BaseTool
 
+from app.agents.services import AgentContextService
 from app.coder.agent import CoderAgent
+from app.context.tools import FileTools, SearchTools
+from app.core.db import sessionmanager
 from app.core.enums import OperationalMode
 from app.llms.enums import LLMModel
-from app.settings.services import SettingsService
 from app.llms.services import LLMService
-from app.sessions.services import SessionService
-from app.agents.services import AgentContextService
-from app.context.tools import SearchTools, FileTools
 from app.patches.tools import PatcherTools
-from app.core.db import sessionmanager
-from llama_index.core.tools import BaseTool
+from app.sessions.services import SessionService
+from app.settings.services import SettingsService
 
 
 class AgentFactoryService:

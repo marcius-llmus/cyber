@@ -1,9 +1,9 @@
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.commons.dependencies import get_db
 from app.blueprints.dependencies import get_blueprint_service
 from app.blueprints.services import BlueprintService
+from app.commons.dependencies import get_db
 from app.projects.dependencies import get_project_service
 from app.projects.services import ProjectService
 from app.prompts.repositories import PromptRepository

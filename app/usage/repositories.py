@@ -1,10 +1,10 @@
 from decimal import Decimal
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.dialects.sqlite import insert
 
 from app.commons.repositories import BaseRepository
-from app.usage.models import SessionUsage, GlobalProviderUsage
+from app.usage.models import GlobalProviderUsage, SessionUsage
 
 
 class UsageRepository(BaseRepository[SessionUsage]):
@@ -33,7 +33,7 @@ class UsageRepository(BaseRepository[SessionUsage]):
                 "cached_tokens": self.model.cached_tokens + cached_tokens,
             }
         ).returning(self.model)
-        
+
         result = await self.db.execute(stmt)
         await self.db.flush()
         return result.scalar_one()

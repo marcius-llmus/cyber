@@ -1,7 +1,7 @@
 from enum import StrEnum
+from typing import Any, Union
 
 from pydantic import BaseModel
-from typing import Union, Any
 
 from app.context.schemas import ContextFileListItem
 

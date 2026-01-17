@@ -1,12 +1,16 @@
-import pytest
 from unittest.mock import AsyncMock
 
-from app.llms.exceptions import MissingLLMApiKeyException
+import pytest
+
 from app.llms.enums import LLMModel, LLMProvider, LLMRole
-from app.settings.exceptions import ContextWindowExceededException, LLMSettingsNotFoundException
-from app.settings.schemas import LLMSettingsUpdate
+from app.llms.exceptions import MissingLLMApiKeyException
 from app.llms.models import LLMSettings
 from app.llms.schemas import LLM
+from app.settings.exceptions import (
+    ContextWindowExceededException,
+    LLMSettingsNotFoundException,
+)
+from app.settings.schemas import LLMSettingsUpdate
 
 
 async def test_llm_service__get_model_metadata__returns_llm_schema(llm_service):
@@ -185,7 +189,7 @@ async def test_llm_service__update_settings__updates_api_key_for_provider_when_a
 
     updated = await llm_service.update_settings(llm_settings_openai_no_role_mock.id, LLMSettingsUpdate(api_key="sk-new"))
     assert updated.id == llm_settings_openai_no_role_mock.id
-    
+
     llm_service.llm_settings_repo.update_api_key_for_provider.assert_awaited_once()
 
 
@@ -255,19 +259,19 @@ async def test_llm_service__get_client__hydrates_provider_specific_client(
     """
     # Configure mock repo to return the key
     llm_service.llm_settings_repo.get_api_key_for_provider.return_value = "sk-test"
-    
+
     fake_llm = LLM(model_name=model_name, provider=provider, default_context_window=128000)
     mocker.patch.object(llm_service.llm_factory, "get_llm", return_value=fake_llm)
-    
-    # We override _get_client_instance to return our fake object, 
+
+    # We override _get_client_instance to return our fake object,
     # but we want to ensure the service logic calls it with correct params.
     llm_service._get_client_instance = AsyncMock(return_value=fake_llm_client)
     client = await llm_service.get_client(model_name, temperature=0.5)
-    
+
     assert client == fake_llm_client
     llm_service._get_client_instance.assert_awaited_once_with(
-        model_name, 
-        0.5, 
+        model_name,
+        0.5,
         "sk-test"
     )
 

@@ -1,11 +1,12 @@
 import logging
 from decimal import Decimal
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.llms.enums import LLMModel, LLMRole
 from app.llms.factories import build_llm_service
 from app.settings.repositories import SettingsRepository
 from app.settings.schemas import LLMSettingsCreate, SettingsCreate
-from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 

@@ -1,5 +1,4 @@
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.commons.repositories import BaseRepository
 from app.projects.exceptions import MultipleActiveProjectsException

@@ -1,10 +1,12 @@
 import inspect
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
 
 from app.settings import dependencies
 from app.settings.repositories import SettingsRepository
 from app.settings.services import SettingsPageService
+
 
 class TestSettingsDependencies:
     async def test_get_settings_repository_returns_repository(self, db_session_mock):

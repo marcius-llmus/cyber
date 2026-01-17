@@ -1,12 +1,14 @@
 """Service tests for the sessions app."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, call
+
+import pytest
+
 from app.core.enums import OperationalMode
-from app.sessions.services import SessionService, SessionPageService
-from app.sessions.exceptions import ChatSessionNotFoundException
 from app.projects.exceptions import ActiveProjectRequiredException
+from app.sessions.exceptions import ChatSessionNotFoundException
 from app.sessions.schemas import ChatSessionCreate
+from app.sessions.services import SessionPageService, SessionService
 
 
 async def test_set_active_session_orchestration(

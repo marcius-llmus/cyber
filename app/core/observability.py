@@ -1,4 +1,5 @@
 import logging
+
 import phoenix as px
 from openinference.instrumentation.llama_index import LlamaIndexInstrumentor
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
@@ -20,9 +21,9 @@ def init_observability():
         tracer_provider.add_span_processor(SimpleSpanProcessor(OTLPSpanExporter(endpoint)))
 
         LlamaIndexInstrumentor().instrument(tracer_provider=tracer_provider)
-        
+
         logger.info("🔭 Arize Phoenix Observability initialized.")
         logger.info("   View traces at: http://localhost:6006")
-        
+
     except Exception as e:
         logger.warning(f"Failed to initialize Arize Phoenix: {e}")

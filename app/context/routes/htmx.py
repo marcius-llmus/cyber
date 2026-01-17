@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
-from app.commons.fastapi_htmx import htmx
-from app.core.templating import templates
 
+from app.commons.fastapi_htmx import htmx
 from app.context.dependencies import get_context_page_service, get_context_service
 from app.context.schemas import ContextFileBatchUpdate
 from app.context.services import ContextPageService, WorkspaceService
+from app.core.templating import templates
 
 router = APIRouter()
 

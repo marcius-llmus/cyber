@@ -1,4 +1,5 @@
 from llama_index.core.tools.tool_spec.base import BaseToolSpec
+
 from app.core.db import DatabaseSessionManager
 from app.settings.models import Settings
 

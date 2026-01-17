@@ -1,10 +1,10 @@
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
 
 from app.projects.exceptions import ProjectNotFoundException
 from app.projects.models import Project
 from app.projects.services import ProjectService
-from app.projects.schemas import ProjectCreate
 
 
 class TestProjectService:
@@ -37,7 +37,7 @@ class TestProjectService:
 
         assert project_mock.is_active is True
         assert project_inactive_mock.is_active is False
-        
+
         project_service.project_repo.get = AsyncMock(return_value=project_inactive_mock)
         project_service.project_repo.get_active = AsyncMock(return_value=project_mock)
         project_service.project_repo.deactivate = AsyncMock()
@@ -61,7 +61,7 @@ class TestProjectService:
         project_service.project_repo.get = AsyncMock(return_value=project_mock)
         project_service.project_repo.get_active = AsyncMock(return_value=project_mock)
         project_service.project_repo.list = AsyncMock(return_value=[project_mock])
-        
+
         projects = await project_service.set_active_project(project_id=project_mock.id)
 
         assert isinstance(projects, list)

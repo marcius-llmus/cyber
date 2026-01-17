@@ -1,8 +1,9 @@
 import pytest
-from pydantic import ValidationError
-from app.chat.schemas import MessageCreate, TurnRequest, ChatTurnCreate, ChatTurnUpdate
-from app.chat.enums import ChatTurnStatus
 from llama_index.core.llms import MessageRole
+from pydantic import ValidationError
+
+from app.chat.enums import ChatTurnStatus
+from app.chat.schemas import ChatTurnCreate, ChatTurnUpdate, MessageCreate, TurnRequest
 
 
 class TestChatSchemas:
@@ -10,7 +11,7 @@ class TestChatSchemas:
         """MessageCreate requires a valid MessageRole enum value."""
         with pytest.raises(ValidationError):
             MessageCreate(session_id=1, turn_id="t1", role="INVALID", blocks=[])
-        
+
         # Valid case
         msg = MessageCreate(session_id=1, turn_id="t1", role=MessageRole.USER, blocks=[])
         assert msg.role == MessageRole.USER
@@ -29,7 +30,7 @@ class TestChatSchemas:
         """ChatTurnUpdate validation fails if status is missing."""
         with pytest.raises(ValidationError):
             ChatTurnUpdate()
-            
+
         # Valid
         update = ChatTurnUpdate(status=ChatTurnStatus.SUCCEEDED)
         assert update.status == ChatTurnStatus.SUCCEEDED

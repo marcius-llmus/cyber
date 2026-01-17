@@ -1,9 +1,14 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.projects.factories import build_project_service
-from app.context.services import WorkspaceService, RepoMapService, SearchService, FileSystemService
-from app.context.services.codebase import CodebaseService
 from app.context.repositories import ContextRepository
+from app.context.services import (
+    FileSystemService,
+    RepoMapService,
+    SearchService,
+    WorkspaceService,
+)
+from app.context.services.codebase import CodebaseService
+from app.projects.factories import build_project_service
 from app.settings.factories import build_settings_service
 
 
@@ -38,7 +43,7 @@ async def build_search_service(db: AsyncSession) -> SearchService:
     codebase_service = await build_codebase_service()
     settings_service = await build_settings_service(db)
     return SearchService(
-        project_service=project_service, 
+        project_service=project_service,
         codebase_service=codebase_service,
         settings_service=settings_service
     )

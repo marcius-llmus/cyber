@@ -1,28 +1,29 @@
 import logging
-from typing import Any, Callable, Coroutine
+from collections.abc import Callable, Coroutine
+from datetime import datetime
+from typing import Any
 
 from fastapi import WebSocketDisconnect
 from pydantic import ValidationError
 
-from app.coder.services import CoderService
 from app.coder.schemas import (
-    AIMessageChunkEvent,
-    AIMessageBlockStartEvent,
-    CoderEvent,
     AgentStateEvent,
-    UsageMetricsUpdatedEvent,
+    AIMessageBlockStartEvent,
+    AIMessageChunkEvent,
+    CoderEvent,
+    ContextFilesUpdatedEvent,
+    LogLevel,
+    SingleShotDiffAppliedEvent,
     ToolCallEvent,
     ToolCallResultEvent,
+    UsageMetricsUpdatedEvent,
     WebSocketMessage,
-    SingleShotDiffAppliedEvent,
-    ContextFilesUpdatedEvent,
     WorkflowErrorEvent,
     WorkflowLogEvent,
-    LogLevel
 )
+from app.coder.services import CoderService
 from app.commons.websockets import WebSocketConnectionManager
 from app.core.templating import templates
-from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -145,11 +146,11 @@ class WebSocketOrchestrator:
         context = {"status": event.status, "turn_id": turn_id}
         template = templates.get_template("chat/partials/ai_status_update.html").render(context)
         await self.ws_manager.send_html(template)
-        
+
         # Also log if status is not empty
         if event.status:
             await self._handle_workflow_log(WorkflowLogEvent(message=event.status, level=LogLevel.INFO))
-        
+
     async def _render_usage_metrics(self, event: UsageMetricsUpdatedEvent, turn_id: str): # noqa
         context = {
             "session_cost": event.session_cost,
@@ -180,12 +181,12 @@ class WebSocketOrchestrator:
         if event.tool_name == "apply_diff":
             file_path = event.tool_kwargs.get("file_path", "unknown")
             diff = event.tool_kwargs.get("diff", "")
-            
+
             # Calculate stats
             lines = diff.splitlines()
             additions = sum(1 for line in lines if line.startswith('+') and not line.startswith('+++'))
             deletions = sum(1 for line in lines if line.startswith('-') and not line.startswith('---'))
-            
+
             diff_context = {
                 "tool_id": event.tool_id,
                 "file_path": file_path,
@@ -196,7 +197,7 @@ class WebSocketOrchestrator:
                 "tool_run_id": event.tool_run_id,
             }
             diff_template = templates.get_template("patches/partials/diff_patch_item_oob.html").render(diff_context)
-            
+
             await self.ws_manager.send_html(diff_template)
 
     async def _render_tool_result(self, event: ToolCallResultEvent, turn_id: str): # noqa
@@ -222,7 +223,7 @@ class WebSocketOrchestrator:
     async def _render_single_shot_applied(self, event: SingleShotDiffAppliedEvent, turn_id: str):
         await self._handle_workflow_log(
             WorkflowLogEvent(
-                message=f"Single-shot patch applied to {event.file_path}: {event.output}", 
+                message=f"Single-shot patch applied to {event.file_path}: {event.output}",
                 level=LogLevel.INFO
             )
         )

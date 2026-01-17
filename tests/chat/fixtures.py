@@ -1,4 +1,5 @@
 from unittest.mock import MagicMock
+
 import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession

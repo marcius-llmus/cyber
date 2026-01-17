@@ -1,5 +1,4 @@
 import pytest
-
 from pydantic import ValidationError
 
 from app.llms.enums import LLMModel, LLMProvider

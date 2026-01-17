@@ -6,7 +6,6 @@ from pydantic import BaseModel
 
 from app.patches.enums import DiffPatchStatus
 
-
 SOURCE_PATTERN = r"^--- ([^\t\n]+)(?:\t[^\n]+)?"
 TARGET_PATTERN = r"^\+\+\+ ([^\t\n]+)(?:\t[^\n]+)?"
 DEV_NULL = '/dev/null'

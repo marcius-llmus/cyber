@@ -3,7 +3,6 @@ import pytest
 from app.llms.enums import LLMModel, LLMProvider, LLMRole
 from app.llms.models import LLMSettings
 from app.llms.repositories import LLMSettingsRepository
-from app.settings.schemas import LLMSettingsUpdate
 
 
 async def test_llm_settings_repository__get_by_model_name__returns_none_when_missing(
@@ -78,11 +77,11 @@ async def test_llm_settings_repository__update_api_key_for_provider__updates_all
 
     new_key = "sk-new-key-123"
     await llm_settings_repository.update_api_key_for_provider(provider, new_key)
-    
+
     # Verify update
     updated_key = await llm_settings_repository.get_api_key_for_provider(provider)
     assert updated_key == new_key
-    
+
 
 @pytest.mark.parametrize(
     "provider,model_name",
@@ -217,18 +216,18 @@ async def test_llm_settings_repository__set_active_role__clears_existing_and_set
         - target model gets CODER
         - behavior does not require commit (flush semantics are enough)
     """
-    
+
     # Initial state check
     old_coder = await llm_settings_repository.get_by_role(LLMRole.CODER)
     assert old_coder.id == llm_settings_openai_coder.id
-    
+
     # Switch role
     await llm_settings_repository.set_active_role(llm_settings_openai_no_role.id, LLMRole.CODER)
-    
+
     # Verify new state
     new_coder = await llm_settings_repository.get_by_role(LLMRole.CODER)
     assert new_coder.id == llm_settings_openai_no_role.id
-    
+
     # Verify old one is cleared
     await db_session.refresh(llm_settings_openai_coder)
     assert llm_settings_openai_coder.active_role is None

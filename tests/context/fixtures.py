@@ -1,21 +1,22 @@
 from dataclasses import dataclass
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
-from unittest.mock import AsyncMock, MagicMock
 
+from app.context.dependencies import get_context_page_service, get_context_service
+from app.context.models import ContextFile
 from app.context.repomap import RepoMap
 from app.context.repositories import ContextRepository
-from app.context.models import ContextFile
 from app.context.services import (
-    WorkspaceService,
     CodebaseService,
-    FileSystemService,
     ContextPageService,
-    SearchService,
+    FileSystemService,
     RepoMapService,
+    SearchService,
+    WorkspaceService,
 )
-from app.context.dependencies import get_context_service, get_context_page_service
 from app.projects.services import ProjectService
 from app.settings.services import SettingsService
 
@@ -51,20 +52,20 @@ def temp_codebase(tmp_path):
 
     # 2. Files inside project
     (project_root / ".gitignore").write_text("*.log\nignore_me.txt\nsecret/", encoding="utf-8")
-    
+
     readme = project_root / "README.md"
     readme.write_text("# Test Project", encoding="utf-8")
-    
+
     ignored_file = project_root / "ignore_me.txt"
     ignored_file.write_text("should be ignored", encoding="utf-8")
 
     # 3. Directories
     src_dir = project_root / "src"
     src_dir.mkdir()
-    
+
     main_py = src_dir / "main.py"
     main_py.write_text("print('hello world')", encoding="utf-8")
-    
+
     utils_py = src_dir / "utils.py"
     utils_py.write_text("def add(a, b): return a + b", encoding="utf-8")
 
@@ -176,7 +177,7 @@ def omega() -> str:
 
     bin_dir = project_root / "bin"
     bin_dir.mkdir()
-    
+
     binary_file = bin_dir / "data.bin"
     # Write invalid UTF-8 bytes to ensure it triggers binary detection
     binary_file.write_bytes(b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x80\x81")

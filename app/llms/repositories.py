@@ -1,4 +1,5 @@
 from sqlalchemy import select, update
+
 from app.commons.repositories import BaseRepository
 from app.llms.enums import LLMProvider, LLMRole
 from app.llms.models import LLMSettings
@@ -22,7 +23,7 @@ class LLMSettingsRepository(BaseRepository[LLMSettings]):
             .values(api_key=api_key)
         )
         await self.db.flush()
-        
+
     async def get_api_key_for_provider(self, provider: LLMProvider) -> str | None:
         llm_setting_with_key = (
             await self.db.execute(

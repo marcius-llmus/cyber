@@ -1,8 +1,10 @@
-import pytest
 from unittest.mock import AsyncMock
 
+import pytest
+
+
 class TestContextHtmxRoutes:
-    
+
     @pytest.mark.usefixtures("override_get_context_page_service")
     async def test_get_file_tree(self, client, context_page_service_mock, get_file_tree_page_data_mock):
         """GET /session/{id}/file-tree returns the file tree."""
@@ -31,11 +33,11 @@ class TestContextHtmxRoutes:
             "files": [], "session_id": 1
         })
         workspace_service_mock.sync_files = AsyncMock(return_value=None)
-        
+
         payload = {"filepaths": ["src/main.py", "README.md"]}
         response = client.post(
-            "/context/session/1/files/batch", 
-            json=payload, 
+            "/context/session/1/files/batch",
+            json=payload,
             headers={"HX-Request": "true"}
         )
 

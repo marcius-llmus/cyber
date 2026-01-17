@@ -9,7 +9,7 @@ from app.llms.registry import LLMFactory
 from app.settings.dependencies import get_settings_service
 from app.settings.models import Settings
 from app.settings.repositories import SettingsRepository
-from app.settings.services import SettingsService, SettingsPageService
+from app.settings.services import SettingsPageService, SettingsService
 
 
 @pytest.fixture

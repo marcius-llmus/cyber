@@ -1,14 +1,13 @@
-import pytest
 from unittest.mock import AsyncMock
 
 from app.context.dependencies import (
+    get_context_page_service,
     get_context_repository,
     get_context_service,
     get_filesystem_service,
-    get_context_page_service,
 )
 from app.context.repositories import ContextRepository
-from app.context.services import WorkspaceService, FileSystemService, ContextPageService
+from app.context.services import ContextPageService, FileSystemService, WorkspaceService
 from app.projects.services import ProjectService
 
 
@@ -26,9 +25,9 @@ async def test_get_context_service(db_session_mock, mocker):
         "app.context.dependencies.build_workspace_service",
         new=AsyncMock(return_value=mock_service),
     )
-    
+
     service = await get_context_service(db_session_mock)
-    
+
     assert service is mock_service
     build_workspace_service_mock.assert_awaited_once_with(db_session_mock)
 

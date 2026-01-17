@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncGenerator, Generator
 from contextlib import asynccontextmanager
+from unittest.mock import create_autospec
 
 import pytest
 from fastapi.testclient import TestClient
@@ -19,12 +20,10 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.pool import StaticPool
-from unittest.mock import create_autospec
 
 from app.commons.dependencies import get_db
 from app.core.db import Base
 from app.main import app
-
 
 pytest_plugins = [
     "tests.agents.fixtures",
@@ -37,7 +36,7 @@ pytest_plugins = [
 ]
 
 @pytest.fixture(scope="session")
-async def engine() -> AsyncGenerator[AsyncEngine, None]:
+async def engine() -> AsyncGenerator[AsyncEngine]:
     engine = create_async_engine(
         "sqlite+aiosqlite:///:memory:",
         connect_args={"check_same_thread": False},
@@ -48,7 +47,7 @@ async def engine() -> AsyncGenerator[AsyncEngine, None]:
 
 
 @pytest.fixture(scope="session", autouse=True)
-async def setup_db(engine: AsyncEngine) -> AsyncGenerator[None, None]:
+async def setup_db(engine: AsyncEngine) -> AsyncGenerator[None]:
     """
     Create database tables before tests run, and drop them after.
     """
@@ -83,7 +82,7 @@ def sessionmaker(engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:
 @pytest.fixture(scope="function")
 async def db_session(
     sessionmaker: async_sessionmaker[AsyncSession],
-) -> AsyncGenerator[AsyncSession, None]:
+) -> AsyncGenerator[AsyncSession]:
     """Provides a transactional session for each test function, rolling back at the end."""
 
     async with sessionmaker() as session:
@@ -100,7 +99,7 @@ def db_session_mock() -> AsyncSession:
 
 
 @pytest.fixture(scope="function")
-def client(db_session_mock: AsyncSession) -> Generator[TestClient, None, None]:
+def client(db_session_mock: AsyncSession) -> Generator[TestClient]:
     """
     Provides a TestClient with the database dependency overridden.
     """
@@ -113,7 +112,7 @@ def client(db_session_mock: AsyncSession) -> Generator[TestClient, None, None]:
 
     app.router.lifespan_context = mock_lifespan
 
-    async def get_db_override() -> AsyncGenerator[AsyncSession, None]:
+    async def get_db_override() -> AsyncGenerator[AsyncSession]:
         yield db_session_mock
 
     app.dependency_overrides[get_db] = get_db_override

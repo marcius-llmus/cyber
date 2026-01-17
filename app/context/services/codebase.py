@@ -1,7 +1,8 @@
 import glob
+from pathlib import Path
+
 import aiofiles
 import aiofiles.os
-from pathlib import Path
 from pathspec import PathSpec
 from pathspec.patterns import GitWildMatchPattern
 
@@ -29,7 +30,7 @@ class _IgnoreMatcher:
         lines = self.DEFAULT_PATTERNS[:]
 
         if await aiofiles.os.path.exists(gitignore_path):
-            async with aiofiles.open(gitignore_path, "r") as f:
+            async with aiofiles.open(gitignore_path) as f:
                 content = await f.read()
                 lines.extend(content.splitlines())
 
@@ -57,7 +58,7 @@ class CodebaseService:
         """
         root = Path(project_root).resolve()
         path = Path(path_str)
-        
+
         # Handle absolute paths that might be outside or inside
         if path.is_absolute():
             abs_path = path.resolve()
@@ -66,7 +67,7 @@ class CodebaseService:
 
         if not self._is_subpath(root, abs_path):
             raise ValueError(f"Access denied: '{path_str}' is outside project root.")
-            
+
         return root, abs_path
 
     async def is_ignored(self, project_root: str | Path, path: str | Path, is_dir: bool = False) -> bool:
@@ -76,12 +77,12 @@ class CodebaseService:
         """
         root = Path(project_root).resolve()
         target = Path(path)
-        
+
         if target.is_absolute():
             abs_path = target.resolve()
         else:
             abs_path = (root / target).resolve()
-            
+
         try:
             rel_path = abs_path.relative_to(root)
         except ValueError:
@@ -141,7 +142,7 @@ class CodebaseService:
                 try:
                     rel_path = full_path.relative_to(project_root)
                     is_dir = await aiofiles.os.path.isdir(full_path)
-                    
+
                     if self.matcher.matches(spec, str(rel_path), is_dir=is_dir):
                         continue
 
@@ -159,7 +160,7 @@ class CodebaseService:
                 files.add(str(file_rel_path))
         elif path.is_dir():
             await _scan_dir(path)
-            
+
         return files
 
     async def list_dir(self, project_root: str, dir_path: str = ".") -> list[str]:
@@ -175,7 +176,7 @@ class CodebaseService:
         # todo: we could unify file traversal checking
         if not self._is_subpath(root, target_path):
              raise ValueError(f"Access denied: '{dir_path}' is outside project root.")
-             
+
         if not target_path.exists() or not target_path.is_dir():
             raise ValueError(f"Directory not found: '{dir_path}'")
 
@@ -189,7 +190,7 @@ class CodebaseService:
             full_path = target_path / entry
             rel_path = full_path.relative_to(root)
             is_dir = await aiofiles.os.path.isdir(full_path)
-            
+
             if not self.matcher.matches(spec, str(rel_path), is_dir=is_dir):
                 suffix = "/" if is_dir else ""
                 results.append(f"{entry}{suffix}")
@@ -208,7 +209,7 @@ class CodebaseService:
                 # In case file doesn't exist, we just return empty as success in order for it to be created
                 return FileReadResult(file_path=file_path, content="", status=FileStatus.SUCCESS)
 
-            async with aiofiles.open(abs_path, "r", encoding="utf-8") as f:
+            async with aiofiles.open(abs_path, encoding="utf-8") as f:
                 content = await f.read()
                 return FileReadResult(file_path=file_path, content=content, status=FileStatus.SUCCESS)
         except UnicodeDecodeError:
@@ -244,10 +245,10 @@ class CodebaseService:
                 raise ValueError(f"Access denied: Pattern '{pattern}' targets outside project root.")
 
             matched_paths = glob.glob(full_pattern, recursive=True)
-            
+
             for p in matched_paths:
                 path_obj = Path(p)
-                
+
                 files = await self._collect_files(root, path_obj, spec)
                 results.update(files)
 
@@ -313,7 +314,7 @@ class CodebaseService:
             except ValueError:
                 # Explicitly skip invalid, unsafe, or ignored files
                 continue
-                
+
         return valid_abs_paths
 
     async def write_file(self, project_root: str, file_path: str, content: str) -> None:

@@ -1,9 +1,8 @@
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.commons.repositories import BaseRepository
-from app.prompts.models import ProjectPromptAttachment, Prompt
 from app.prompts.enums import PromptType
+from app.prompts.models import ProjectPromptAttachment, Prompt
 
 
 class PromptRepository(BaseRepository[Prompt]):

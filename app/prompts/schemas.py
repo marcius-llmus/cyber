@@ -1,9 +1,9 @@
-from typing import NotRequired, TypedDict
+from typing import TypedDict
 
 from pydantic import BaseModel, ConfigDict
 
-from app.projects.models import Project
 from app.blueprints.schemas import Blueprint
+from app.projects.models import Project
 from app.prompts.enums import PromptType
 from app.prompts.models import Prompt
 

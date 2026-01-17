@@ -1,5 +1,5 @@
-from app.llms.schemas import LLM
 from app.llms.enums import LLMModel, LLMProvider
+from app.llms.schemas import LLM
 
 
 class LLMFactory:

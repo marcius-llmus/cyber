@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Request, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import HTMLResponse
+
 from app.chat.dependencies import get_chat_service
 from app.chat.services import ChatService
-from app.projects.exceptions import ActiveProjectRequiredException
 from app.commons.fastapi_htmx import htmx
+from app.projects.exceptions import ActiveProjectRequiredException
 
 router = APIRouter()
 

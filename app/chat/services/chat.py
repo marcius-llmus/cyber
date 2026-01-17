@@ -3,14 +3,14 @@ from typing import Any
 
 from llama_index.core.llms import ChatMessage, MessageRole
 
+from app.chat.models import Message
 from app.chat.repositories import MessageRepository
 from app.chat.schemas import MessageCreate
-from app.sessions.models import ChatSession
-from app.chat.models import Message
-from app.sessions.schemas import ChatSessionCreate
-from app.sessions.services import SessionService
 from app.projects.exceptions import ActiveProjectRequiredException
 from app.projects.services import ProjectService
+from app.sessions.models import ChatSession
+from app.sessions.schemas import ChatSessionCreate
+from app.sessions.services import SessionService
 
 
 class ChatService:

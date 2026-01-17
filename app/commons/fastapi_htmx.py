@@ -5,15 +5,15 @@ import logging
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from functools import wraps
-from typing import Optional, Union
+from typing import Union
 
 from fastapi import HTTPException, Request
 from fastapi.templating import Jinja2Templates
 
 TemplatePath = Union[Jinja2Templates, dict[str, Jinja2Templates]]
 TemplateName = str
-templates_path: Optional[TemplatePath] = None
-templates_file_extension: Optional[str] = None
+templates_path: TemplatePath | None = None
+templates_file_extension: str | None = None
 
 
 @dataclass
@@ -62,7 +62,7 @@ class HXRequest(Request):
     hx_request: bool = False
 
 
-def _get_template_name(name: Union[TemplateSpec, str], file_extension: Optional[str]) -> TemplateFileInfo:
+def _get_template_name(name: TemplateSpec | str, file_extension: str | None) -> TemplateFileInfo:
     if isinstance(name, TemplateSpec) and isinstance(templates_path, dict):
         try:
             templates_collection_path = templates_path[name.collection_name]
@@ -85,11 +85,11 @@ def _get_template_name(name: Union[TemplateSpec, str], file_extension: Optional[
 
 
 def htmx(  # noqa: C901
-    partial_template_name: Union[TemplateSpec, TemplateName],
-    full_template_name: Optional[Union[TemplateSpec, TemplateName]] = None,
-    partial_template_constructor: Optional[Callable] = None,
-    full_template_constructor: Optional[Callable] = None,
-    template_extension: Optional[str] = None,
+    partial_template_name: TemplateSpec | TemplateName,
+    full_template_name: TemplateSpec | TemplateName | None = None,
+    partial_template_constructor: Callable | None = None,
+    full_template_constructor: Callable | None = None,
+    template_extension: str | None = None,
 ) -> Callable:
     """Decorator for FastAPI routes to make HTMX easier to use.
 

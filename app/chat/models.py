@@ -1,21 +1,21 @@
 from typing import Any
+
+from llama_index.core.llms import MessageRole
 from sqlalchemy import (
+    JSON,
     Column,
     DateTime,
     Enum,
     Float,
     ForeignKey,
     Integer,
-    JSON,
     String,
-    Text,
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from llama_index.core.llms import MessageRole
-from app.core.db import Base
 from app.chat.enums import ChatTurnStatus
+from app.core.db import Base
 
 
 class Message(Base):

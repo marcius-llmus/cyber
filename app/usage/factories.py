@@ -1,10 +1,12 @@
 from functools import lru_cache
+
 from genai_prices import UpdatePrices
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.usage.repositories import UsageRepository, GlobalUsageRepository
-from app.usage.services import UsageService
+
 from app.llms.factories import build_llm_service
 from app.settings.factories import build_settings_service
+from app.usage.repositories import GlobalUsageRepository, UsageRepository
+from app.usage.services import UsageService
 
 
 async def build_usage_service(db: AsyncSession) -> UsageService:

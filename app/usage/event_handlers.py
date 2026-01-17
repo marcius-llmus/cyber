@@ -1,19 +1,19 @@
-from typing import List, Optional, Any
 from contextvars import ContextVar
+from typing import Any
 
 from llama_index.core.instrumentation import get_dispatcher
-from llama_index.core.instrumentation.events import BaseEvent
 from llama_index.core.instrumentation.event_handlers import BaseEventHandler
+from llama_index.core.instrumentation.events import BaseEvent
 from llama_index.core.instrumentation.events.llm import (
     LLMChatEndEvent,
     LLMCompletionEndEvent,
     LLMPredictEndEvent,
-    LLMStructuredPredictEndEvent
+    LLMStructuredPredictEndEvent,
 )
 
 # Private module-level ContextVar.
 # Implementation detail: hidden from the rest of the app.
-_usage_events_ctx: ContextVar[Optional[List[BaseEvent]]] = ContextVar("usage_events_ctx", default=None)
+_usage_events_ctx: ContextVar[list[BaseEvent] | None] = ContextVar("usage_events_ctx", default=None)
 
 
 class _GlobalTokenUsageEventHandler(BaseEventHandler):
@@ -38,7 +38,7 @@ class UsageCollector:
     Context manager to capture usage events for a specific workflow execution.
     """
     def __init__(self):
-        self.events: List[BaseEvent] = []
+        self.events: list[BaseEvent] = []
         self._token = None
         self._processed_count = 0
 
@@ -51,7 +51,7 @@ class UsageCollector:
         # Stop capturing and cleanup
         _usage_events_ctx.reset(self._token)
 
-    def consume(self) -> List[BaseEvent]:
+    def consume(self) -> list[BaseEvent]:
         """
         Returns only the events added since the last consume call.
         Moves the internal cursor forward.
@@ -59,7 +59,7 @@ class UsageCollector:
         total_events = len(self.events)
         if self._processed_count >= total_events:
             return []
-        
+
         batch = self.events[self._processed_count:]
         self._processed_count = total_events
         return batch

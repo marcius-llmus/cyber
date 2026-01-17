@@ -1,9 +1,9 @@
 from async_lru import alru_cache
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.llms.services import LLMService
-from app.llms.repositories import LLMSettingsRepository
 from app.llms.registry import LLMFactory
+from app.llms.repositories import LLMSettingsRepository
+from app.llms.services import LLMService
 
 
 @alru_cache

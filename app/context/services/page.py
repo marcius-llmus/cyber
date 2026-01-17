@@ -1,8 +1,10 @@
-from typing import Any, Dict, List
+from typing import Any
+
+from app.context.schemas import FileTreeNode
 from app.context.services.context import WorkspaceService
 from app.context.services.filesystem import FileSystemService
-from app.context.schemas import FileTreeNode
 from app.projects.services import ProjectService
+
 
 class ContextPageService:
     """
@@ -25,7 +27,7 @@ class ContextPageService:
 
         # 1. Get Pure Domain Tree
         domain_nodes = await self.fs_service.get_project_file_tree()
-        
+
         # 2. Get Active Context (to mark selection)
         active_files = await self.context_service.get_active_context(session_id)
         active_paths = {f.file_path for f in active_files}
@@ -41,21 +43,21 @@ class ContextPageService:
         }
         return {"file_tree": root_node}
 
-    def _transform_tree(self, nodes: list[FileTreeNode], active_paths: set[str]) -> List[Dict[str, Any]]:
+    def _transform_tree(self, nodes: list[FileTreeNode], active_paths: set[str]) -> list[dict[str, Any]]:
         ui_nodes = []
         for node in nodes:
-            ui_node: Dict[str, Any] = {
+            ui_node: dict[str, Any] = {
                 "name": node.name,
                 "path": node.path,
                 "type": "folder" if node.is_dir else "file",
             }
-            
+
             if node.is_dir:
                 if node.children:
                     ui_node["children"] = self._transform_tree(node.children, active_paths)
             else:
                 ui_node["selected"] = node.path in active_paths
-            
+
             ui_nodes.append(ui_node)
         return ui_nodes
 

@@ -2,9 +2,9 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.commons.dependencies import get_db
-from app.context.services import ContextPageService, WorkspaceService, FileSystemService
+from app.context.factories import build_filesystem_service, build_workspace_service
 from app.context.repositories import ContextRepository
-from app.context.factories import build_workspace_service, build_filesystem_service
+from app.context.services import ContextPageService, FileSystemService, WorkspaceService
 from app.projects.dependencies import get_project_service
 from app.projects.services import ProjectService
 

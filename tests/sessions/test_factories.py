@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
 
 from app.sessions.factories import build_session_service
 from app.sessions.repositories import ChatSessionRepository

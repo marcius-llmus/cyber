@@ -11,7 +11,7 @@ from app.projects.dependencies import (
     get_project_service,
 )
 from app.projects.repositories import ProjectRepository
-from app.projects.services import ProjectPageService, ProjectService
+from app.projects.services import ProjectPageService
 
 
 class TestProjectsDependencies:

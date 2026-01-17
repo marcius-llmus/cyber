@@ -6,8 +6,8 @@ from app.context.repositories import ContextRepository
 from app.context.schemas import ContextFileCreate, ContextFileUpdate
 from app.context.services.codebase import CodebaseService
 from app.patches.schemas import ParsedDiffPatch
-from app.projects.services import ProjectService
 from app.projects.exceptions import ActiveProjectRequiredException
+from app.projects.services import ProjectService
 
 logger = logging.getLogger(__name__)
 

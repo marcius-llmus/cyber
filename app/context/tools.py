@@ -2,11 +2,12 @@ import logging
 from typing import Annotated
 
 from pydantic import Field
-from app.core.db import DatabaseSessionManager
-from app.settings.models import Settings
+
 from app.commons.tools import BaseToolSet
 from app.context.factories import build_filesystem_service, build_search_service
 from app.context.schemas import FileStatus
+from app.core.db import DatabaseSessionManager
+from app.settings.models import Settings
 
 logger = logging.getLogger(__name__)
 
@@ -156,7 +157,7 @@ class FileTools(BaseToolSet):
             async with self.db.session() as session:
                 fs_service = await build_filesystem_service(session)
                 results = await fs_service.read_files(file_patterns)
-                
+
                 if not results:
                     return "No files found matching the file patterns."
 
@@ -166,7 +167,7 @@ class FileTools(BaseToolSet):
                         output.append(f"## File: {result.file_path}\n{result.content}")
                     else:
                         output.append(f"## File: {result.file_path}\n[Error reading file: {result.status} - {result.error_message}]")
-                
+
                 return "\n\n".join(output)
 
         except Exception as e:

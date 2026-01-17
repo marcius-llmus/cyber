@@ -1,5 +1,5 @@
+
 from pydantic import BaseModel
-from typing import List
 
 
 class SessionMetrics(BaseModel):
@@ -8,4 +8,4 @@ class SessionMetrics(BaseModel):
     input_tokens: int = 0
     output_tokens: int = 0
     cached_tokens: int = 0
-    errors: List[str] = []
+    errors: list[str] = []

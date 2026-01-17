@@ -1,14 +1,15 @@
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.enums import OperationalMode
 from app.projects.models import Project
-from app.sessions.dependencies import get_session_service, get_session_page_service
+from app.sessions.dependencies import get_session_page_service, get_session_service
 from app.sessions.models import ChatSession
 from app.sessions.repositories import ChatSessionRepository
-from app.sessions.services import SessionService, SessionPageService
+from app.sessions.services import SessionPageService, SessionService
 
 
 @pytest.fixture

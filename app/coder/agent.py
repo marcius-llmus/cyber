@@ -1,6 +1,6 @@
 import uuid
+from collections.abc import Sequence
 from copy import deepcopy
-from typing import List, Sequence
 
 from llama_index.core.agent.workflow.function_agent import FunctionAgent
 from llama_index.core.agent.workflow.workflow_events import AgentOutput
@@ -30,14 +30,14 @@ class CoderAgent(FunctionAgent):
     # we do this so it is not required to pass kwargs or run_id as tool args
     @staticmethod
     def _pop_run_id_from_tool_kwargs(tool_kwargs):
-        if not "_run_id" in tool_kwargs:
+        if "_run_id" not in tool_kwargs:
             raise ValueError("run_id not found in tool kwargs")
         tool_kwargs.pop("_run_id")
 
     async def take_step(
         self,
         ctx: Context,
-        llm_input: List[ChatMessage],
+        llm_input: list[ChatMessage],
         tools: Sequence[AsyncBaseTool],
         memory: BaseMemory,
     ) -> AgentOutput:

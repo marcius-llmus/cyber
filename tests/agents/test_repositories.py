@@ -1,14 +1,13 @@
 """Repository tests for the agents app."""
 
+import pytest
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-import pytest
-
-from app.core.enums import OperationalMode
 from app.agents.models import WorkflowState
-from app.projects.models import Project
 from app.agents.repositories import WorkflowStateRepository
+from app.core.enums import OperationalMode
+from app.projects.models import Project
 from app.sessions.models import ChatSession
 
 
@@ -127,7 +126,7 @@ class TestWorkflowStateRepository:
         """save_state should not commit; transaction boundaries are owned by higher layers."""
         await workflow_state_repository.save_state(chat_session.id, {"data": 1})
         await db_session.rollback()
-        
+
         # Should be gone
         result = await workflow_state_repository.get_by_session_id(chat_session.id)
         assert result is None

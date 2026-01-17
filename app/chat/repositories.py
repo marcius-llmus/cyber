@@ -1,7 +1,7 @@
-from sqlalchemy import select, delete
+from sqlalchemy import delete, select
 
+from app.chat.models import ChatTurn, Message
 from app.commons.repositories import BaseRepository
-from app.chat.models import Message, ChatTurn
 
 
 class MessageRepository(BaseRepository[Message]):

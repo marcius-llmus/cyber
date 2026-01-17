@@ -1,7 +1,7 @@
 from sqlalchemy import (
+    Boolean,
     Column,
     DateTime,
-    Boolean,
     Enum,
     ForeignKey,
     Integer,
@@ -12,6 +12,7 @@ from sqlalchemy.sql import func
 
 from app.core.db import Base
 from app.core.enums import ContextStrategy, OperationalMode
+
 
 class ChatSession(Base):
     __tablename__ = "chat_sessions"

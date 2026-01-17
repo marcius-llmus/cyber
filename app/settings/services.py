@@ -1,7 +1,7 @@
 from app.llms.services import LLMService
+from app.settings.exceptions import SettingsNotFoundException
 from app.settings.models import Settings
 from app.settings.repositories import SettingsRepository
-from app.settings.exceptions import SettingsNotFoundException
 from app.settings.schemas import SettingsUpdate
 
 

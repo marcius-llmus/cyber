@@ -1,6 +1,7 @@
-from app.chat.models import Message, ChatTurn
 from llama_index.core.llms import MessageRole
+
 from app.chat.enums import ChatTurnStatus
+from app.chat.models import ChatTurn, Message
 
 
 class TestMessageRepository:
@@ -42,7 +43,7 @@ class TestMessageRepository:
         await db_session.flush()
 
         await message_repository.delete_by_session_id(chat_session.id)
-        
+
         messages = await message_repository.list_by_session_id(chat_session.id)
         assert messages == []
 

@@ -1,7 +1,12 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 
-from app.sessions.dependencies import get_session_page_service, get_session_repository, get_session_service
+import pytest
+
+from app.sessions.dependencies import (
+    get_session_page_service,
+    get_session_repository,
+    get_session_service,
+)
 from app.sessions.repositories import ChatSessionRepository
 from app.sessions.services import SessionPageService
 

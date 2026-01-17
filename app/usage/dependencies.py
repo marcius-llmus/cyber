@@ -1,8 +1,9 @@
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.commons.dependencies import get_db
-from app.usage.services import UsagePageService, UsageService
 from app.usage.factories import build_usage_service
+from app.usage.services import UsagePageService, UsageService
 
 
 async def get_usage_service(db: AsyncSession = Depends(get_db)) -> UsageService:

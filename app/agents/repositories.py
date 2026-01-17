@@ -1,8 +1,8 @@
 from sqlalchemy import select
 from sqlalchemy.dialects.sqlite import insert
 
-from app.commons.repositories import BaseRepository
 from app.agents.models import WorkflowState
+from app.commons.repositories import BaseRepository
 
 
 class WorkflowStateRepository(BaseRepository[WorkflowState]):
@@ -23,7 +23,7 @@ class WorkflowStateRepository(BaseRepository[WorkflowState]):
             index_elements=[self.model.session_id],
             set_={"state": state}
         ).returning(self.model)
-        
+
         result = await self.db.execute(stmt)
         await self.db.flush()
         return result.scalar_one()

@@ -1,12 +1,21 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.context.factories import build_repo_map_service, build_workspace_service, build_codebase_service
-from app.settings.factories import build_settings_service
+
+from app.agents.repositories import WorkflowStateRepository
+from app.agents.services import (
+    AgentContextService,
+    AgentFactoryService,
+    WorkflowService,
+)
+from app.context.factories import (
+    build_codebase_service,
+    build_repo_map_service,
+    build_workspace_service,
+)
 from app.llms.factories import build_llm_service
 from app.projects.factories import build_project_service
 from app.prompts.factories import build_prompt_service
-from app.agents.repositories import WorkflowStateRepository
-from app.agents.services import WorkflowService, AgentContextService, AgentFactoryService
 from app.sessions.factories import build_session_service
+from app.settings.factories import build_settings_service
 
 
 async def build_workflow_service(db: AsyncSession) -> WorkflowService:
@@ -20,7 +29,7 @@ async def build_agent_context_service(db: AsyncSession) -> AgentContextService:
     codebase_service = await build_codebase_service()
     project_service = await build_project_service(db)
     prompt_service = await build_prompt_service(db)
-    
+
     return AgentContextService(
         repo_map_service=repo_map_service,
         workspace_service=workspace_service,

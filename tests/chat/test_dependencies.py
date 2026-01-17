@@ -1,14 +1,14 @@
-import pytest
 import inspect
 from unittest.mock import AsyncMock
 
+import pytest
+
 from app.chat.dependencies import (
-    get_message_repository,
     get_chat_service,
     get_chat_turn_service,
+    get_message_repository,
 )
-from app.chat.repositories import MessageRepository, ChatTurnRepository
-from app.chat.services.turn import ChatTurnService
+from app.chat.repositories import MessageRepository
 
 
 class TestChatDependencies:

@@ -1,6 +1,6 @@
 from enum import StrEnum
+
 from pydantic import BaseModel
-from typing import List, Optional
 
 
 class ContextFileListItem(BaseModel):
@@ -52,4 +52,4 @@ class FileTreeNode(BaseModel):
     name: str
     path: str
     is_dir: bool
-    children: Optional[List["FileTreeNode"]] = None
+    children: list["FileTreeNode"] | None = None

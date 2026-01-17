@@ -1,6 +1,7 @@
 import logging
 import uuid
-from typing import Any, AsyncGenerator, Callable
+from collections.abc import AsyncGenerator, Callable
+from typing import Any
 
 from llama_index.core.agent.workflow.workflow_events import (
     AgentInput,
@@ -11,14 +12,14 @@ from llama_index.core.agent.workflow.workflow_events import (
 )
 
 from app.coder.schemas import (
+    AgentStateEvent,
     AIMessageBlockStartEvent,
     AIMessageChunkEvent,
     CoderEvent,
-    WorkflowLogEvent,
+    LogLevel,
     ToolCallEvent,
     ToolCallResultEvent,
-    LogLevel,
-    AgentStateEvent,
+    WorkflowLogEvent,
 )
 
 logger = logging.getLogger(__name__)
@@ -44,10 +45,10 @@ class _MessageStateAccumulator:
                 "block_id": self.current_text_block_id,
                 "content": ""
             })
-        
+
         # Append to the last block (assuming it matches current ID)
         self.blocks[-1]["content"] += delta
-            
+
         return self.current_text_block_id
 
     def add_tool_call(self, run_id: str, tool_id: str, name: str, kwargs: dict):
@@ -83,7 +84,7 @@ class MessagingTurnEventHandler:
     """
     def __init__(self):
         self._accumulator = _MessageStateAccumulator()
-        self.handlers: dict[type, Callable[[Any], AsyncGenerator[CoderEvent, None]]] = {
+        self.handlers: dict[type, Callable[[Any], AsyncGenerator[CoderEvent]]] = {
             AgentStream: self._handle_agent_stream_event,
             ToolCall: self._handle_tool_call_event,
             ToolCallResult: self._handle_tool_call_result_event,
@@ -94,7 +95,7 @@ class MessagingTurnEventHandler:
     def get_blocks(self) -> list[dict[str, Any]]:
         return self._accumulator.get_blocks()
 
-    async def handle(self, event: Any) -> AsyncGenerator[CoderEvent, None]:
+    async def handle(self, event: Any) -> AsyncGenerator[CoderEvent]:
         if not (handler := self.handlers.get(type(event))):
             logger.warning(f"No handler for event type: {type(event)}")
             return
@@ -102,7 +103,7 @@ class MessagingTurnEventHandler:
         async for coder_event in handler(event):
             yield coder_event
 
-    async def _handle_agent_stream_event(self, event: AgentStream) -> AsyncGenerator[CoderEvent, None]:
+    async def _handle_agent_stream_event(self, event: AgentStream) -> AsyncGenerator[CoderEvent]:
         if event.delta:
             prev_block_id = self._accumulator.current_text_block_id
             block_id = self._accumulator.append_text(event.delta)
@@ -112,9 +113,9 @@ class MessagingTurnEventHandler:
 
             yield AIMessageChunkEvent(delta=event.delta, block_id=block_id)
 
-    async def _handle_tool_call_event(self, event: ToolCall) -> AsyncGenerator[CoderEvent, None]:
+    async def _handle_tool_call_event(self, event: ToolCall) -> AsyncGenerator[CoderEvent]:
         yield AgentStateEvent(status=f"Calling tool `{event.tool_name}`...")
-        
+
         tool_event = await self._build_tool_call_event(event)
         self._accumulator.add_tool_call(
             run_id=tool_event.tool_run_id,
@@ -124,7 +125,7 @@ class MessagingTurnEventHandler:
         )
         yield tool_event
 
-    async def _handle_tool_call_result_event(self, event: ToolCallResult) -> AsyncGenerator[CoderEvent, None]:
+    async def _handle_tool_call_result_event(self, event: ToolCallResult) -> AsyncGenerator[CoderEvent]:
         result_event = await self._build_tool_call_result_event(event)
         self._accumulator.add_tool_result(run_id=result_event.tool_run_id, output=result_event.tool_output)
         yield result_event

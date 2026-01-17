@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, ForeignKey, JSON
+from sqlalchemy import JSON, Column, ForeignKey, Integer
 from sqlalchemy.orm import relationship
+
 from app.core.db import Base
 
 
