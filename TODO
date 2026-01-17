@@ -32,6 +32,7 @@ Roadmap
 - Add per session settings (overrides)
 - Add pre creation of diffs then optionally applying existing pending diffs (per message or per turn).
 - Add list folders tool for when repo map is not enough (could be a condition)
+- Fix _estimate_token_count on repo map
 
 
 --------
