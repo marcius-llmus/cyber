@@ -10,7 +10,9 @@ from app.agents.repositories import WorkflowStateRepository
 from app.agents.services import AgentContextService, WorkflowService
 from app.agents.services.agent_factory import AgentFactoryService
 from app.coder.agent import CoderAgent
+from app.context.tools import FileTools, SearchTools
 from app.context.services import CodebaseService, RepoMapService, WorkspaceService
+from app.patches.tools import PatcherTools
 from app.projects.services import ProjectService
 from app.prompts.services import PromptService
 
@@ -79,6 +81,27 @@ def coder_agent_mock(mocker: MockerFixture) -> MagicMock:
 
 
 @pytest.fixture
+def search_tools_inst(mocker: MockerFixture) -> MagicMock:
+    inst = mocker.create_autospec(SearchTools, instance=True)
+    inst.to_tool_list.return_value = ["S"]
+    return inst
+
+
+@pytest.fixture
+def file_tools_inst(mocker: MockerFixture) -> MagicMock:
+    inst = mocker.create_autospec(FileTools, instance=True)
+    inst.to_tool_list.return_value = ["F"]
+    return inst
+
+
+@pytest.fixture
+def patcher_tools_inst(mocker: MockerFixture) -> MagicMock:
+    inst = mocker.create_autospec(PatcherTools, instance=True)
+    inst.to_tool_list.return_value = ["P"]
+    return inst
+
+
+@pytest.fixture
 def workflow_mock(mocker: MockerFixture) -> MagicMock:
     return mocker.create_autospec(Workflow, instance=True)
 
@@ -116,9 +139,7 @@ def agent_factory_service(
 
 
 @pytest.fixture
-def override_get_workflow_service(workflow_service_mock: MagicMock):
-    from app.main import app
-
-    app.dependency_overrides[get_workflow_service] = lambda: workflow_service_mock
+def override_get_workflow_service(client, workflow_service_mock: MagicMock):
+    client.app.dependency_overrides[get_workflow_service] = lambda: workflow_service_mock
     yield
-    app.dependency_overrides.clear()
+    client.app.dependency_overrides.clear()

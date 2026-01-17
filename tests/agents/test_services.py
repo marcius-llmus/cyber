@@ -114,7 +114,7 @@ class TestAgentContextService:
         self, agent_context_service: AgentContextService, project_service_mock: MagicMock
     ):
         """Should raise ActiveProjectRequiredException when there is no active project."""
-        project_service_mock.get_active_project.return_value = None
+        project_service_mock.get_active_project = AsyncMock(return_value=None)
         
         with pytest.raises(ActiveProjectRequiredException):
             await agent_context_service.build_system_prompt(session_id=1, operational_mode=OperationalMode.CODING)
@@ -123,7 +123,7 @@ class TestAgentContextService:
         self, agent_context_service: AgentContextService, project_service_mock: MagicMock
     ):
         """CHAT mode should not include repo map, active context, or tool rules."""
-        project_service_mock.get_active_project.return_value = Project(id=1, name="p", path="/")
+        project_service_mock.get_active_project = AsyncMock(return_value=Project(id=1, name="p", path="/"))
  
         prompt = await agent_context_service.build_system_prompt(session_id=1, operational_mode=OperationalMode.CHAT)
  
@@ -146,11 +146,11 @@ class TestAgentContextService:
         codebase_service_mock: MagicMock,
     ):
         """CODING mode should include both the repo map and active context when available."""
-        project_service_mock.get_active_project.return_value = Project(id=1, name="p", path="/")
-        repo_map_service_mock.generate_repo_map.return_value = "tree"
-        workspace_service_mock.get_active_context.return_value = [ContextFile(file_path="a.py")]
+        project_service_mock.get_active_project = AsyncMock(return_value=Project(id=1, name="p", path="/"))
+        repo_map_service_mock.generate_repo_map = AsyncMock(return_value="tree")
+        workspace_service_mock.get_active_context = AsyncMock(return_value=[ContextFile(file_path="a.py")])
         # Fix FileReadResult instantiation
-        codebase_service_mock.read_file.return_value = FileReadResult(file_path="a.py", status=FileStatus.SUCCESS, content="code")
+        codebase_service_mock.read_file = AsyncMock(return_value=FileReadResult(file_path="a.py", status=FileStatus.SUCCESS, content="code"))
 
         prompt = await agent_context_service.build_system_prompt(session_id=1, operational_mode=OperationalMode.CODING)
 
@@ -166,8 +166,8 @@ class TestAgentContextService:
         repo_map_service_mock: MagicMock,
     ):
         """ASK mode should include repo map when available and respect read-only constraints."""
-        project_service_mock.get_active_project.return_value = Project(id=1, name="p", path="/")
-        repo_map_service_mock.generate_repo_map.return_value = "tree"
+        project_service_mock.get_active_project = AsyncMock(return_value=Project(id=1, name="p", path="/"))
+        repo_map_service_mock.generate_repo_map = AsyncMock(return_value="tree")
 
         prompt = await agent_context_service.build_system_prompt(session_id=1, operational_mode=OperationalMode.ASK)
 
@@ -180,7 +180,7 @@ class TestAgentContextService:
         project_service_mock: MagicMock,
     ):
         """ASK mode should include tool usage rules since read-only tools are available."""
-        project_service_mock.get_active_project.return_value = Project(id=1, name="p", path="/")
+        project_service_mock.get_active_project = AsyncMock(return_value=Project(id=1, name="p", path="/"))
         
         prompt = await agent_context_service.build_system_prompt(session_id=1, operational_mode=OperationalMode.ASK)
         
@@ -193,8 +193,8 @@ class TestAgentContextService:
         repo_map_service_mock: MagicMock,
     ):
         """PLANNER mode should include repo map when available and not require patcher tooling."""
-        project_service_mock.get_active_project.return_value = Project(id=1, name="p", path="/")
-        repo_map_service_mock.generate_repo_map.return_value = "tree"
+        project_service_mock.get_active_project = AsyncMock(return_value=Project(id=1, name="p", path="/"))
+        repo_map_service_mock.generate_repo_map = AsyncMock(return_value="tree")
 
         prompt = await agent_context_service.build_system_prompt(session_id=1, operational_mode=OperationalMode.PLANNER)
 
@@ -206,7 +206,7 @@ class TestAgentContextService:
         project_service_mock: MagicMock,
     ):
         """SINGLE_SHOT mode should exclude tool usage rules since no tools are available."""
-        project_service_mock.get_active_project.return_value = Project(id=1, name="p", path="/")
+        project_service_mock.get_active_project = AsyncMock(return_value=Project(id=1, name="p", path="/"))
  
         prompt = await agent_context_service.build_system_prompt(session_id=1, operational_mode=OperationalMode.SINGLE_SHOT)
  
@@ -220,7 +220,7 @@ class TestAgentContextService:
         project_service_mock: MagicMock,
     ):
         """PLANNER mode should include tool usage rules since read-only tools are available."""
-        project_service_mock.get_active_project.return_value = Project(id=1, name="p", path="/")
+        project_service_mock.get_active_project = AsyncMock(return_value=Project(id=1, name="p", path="/"))
         
         prompt = await agent_context_service.build_system_prompt(session_id=1, operational_mode=OperationalMode.PLANNER)
         
@@ -232,7 +232,7 @@ class TestAgentContextService:
         project_service_mock: MagicMock,
     ):
         """Non-CHAT modes should include coder behavior guidelines."""
-        project_service_mock.get_active_project.return_value = Project(id=1, name="p", path="/")
+        project_service_mock.get_active_project = AsyncMock(return_value=Project(id=1, name="p", path="/"))
         
         for mode in [OperationalMode.CODING, OperationalMode.ASK, OperationalMode.PLANNER, OperationalMode.SINGLE_SHOT]:
             prompt = await agent_context_service.build_system_prompt(session_id=1, operational_mode=mode)
@@ -245,8 +245,8 @@ class TestAgentContextService:
         prompt_service_mock: MagicMock,
     ):
         """Non-CHAT modes should embed active prompts XML when prompts exist for the project."""
-        project_service_mock.get_active_project.return_value = Project(id=1, name="p", path="/")
-        prompt_service_mock.get_active_prompts.return_value = [Prompt(name="P1", content="C1")]
+        project_service_mock.get_active_project = AsyncMock(return_value=Project(id=1, name="p", path="/"))
+        prompt_service_mock.get_active_prompts = AsyncMock(return_value=[Prompt(name="P1", content="C1")])
 
         prompt = await agent_context_service.build_system_prompt(session_id=1, operational_mode=OperationalMode.CODING)
 
@@ -261,8 +261,8 @@ class TestAgentContextService:
         prompt_service_mock: MagicMock,
     ):
         """Non-CHAT modes should omit CUSTOM_INSTRUCTIONS section when no active prompts exist."""
-        project_service_mock.get_active_project.return_value = Project(id=1, name="p", path="/")
-        prompt_service_mock.get_active_prompts.return_value = []
+        project_service_mock.get_active_project = AsyncMock(return_value=Project(id=1, name="p", path="/"))
+        prompt_service_mock.get_active_prompts = AsyncMock(return_value=[])
 
         prompt = await agent_context_service.build_system_prompt(session_id=1, operational_mode=OperationalMode.CODING)
 
@@ -277,8 +277,8 @@ class TestAgentContextService:
         workspace_service_mock: MagicMock,
     ):
         """Non-CHAT modes should omit ACTIVE_CONTEXT when workspace has no active files."""
-        project_service_mock.get_active_project.return_value = Project(id=1, name="p", path="/")
-        workspace_service_mock.get_active_context.return_value = []
+        project_service_mock.get_active_project = AsyncMock(return_value=Project(id=1, name="p", path="/"))
+        workspace_service_mock.get_active_context = AsyncMock(return_value=[])
 
         prompt = await agent_context_service.build_system_prompt(session_id=1, operational_mode=OperationalMode.CODING)
 
@@ -291,8 +291,8 @@ class TestAgentContextService:
         repo_map_service_mock: MagicMock,
     ):
         """Non-CHAT modes should omit REPOSITORY_MAP section when repo map is unavailable."""
-        project_service_mock.get_active_project.return_value = Project(id=1, name="p", path="/")
-        repo_map_service_mock.generate_repo_map.return_value = None
+        project_service_mock.get_active_project = AsyncMock(return_value=Project(id=1, name="p", path="/"))
+        repo_map_service_mock.generate_repo_map = AsyncMock(return_value=None)
 
         prompt = await agent_context_service.build_system_prompt(session_id=1, operational_mode=OperationalMode.CODING)
 
@@ -306,18 +306,18 @@ class TestAgentContextService:
         codebase_service_mock: MagicMock,
     ):
         """Active context builder should only include files that were read successfully."""
-        project_service_mock.get_active_project.return_value = Project(id=1, name="p", path="/")
-        workspace_service_mock.get_active_context.return_value = [
+        project_service_mock.get_active_project = AsyncMock(return_value=Project(id=1, name="p", path="/"))
+        workspace_service_mock.get_active_context = AsyncMock(return_value=[
             ContextFile(file_path="good.py"),
             ContextFile(file_path="bad.py"),
-        ]
+        ])
         
         async def read_side_effect(path, file_path):
             if file_path == "good.py":
                 return FileReadResult(file_path=file_path, status=FileStatus.SUCCESS, content="good code")
             return FileReadResult(file_path=file_path, status=FileStatus.ERROR, content="")
             
-        codebase_service_mock.read_file.side_effect = read_side_effect
+        codebase_service_mock.read_file = AsyncMock(side_effect=read_side_effect)
 
         prompt = await agent_context_service.build_system_prompt(session_id=1, operational_mode=OperationalMode.CODING)
 
@@ -334,11 +334,11 @@ class TestAgentContextService:
         prompt_service_mock: MagicMock,
     ):
         """build_system_prompt should produce sections in a stable, predictable order."""
-        project_service_mock.get_active_project.return_value = Project(id=1, name="p", path="/")
-        repo_map_service_mock.generate_repo_map.return_value = "MAP"
-        workspace_service_mock.get_active_context.return_value = [ContextFile(file_path="f.py")]
-        codebase_service_mock.read_file.return_value = FileReadResult(file_path="f.py", status=FileStatus.SUCCESS, content="CODE")
-        prompt_service_mock.get_active_prompts.return_value = [Prompt(name="P", content="C")]
+        project_service_mock.get_active_project = AsyncMock(return_value=Project(id=1, name="p", path="/"))
+        repo_map_service_mock.generate_repo_map = AsyncMock(return_value="MAP")
+        workspace_service_mock.get_active_context = AsyncMock(return_value=[ContextFile(file_path="f.py")])
+        codebase_service_mock.read_file = AsyncMock(return_value=FileReadResult(file_path="f.py", status=FileStatus.SUCCESS, content="CODE"))
+        prompt_service_mock.get_active_prompts = AsyncMock(return_value=[Prompt(name="P", content="C")])
 
         prompt = await agent_context_service.build_system_prompt(session_id=1, operational_mode=OperationalMode.CODING)
 
@@ -368,13 +368,13 @@ class TestAgentContextService:
         repo_map_service_mock: MagicMock,
     ):
         """REPOSITORY_MAP section should include the descriptive HTML comment."""
-        project_service_mock.get_active_project.return_value = Project(id=1, name="p", path="/")
-        repo_map_service_mock.generate_repo_map.return_value = "MAP"
+        project_service_mock.get_active_project = AsyncMock(return_value=Project(id=1, name="p", path="/"))
+        repo_map_service_mock.generate_repo_map = AsyncMock(return_value="MAP")
         
         prompt = await agent_context_service.build_system_prompt(session_id=1, operational_mode=OperationalMode.CODING)
         
         assert "<!--" in prompt
-        assert "AUTHORITATIVE source of truth" in prompt
+        assert "This section contains the source of truth" in prompt
 
     async def test_build_system_prompt_active_context_includes_description_comment(
         self,
@@ -384,9 +384,9 @@ class TestAgentContextService:
         codebase_service_mock: MagicMock,
     ):
         """ACTIVE_CONTEXT section should include the descriptive HTML comment."""
-        project_service_mock.get_active_project.return_value = Project(id=1, name="p", path="/")
-        workspace_service_mock.get_active_context.return_value = [ContextFile(file_path="f.py")]
-        codebase_service_mock.read_file.return_value = FileReadResult(file_path="f.py", status=FileStatus.SUCCESS, content="CODE")
+        project_service_mock.get_active_project = AsyncMock(return_value=Project(id=1, name="p", path="/"))
+        workspace_service_mock.get_active_context = AsyncMock(return_value=[ContextFile(file_path="f.py")])
+        codebase_service_mock.read_file = AsyncMock(return_value=FileReadResult(file_path="f.py", status=FileStatus.SUCCESS, content="CODE"))
         
         prompt = await agent_context_service.build_system_prompt(session_id=1, operational_mode=OperationalMode.CODING)
         
@@ -400,8 +400,8 @@ class TestAgentContextService:
         repo_map_service_mock: MagicMock,
     ):
         """build_system_prompt should surface exceptions raised by RepoMapService.generate_repo_map."""
-        project_service_mock.get_active_project.return_value = Project(id=1, name="p", path="/")
-        repo_map_service_mock.generate_repo_map.side_effect = Exception("Repo Map Error")
+        project_service_mock.get_active_project = AsyncMock(return_value=Project(id=1, name="p", path="/"))
+        repo_map_service_mock.generate_repo_map = AsyncMock(side_effect=Exception("Repo Map Error"))
         
         with pytest.raises(Exception, match="Repo Map Error"):
             await agent_context_service.build_system_prompt(session_id=1)
@@ -413,8 +413,8 @@ class TestAgentContextService:
         workspace_service_mock: MagicMock,
     ):
         """build_system_prompt should surface exceptions raised by WorkspaceService.get_active_context."""
-        project_service_mock.get_active_project.return_value = Project(id=1, name="p", path="/")
-        workspace_service_mock.get_active_context.side_effect = Exception("Workspace Error")
+        project_service_mock.get_active_project = AsyncMock(return_value=Project(id=1, name="p", path="/"))
+        workspace_service_mock.get_active_context = AsyncMock(side_effect=Exception("Workspace Error"))
         
         with pytest.raises(Exception, match="Workspace Error"):
             await agent_context_service.build_system_prompt(session_id=1)
@@ -427,9 +427,9 @@ class TestAgentContextService:
         codebase_service_mock: MagicMock,
     ):
         """build_system_prompt should surface exceptions raised by CodebaseService.read_file."""
-        project_service_mock.get_active_project.return_value = Project(id=1, name="p", path="/")
-        workspace_service_mock.get_active_context.return_value = [ContextFile(file_path="f.py")]
-        codebase_service_mock.read_file.side_effect = Exception("Codebase Error")
+        project_service_mock.get_active_project = AsyncMock(return_value=Project(id=1, name="p", path="/"))
+        workspace_service_mock.get_active_context = AsyncMock(return_value=[ContextFile(file_path="f.py")])
+        codebase_service_mock.read_file = AsyncMock(side_effect=Exception("Codebase Error"))
         
         with pytest.raises(Exception, match="Codebase Error"):
             await agent_context_service.build_system_prompt(session_id=1)
@@ -440,7 +440,7 @@ class TestAgentContextService:
         workspace_service_mock: MagicMock,
     ):
         """_build_active_context_xml should return empty string when workspace returns no active files."""
-        workspace_service_mock.get_active_context.return_value = []
+        workspace_service_mock.get_active_context = AsyncMock(return_value=[])
         project = Project(id=1, name="p", path="/")
         
         result = await agent_context_service._build_active_context_xml(session_id=1, project=project)
@@ -453,8 +453,8 @@ class TestAgentContextService:
         codebase_service_mock: MagicMock,
     ):
         """_build_active_context_xml should skip entries where read_file status is not SUCCESS."""
-        workspace_service_mock.get_active_context.return_value = [ContextFile(file_path="bad.py")]
-        codebase_service_mock.read_file.return_value = FileReadResult(file_path="bad.py", status=FileStatus.ERROR, content="")
+        workspace_service_mock.get_active_context = AsyncMock(return_value=[ContextFile(file_path="bad.py")])
+        codebase_service_mock.read_file = AsyncMock(return_value=FileReadResult(file_path="bad.py", status=FileStatus.ERROR, content=""))
         project = Project(id=1, name="p", path="/")
         
         result = await agent_context_service._build_active_context_xml(session_id=1, project=project)
@@ -471,11 +471,11 @@ class TestAgentContextService:
         # If workspace service returns duplicates, it will process duplicates.
         # Ideally workspace service handles this, but let's see what happens here.
         # The requirement asks to test behavior.
-        workspace_service_mock.get_active_context.return_value = [
+        workspace_service_mock.get_active_context = AsyncMock(return_value=[
             ContextFile(file_path="a.py"),
             ContextFile(file_path="a.py"),
-        ]
-        codebase_service_mock.read_file.return_value = FileReadResult(file_path="a.py", status=FileStatus.SUCCESS, content="code")
+        ])
+        codebase_service_mock.read_file = AsyncMock(return_value=FileReadResult(file_path="a.py", status=FileStatus.SUCCESS, content="code"))
         project = Project(id=1, name="p", path="/")
         
         result = await agent_context_service._build_active_context_xml(session_id=1, project=project)
@@ -489,8 +489,8 @@ class TestAgentContextService:
         codebase_service_mock: MagicMock,
     ):
         """_build_active_context_xml should wrap each file in a <FILE path="..."> tag."""
-        workspace_service_mock.get_active_context.return_value = [ContextFile(file_path="a.py")]
-        codebase_service_mock.read_file.return_value = FileReadResult(file_path="a.py", status=FileStatus.SUCCESS, content="code")
+        workspace_service_mock.get_active_context = AsyncMock(return_value=[ContextFile(file_path="a.py")])
+        codebase_service_mock.read_file = AsyncMock(return_value=FileReadResult(file_path="a.py", status=FileStatus.SUCCESS, content="code"))
         project = Project(id=1, name="p", path="/")
         
         result = await agent_context_service._build_active_context_xml(session_id=1, project=project)
@@ -505,8 +505,8 @@ class TestAgentContextService:
     ):
         """_build_active_context_xml should embed file content without mutation."""
         content = "def foo():\n    return 1"
-        workspace_service_mock.get_active_context.return_value = [ContextFile(file_path="a.py")]
-        codebase_service_mock.read_file.return_value = FileReadResult(file_path="a.py", status=FileStatus.SUCCESS, content=content)
+        workspace_service_mock.get_active_context = AsyncMock(return_value=[ContextFile(file_path="a.py")])
+        codebase_service_mock.read_file = AsyncMock(return_value=FileReadResult(file_path="a.py", status=FileStatus.SUCCESS, content=content))
         project = Project(id=1, name="p", path="/")
         
         result = await agent_context_service._build_active_context_xml(session_id=1, project=project)
@@ -518,7 +518,7 @@ class TestAgentContextService:
         prompt_service_mock: MagicMock,
     ):
         """_build_prompts_xml should wrap each prompt in an <INSTRUCTION name="..."> tag."""
-        prompt_service_mock.get_active_prompts.return_value = [Prompt(name="P1", content="C1")]
+        prompt_service_mock.get_active_prompts = AsyncMock(return_value=[Prompt(name="P1", content="C1")])
         
         result = await agent_context_service._build_prompts_xml(project_id=1)
         assert '<INSTRUCTION name="P1">' in result
@@ -530,7 +530,7 @@ class TestAgentContextService:
         prompt_service_mock: MagicMock,
     ):
         """_build_prompts_xml should embed prompt content without mutation."""
-        prompt_service_mock.get_active_prompts.return_value = [Prompt(name="P1", content="Content")]
+        prompt_service_mock.get_active_prompts = AsyncMock(return_value=[Prompt(name="P1", content="Content")])
         
         result = await agent_context_service._build_prompts_xml(project_id=1)
         assert "Content" in result
@@ -541,7 +541,7 @@ class TestAgentContextService:
         prompt_service_mock: MagicMock,
     ):
         """_build_prompts_xml should return empty string when there are no active prompts."""
-        prompt_service_mock.get_active_prompts.return_value = []
+        prompt_service_mock.get_active_prompts = AsyncMock(return_value=[])
         
         result = await agent_context_service._build_prompts_xml(project_id=1)
         assert result == ""
@@ -554,9 +554,9 @@ class TestAgentContextService:
         codebase_service_mock: MagicMock,
     ):
         """build_system_prompt should omit ACTIVE_CONTEXT when no files are successfully read."""
-        project_service_mock.get_active_project.return_value = Project(id=1, name="p", path="/")
-        workspace_service_mock.get_active_context.return_value = [ContextFile(file_path="f.py")]
-        codebase_service_mock.read_file.return_value = FileReadResult(file_path="f.py", status=FileStatus.ERROR, content="")
+        project_service_mock.get_active_project = AsyncMock(return_value=Project(id=1, name="p", path="/"))
+        workspace_service_mock.get_active_context = AsyncMock(return_value=[ContextFile(file_path="f.py")])
+        codebase_service_mock.read_file = AsyncMock(return_value=FileReadResult(file_path="f.py", status=FileStatus.ERROR, content=""))
  
         prompt = await agent_context_service.build_system_prompt(session_id=1)
         assert "<ACTIVE_CONTEXT>\n" not in prompt
@@ -568,8 +568,8 @@ class TestAgentContextService:
         repo_map_service_mock: MagicMock,
     ):
         """build_system_prompt should omit REPOSITORY_MAP when repo map service returns None."""
-        project_service_mock.get_active_project.return_value = Project(id=1, name="p", path="/")
-        repo_map_service_mock.generate_repo_map.return_value = None
+        project_service_mock.get_active_project = AsyncMock(return_value=Project(id=1, name="p", path="/"))
+        repo_map_service_mock.generate_repo_map = AsyncMock(return_value=None)
         
         prompt = await agent_context_service.build_system_prompt(session_id=1)
         assert "<REPOSITORY_MAP>\n" not in prompt
@@ -590,8 +590,8 @@ class TestAgentContextService:
         project_service_mock: MagicMock,
         prompt_service_mock: MagicMock,
     ):
-        project_service_mock.get_active_project.return_value = Project(id=1, name="p", path="/")
-        prompt_service_mock.get_active_prompts.return_value = [Prompt(name="P1", content="C1")]
+        project_service_mock.get_active_project = AsyncMock(return_value=Project(id=1, name="p", path="/"))
+        prompt_service_mock.get_active_prompts = AsyncMock(return_value=[Prompt(name="P1", content="C1")])
 
         prompt = await agent_context_service.build_system_prompt(session_id=1, operational_mode=mode)
 
@@ -605,8 +605,8 @@ class TestAgentContextService:
         project_service_mock: MagicMock,
         prompt_service_mock: MagicMock,
     ):
-        project_service_mock.get_active_project.return_value = Project(id=1, name="p", path="/")
-        prompt_service_mock.get_active_prompts.return_value = [Prompt(name="P1", content="C1")]
+        project_service_mock.get_active_project = AsyncMock(return_value=Project(id=1, name="p", path="/"))
+        prompt_service_mock.get_active_prompts = AsyncMock(return_value=[Prompt(name="P1", content="C1")])
 
         prompt = await agent_context_service.build_system_prompt(session_id=1, operational_mode=OperationalMode.CHAT)
 

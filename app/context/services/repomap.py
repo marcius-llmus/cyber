@@ -2,6 +2,7 @@ import os
 from app.context.services.context import WorkspaceService
 from app.context.services.codebase import CodebaseService
 from app.settings.services import SettingsService
+from app.projects.services import ProjectService
 from app.projects.exceptions import ActiveProjectRequiredException
 from app.context.repomap import RepoMap
 
@@ -15,10 +16,12 @@ class RepoMapService:
         context_service: WorkspaceService,
         codebase_service: CodebaseService,
         settings_service: SettingsService,
+        project_service: ProjectService,
     ):
         self.context_service = context_service
         self.codebase_service = codebase_service
         self.settings_service = settings_service
+        self.project_service = project_service
 
     async def generate_repo_map(
         self,
@@ -27,7 +30,7 @@ class RepoMapService:
         mentioned_idents: set[str] | None = None,
         include_active_content: bool = True,
     ) -> str:
-        project = await self.context_service.project_service.get_active_project()
+        project = await self.project_service.get_active_project()
         if not project:
             raise ActiveProjectRequiredException("Active project required to generate repo map.")
 
@@ -44,6 +47,7 @@ class RepoMapService:
 
         settings = await self.settings_service.get_settings()
 
+        # todo: create a factory service for it (just like in agents)
         repo_mapper = RepoMap(
             all_files=all_files_abs,
             active_context_files=active_files_abs,
