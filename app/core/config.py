@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     BLUEPRINTS_ROOT_DIR: str = "workspace/blueprints"
     LOG_LEVEL: LogLevel = LogLevel.INFO
     OBSERVABILITY_ENABLED: bool = False
-    AGENT_MAX_ITERATIONS: int = 111
+    AGENT_MAX_ITERATIONS: int = 11 # todo: safety until stable enough (change later)
     LLM_TIMEOUT: float = 600.0
 
     @property
