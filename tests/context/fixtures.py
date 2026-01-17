@@ -3,6 +3,8 @@ import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 from unittest.mock import AsyncMock, MagicMock
+
+from app.context.repomap import RepoMap
 from app.context.repositories import ContextRepository
 from app.context.models import ContextFile
 from app.context.services import (
@@ -377,3 +379,116 @@ def chat_session_mock(mocker: MockerFixture) -> MagicMock:
     obj = mocker.MagicMock()
     obj.id = 1
     return obj
+
+@pytest.fixture
+def repomap_tmp_project(tmp_path) -> dict:
+    root = tmp_path / "project"
+    root.mkdir()
+    (root / "src").mkdir()
+
+    # defs: core + class, plus a private def
+    (root / "src" / "defs.py").write_text(
+        """\
+def core():
+    return 1
+
+
+def _hidden():
+    return 2
+
+
+class MyClass:
+    def method(self):
+        return core()
+""",
+        encoding="utf-8",
+    )
+
+    # usage
+    (root / "src" / "use1.py").write_text(
+        """\
+from src.defs import core, MyClass
+
+
+def run():
+    core()
+    x = MyClass()
+    return x
+""",
+        encoding="utf-8",
+    )
+    (root / "src" / "use2.py").write_text(
+        """\
+from src.defs import core
+
+
+def run2():
+    core()
+    core()
+""",
+        encoding="utf-8",
+    )
+
+    # separate definers to validate weighting differences
+    (root / "src" / "public_defs.py").write_text(
+        """\
+def public():
+    return 1
+""",
+        encoding="utf-8",
+    )
+    (root / "src" / "hidden_defs.py").write_text(
+        """\
+def _hidden2():
+    return 2
+""",
+        encoding="utf-8",
+    )
+    (root / "src" / "refs_equal.py").write_text(
+        """\
+from src.public_defs import public
+from src.hidden_defs import _hidden2
+
+
+def run():
+    public()
+    _hidden2()
+""",
+        encoding="utf-8",
+    )
+
+    # unknown extension (should be ignored by extract_tags)
+    (root / "notes.unknown").write_text("hello", encoding="utf-8")
+
+    return {
+        "root": str(root),
+        "defs": str(root / "src" / "defs.py"),
+        "use1": str(root / "src" / "use1.py"),
+        "use2": str(root / "src" / "use2.py"),
+        "public_defs": str(root / "src" / "public_defs.py"),
+        "hidden_defs": str(root / "src" / "hidden_defs.py"),
+        "refs_equal": str(root / "src" / "refs_equal.py"),
+        "unknown": str(root / "notes.unknown"),
+    }
+
+
+@pytest.fixture
+def repomap_instance(repomap_tmp_project) -> RepoMap:
+    root = repomap_tmp_project["root"]
+    all_files = [
+        repomap_tmp_project["defs"],
+        repomap_tmp_project["use1"],
+        repomap_tmp_project["use2"],
+        repomap_tmp_project["public_defs"],
+        repomap_tmp_project["hidden_defs"],
+        repomap_tmp_project["refs_equal"],
+        repomap_tmp_project["unknown"],
+    ]
+    return RepoMap(
+        all_files=all_files,
+        active_context_files=[],
+        mentioned_filenames=set(),
+        mentioned_idents=set(),
+        token_limit=10_000,
+        root=root,
+    )
