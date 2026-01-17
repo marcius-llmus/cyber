@@ -105,13 +105,14 @@ STRICT FORMAT RULES:
 TOOL_USAGE_RULES = """
 TOOL USAGE GUIDELINES
 Use the correct tools to apply patches, read and interact with files and search codebase.
+Repo map is just a general guidance for content. DO NOT TRUST IT for file contents. Read the files when needed instead.
+You can comment before calling the tools, what you are going to do.
 
-Batch Operations: Inefficiency is the enemy.
+Batch Operations:
     - Grep is your friend. You can use it as much as you can to optimize reading whole files afterwards.
     - You can read ALL relevant files in a single tool call.
-    - You can Apply ALL necessary patches in a single turn using multiple tool calls if needed.
     - When possible, issue multiple tool calls in the same response to do independent actions simultaneously.
-    - Do not stop to tell the user "I have read the file". Act immediately.
+    - Do not stop to tell the user "I have read the file" or "Show me were the files is". Read immediately.
 
 State Management:
     - ALWAYS check active context files before reading a file. It is ALWAYS uptodate. No need to read files by tools if it is already in active context.
@@ -120,8 +121,9 @@ State Management:
 """
 
 REPO_MAP_DESCRIPTION = """
-This section contains the AUTHORITATIVE source of truth for the project's file structure and definitions.
+This section contains the source of truth for the project's file structure and definitions.
 Trust this map for paths and existence. It represents the current state of the filesystem.
+It does not replace file reading. Its file structure is true, but for file contents, read the actual project files.
 
 FORMAT:
 file_path:
