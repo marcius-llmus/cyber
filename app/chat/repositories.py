@@ -1,14 +1,18 @@
-from sqlalchemy import select, delete
+from sqlalchemy import delete, select
 
+from app.chat.models import ChatTurn, Message
 from app.commons.repositories import BaseRepository
-from app.chat.models import Message, ChatTurn
 
 
 class MessageRepository(BaseRepository[Message]):
     model = Message
 
     async def list_by_session_id(self, session_id: int) -> list[Message]:
-        stmt = select(self.model).where(self.model.session_id == session_id).order_by(self.model.id)
+        stmt = (
+            select(self.model)
+            .where(self.model.session_id == session_id)
+            .order_by(self.model.id)
+        )
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
 
@@ -21,7 +25,11 @@ class MessageRepository(BaseRepository[Message]):
 class ChatTurnRepository(BaseRepository[ChatTurn]):
     model = ChatTurn
 
-    async def get_by_id_and_session(self, *, turn_id: str, session_id: int) -> ChatTurn | None:
-        stmt = select(self.model).where(self.model.id == turn_id, self.model.session_id == session_id)
+    async def get_by_id_and_session(
+        self, *, turn_id: str, session_id: int
+    ) -> ChatTurn | None:
+        stmt = select(self.model).where(
+            self.model.id == turn_id, self.model.session_id == session_id
+        )
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()

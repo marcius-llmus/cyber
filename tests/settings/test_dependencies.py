@@ -1,10 +1,12 @@
 import inspect
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
 
 from app.settings import dependencies
 from app.settings.repositories import SettingsRepository
 from app.settings.services import SettingsPageService
+
 
 class TestSettingsDependencies:
     async def test_get_settings_repository_returns_repository(self, db_session_mock):
@@ -53,7 +55,9 @@ class TestSettingsDependencies:
         assert page_service.llm_service is llm_service_mock
         build_llm_service_mock.assert_awaited_once_with(db_session_mock)
 
-    async def test_get_settings_service_propagates_factory_errors(self, db_session_mock, mocker):
+    async def test_get_settings_service_propagates_factory_errors(
+        self, db_session_mock, mocker
+    ):
         build_settings_service_mock = mocker.patch(
             "app.settings.dependencies.build_settings_service",
             new=AsyncMock(side_effect=ValueError("Boom")),
@@ -63,7 +67,6 @@ class TestSettingsDependencies:
             await dependencies.get_settings_service(db=db_session_mock)
 
         build_settings_service_mock.assert_awaited_once_with(db_session_mock)
-
 
     async def test_get_settings_page_service_propagates_factory_errors(
         self,

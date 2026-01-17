@@ -1,6 +1,8 @@
-import pytest
 import inspect
 from unittest.mock import AsyncMock
+
+import pytest
+
 from app.llms import dependencies
 
 
@@ -10,12 +12,16 @@ from app.llms import dependencies
         "get_llm_service",
     ],
 )
-def test_llms_dependencies__module_exposes_expected_dependency_factories(dependency_name: str):
+def test_llms_dependencies__module_exposes_expected_dependency_factories(
+    dependency_name: str,
+):
     """Covers: dependency surface. Asserts: llms.dependencies exposes expected providers."""
     assert hasattr(dependencies, dependency_name)
 
 
-async def test_get_llm_service__returns_llm_service_instance(db_session_mock, mocker, llm_service_mock):
+async def test_get_llm_service__returns_llm_service_instance(
+    db_session_mock, mocker, llm_service_mock
+):
     """Scenario: resolve the llm service via dependency.
 
     Asserts:

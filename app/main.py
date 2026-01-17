@@ -2,25 +2,24 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
-from app.commons.fastapi_htmx import htmx_init
+from fastapi.staticfiles import StaticFiles
 
-from app.core.db import sessionmanager
-from app.coder.routes.htmx import router as coder_htmx_router
 from app.chat.routes.htmx import router as chat_htmx_router
-from app.core.templating import templates
-from app.projects.routes.htmx import router as projects_htmx_router
+from app.coder.routes.htmx import router as coder_htmx_router
+from app.commons.fastapi_htmx import htmx_init
 from app.context.routes.htmx import router as context_htmx_router
-from app.sessions.routes.htmx import router as sessions_htmx_router
-from app.prompts.routes.htmx import router as prompts_htmx_router
-from app.settings.routes.htmx import router as settings_htmx_router
-from app.settings.utils import initialize_application_settings
 from app.core.config import settings
+from app.core.db import sessionmanager
 from app.core.observability import init_observability
 from app.core.setup import initialize_workspace
+from app.core.templating import templates
+from app.projects.routes.htmx import router as projects_htmx_router
+from app.prompts.routes.htmx import router as prompts_htmx_router
+from app.sessions.routes.htmx import router as sessions_htmx_router
+from app.settings.routes.htmx import router as settings_htmx_router
+from app.settings.utils import initialize_application_settings
 from app.usage.factories import build_price_updater
-
 
 logging.basicConfig(
     level=settings.LOG_LEVEL,
@@ -29,7 +28,7 @@ logging.basicConfig(
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI): # noqa
+async def lifespan(app: FastAPI):  # noqa
     """
     Ensures that the default application settings are created on startup.
     Also ensures that the workspace directories exist and are seeded.
@@ -46,9 +45,9 @@ async def lifespan(app: FastAPI): # noqa
 
     async with sessionmanager.session() as session:
         await initialize_application_settings(session)
-    
+
     yield
-    
+
     price_updater.stop()
     await sessionmanager.cleanup()
 

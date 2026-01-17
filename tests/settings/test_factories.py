@@ -1,7 +1,8 @@
 """Factory tests for the settings app."""
 
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
 
 from app.settings.factories import build_settings_service
 from app.settings.services import SettingsService

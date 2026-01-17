@@ -2,6 +2,8 @@
 export UID = $(shell id -u)
 export GID = $(shell id -g)
 
+PYTHON ?= uv run
+
 ifneq ($(USE_PODMAN),)
 	ENGINE := podman
 	COMPOSE := podman-compose
@@ -20,6 +22,19 @@ init:
 	@# Check for prerequisites
 	@command -v git >/dev/null 2>&1 || { echo >&2 "Error: git is not installed."; exit 1; }
 	@command -v $(ENGINE) >/dev/null 2>&1 || { echo >&2 "Error: $(ENGINE) is not installed."; exit 1; }
+	@command -v uv >/dev/null 2>&1 || { echo >&2 "Error: uv is not installed."; exit 1; }
+
+format:
+	@$(PYTHON) ruff check . --fix
+	@$(PYTHON) black .
+
+lint:
+	@$(PYTHON) ruff check .
+	@$(PYTHON) black --check .
+#	@$(PYTHON) mypy app
+
+test:
+	@$(PYTHON) pytest
 
 up: init
 	@echo "Starting Cyber using $(ENGINE)..."

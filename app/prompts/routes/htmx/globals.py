@@ -13,7 +13,7 @@ router = APIRouter()
 @router.get("/new/global", response_class=HTMLResponse)
 @htmx("prompts/partials/prompt_form")
 async def get_new_global_prompt_form(
-    request: Request,
+    request: Request,  # noqa: ARG001
     page_service: PromptPageService = Depends(get_prompt_page_service),
 ):
     context = await page_service.get_new_global_prompt_form_context()
@@ -23,7 +23,7 @@ async def get_new_global_prompt_form(
 @router.get("/global/list", response_class=HTMLResponse)
 @htmx("prompts/partials/prompt_list")
 async def get_global_prompts_list(
-    request: Request,
+    request: Request,  # noqa: ARG001
     page_service: PromptPageService = Depends(get_prompt_page_service),
 ):
     return await page_service.get_global_prompts_list_data()
@@ -32,7 +32,7 @@ async def get_global_prompts_list(
 @router.post("/global", response_class=HTMLResponse)
 @htmx("prompts/partials/prompt_item")
 async def create_global_prompt(
-    request: Request,
+    request: Request,  # noqa: ARG001
     prompt_in: PromptCreate,
     service: PromptService = Depends(get_prompt_service),
     page_service: PromptPageService = Depends(get_prompt_page_service),
@@ -45,12 +45,14 @@ async def create_global_prompt(
 @router.get("/global/{prompt_id}/edit", response_class=HTMLResponse)
 @htmx("prompts/partials/prompt_form")
 async def get_edit_global_prompt_form(
-    request: Request,
+    request: Request,  # noqa: ARG001
     prompt_id: int,
     page_service: PromptPageService = Depends(get_prompt_page_service),
 ):
     try:
-        context = await page_service.get_edit_global_prompt_form_context(prompt_id=prompt_id)
+        context = await page_service.get_edit_global_prompt_form_context(
+            prompt_id=prompt_id
+        )
         return context
     except PromptNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
@@ -59,7 +61,7 @@ async def get_edit_global_prompt_form(
 @router.get("/global/{prompt_id}/view", response_class=HTMLResponse)
 @htmx("prompts/partials/prompt_item")
 async def get_global_prompt_view(
-    request: Request,
+    request: Request,  # noqa: ARG001
     prompt_id: int,
     page_service: PromptPageService = Depends(get_prompt_page_service),
 ):
@@ -73,7 +75,7 @@ async def get_global_prompt_view(
 @router.put("/global/{prompt_id}", response_class=HTMLResponse)
 @htmx("prompts/partials/prompt_item")
 async def update_global_prompt(
-    request: Request,
+    request: Request,  # noqa: ARG001
     prompt_id: int,
     prompt_in: PromptUpdate,
     service: PromptService = Depends(get_prompt_service),

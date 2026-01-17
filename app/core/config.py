@@ -2,6 +2,7 @@ from pathlib import Path
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
 from app.core.enums import LogLevel
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -18,7 +19,7 @@ class Settings(BaseSettings):
     BLUEPRINTS_ROOT_DIR: str = "workspace/blueprints"
     LOG_LEVEL: LogLevel = LogLevel.INFO
     OBSERVABILITY_ENABLED: bool = False
-    AGENT_MAX_ITERATIONS: int = 111
+    AGENT_MAX_ITERATIONS: int = 21  # todo: safety until stable enough (change later)
     LLM_TIMEOUT: float = 600.0
 
     @property
@@ -26,9 +27,10 @@ class Settings(BaseSettings):
         return str(BASE_DIR / "app/context/repomap/queries")
 
     @field_validator("PROJECTS_ROOT_DIR", "BLUEPRINTS_ROOT_DIR")
-    def make_absolute(cls, v: str) -> str: # noqa
+    def make_absolute(cls, v: str) -> str:  # noqa
         if not Path(v).is_absolute():
             return str(BASE_DIR / v)
         return v
+
 
 settings = Settings()

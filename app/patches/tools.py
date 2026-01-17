@@ -3,9 +3,9 @@ from typing import Annotated
 
 from pydantic import Field
 
-from app.patches.factories import build_diff_patch_service
 from app.commons.tools import BaseToolSet
 from app.patches.enums import DiffPatchStatus
+from app.patches.factories import build_diff_patch_service
 from app.patches.schemas import DiffPatchCreate
 
 logger = logging.getLogger(__name__)
@@ -60,9 +60,7 @@ class PatcherTools(BaseToolSet):
 
     async def apply_diff(
         self,
-        file_path: Annotated[
-            str, Field(description=FILE_PATH_DESCRIPTION)
-        ],
+        file_path: Annotated[str, Field(description=FILE_PATH_DESCRIPTION)],
         diff: Annotated[str, Field(description=APPLY_DIFF_DESCRIPTION)],
     ) -> str:
         """

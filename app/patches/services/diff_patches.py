@@ -1,27 +1,27 @@
 import logging
 import re
+from collections.abc import Awaitable, Callable
 from datetime import datetime
-from typing import Any, Awaitable, Callable
+from typing import Any
 
 from llama_index.core.llms import ChatMessage
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.patches.constants import DIFF_PATCHER_PROMPT
-from app.patches.enums import PatchStrategy
 from app.context.schemas import FileStatus
 from app.context.services.codebase import CodebaseService
+from app.core.db import DatabaseSessionManager
 from app.llms.enums import LLMModel
 from app.llms.services import LLMService
-from app.projects.exceptions import ActiveProjectRequiredException
-from app.projects.services import ProjectService
-from app.patches.enums import DiffPatchStatus
+from app.patches.constants import DIFF_PATCHER_PROMPT
+from app.patches.enums import DiffPatchStatus, PatchStrategy
 from app.patches.repositories import DiffPatchRepository
 from app.patches.schemas import (
     DiffPatchApplyResult,
     DiffPatchCreate,
-    DiffPatchInternalCreate
+    DiffPatchInternalCreate,
 )
-from app.core.db import DatabaseSessionManager
+from app.projects.exceptions import ActiveProjectRequiredException
+from app.projects.services import ProjectService
 
 logger = logging.getLogger(__name__)
 
@@ -59,22 +59,32 @@ class DiffPatchService:
 
             project = await project_service.get_active_project()
             if not project:
-                raise ActiveProjectRequiredException("Active project required to apply patches.")
+                raise ActiveProjectRequiredException(
+                    "Active project required to apply patches."
+                )
 
-            read_result = await codebase_service.read_file(project.path, file_path, must_exist=False)
+            read_result = await codebase_service.read_file(
+                project.path, file_path, must_exist=False
+            )
             if read_result.status == FileStatus.SUCCESS:
                 original_content = read_result.content
             elif read_result.status == FileStatus.BINARY:
                 raise ValueError(f"Cannot patch binary file: {file_path}")
             else:
-                raise ValueError(f"Could not read file {file_path}: {read_result.error_message}")
+                raise ValueError(
+                    f"Could not read file {file_path}: {read_result.error_message}"
+                )
 
-            llm_client = await llm_service.get_client(model_name=LLMModel.GPT_4_1_MINI, temperature=0)
+            llm_client = await llm_service.get_client(
+                model_name=LLMModel.GPT_4_1_MINI, temperature=0
+            )
 
         if strategy != PatchStrategy.LLM_GATHER:
             raise NotImplementedError(f"Strategy {strategy} not implemented")
 
-        patched_content = await self._apply_via_llm(llm_client, original_content, diff_content)
+        patched_content = await self._apply_via_llm(
+            llm_client, original_content, diff_content
+        )
 
         async with self.db.session() as session:
             project_service = await self.project_service_factory(session)
@@ -84,7 +94,9 @@ class DiffPatchService:
             await codebase_service.write_file(project.path, file_path, patched_content)
         return f"Successfully patched {file_path}"
 
-    async def _apply_via_llm(self, llm_client: Any, original_content: str, diff_content: str) -> str:
+    async def _apply_via_llm(
+        self, llm_client: Any, original_content: str, diff_content: str
+    ) -> str:
         messages = [
             ChatMessage(role="system", content=DIFF_PATCHER_PROMPT),
             ChatMessage(role="user", content=f"ORIGINAL CONTENT:\n{original_content}"),
@@ -163,10 +175,11 @@ class DiffPatchService:
 
         applied_at: datetime | None = None
         error_message: str | None = None
-        applied: False
 
         try:
-            await self.apply_diff(file_path=file_path, diff_content=payload.diff, strategy=strategy)
+            await self.apply_diff(
+                file_path=file_path, diff_content=payload.diff, strategy=strategy
+            )
             status = DiffPatchStatus.APPLIED
             applied_at = datetime.now()
         except Exception as e:

@@ -1,18 +1,20 @@
-import pytest
 import inspect
 from unittest.mock import AsyncMock
 
+import pytest
+
 from app.chat.dependencies import (
-    get_message_repository,
     get_chat_service,
     get_chat_turn_service,
+    get_message_repository,
 )
-from app.chat.repositories import MessageRepository, ChatTurnRepository
-from app.chat.services.turn import ChatTurnService
+from app.chat.repositories import MessageRepository
 
 
 class TestChatDependencies:
-    async def test_get_message_repository_returns_repository_instance(self, db_session_mock):
+    async def test_get_message_repository_returns_repository_instance(
+        self, db_session_mock
+    ):
         """get_message_repository returns a MessageRepository bound to the request db session."""
         repo = await get_message_repository(db=db_session_mock)
         assert isinstance(repo, MessageRepository)
@@ -26,7 +28,9 @@ class TestChatDependencies:
         """get_chat_turn_service remains an async dependency (coroutine function)."""
         assert inspect.iscoroutinefunction(get_chat_turn_service)
 
-    async def test_get_chat_service_wires_message_repo_session_service_project_service(self, db_session_mock, mocker, chat_service_mock):
+    async def test_get_chat_service_wires_message_repo_session_service_project_service(
+        self, db_session_mock, mocker, chat_service_mock
+    ):
         """get_chat_service delegates to build_chat_service and returns its result."""
         build_chat_service_mock = mocker.patch(
             "app.chat.dependencies.build_chat_service",
@@ -37,7 +41,9 @@ class TestChatDependencies:
         assert service is chat_service_mock
         build_chat_service_mock.assert_awaited_once_with(db_session_mock)
 
-    async def test_get_chat_turn_service_wires_chat_turn_repository(self, db_session_mock, mocker, chat_turn_service_mock):
+    async def test_get_chat_turn_service_wires_chat_turn_repository(
+        self, db_session_mock, mocker, chat_turn_service_mock
+    ):
         """get_chat_turn_service delegates to build_chat_turn_service and returns its result."""
         build_chat_turn_service_mock = mocker.patch(
             "app.chat.dependencies.build_chat_turn_service",
@@ -48,7 +54,9 @@ class TestChatDependencies:
         assert service is chat_turn_service_mock
         build_chat_turn_service_mock.assert_awaited_once_with(db_session_mock)
 
-    async def test_get_chat_service_propagates_factory_errors(self, db_session_mock, mocker):
+    async def test_get_chat_service_propagates_factory_errors(
+        self, db_session_mock, mocker
+    ):
         """get_chat_service surfaces exceptions raised by build_chat_service."""
         build_chat_service_mock = mocker.patch(
             "app.chat.dependencies.build_chat_service",
@@ -59,7 +67,9 @@ class TestChatDependencies:
 
         build_chat_service_mock.assert_awaited_once_with(db_session_mock)
 
-    async def test_get_chat_turn_service_propagates_factory_errors(self, db_session_mock, mocker):
+    async def test_get_chat_turn_service_propagates_factory_errors(
+        self, db_session_mock, mocker
+    ):
         """get_chat_turn_service surfaces exceptions raised by build_chat_turn_service."""
         build_chat_turn_service_mock = mocker.patch(
             "app.chat.dependencies.build_chat_turn_service",

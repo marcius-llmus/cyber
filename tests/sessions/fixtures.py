@@ -1,14 +1,15 @@
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.enums import OperationalMode
 from app.projects.models import Project
-from app.sessions.dependencies import get_session_service, get_session_page_service
+from app.sessions.dependencies import get_session_page_service, get_session_service
 from app.sessions.models import ChatSession
 from app.sessions.repositories import ChatSessionRepository
-from app.sessions.services import SessionService, SessionPageService
+from app.sessions.services import SessionPageService, SessionService
 
 
 @pytest.fixture
@@ -17,7 +18,7 @@ async def chat_session(db_session: AsyncSession, project: Project) -> ChatSessio
         name="Test Session",
         project_id=project.id,
         operational_mode=OperationalMode.CODING,
-        is_active=False
+        is_active=False,
     )
     db_session.add(session)
     await db_session.flush()
@@ -66,6 +67,8 @@ def override_get_session_service(client, session_service_mock: MagicMock):
 
 @pytest.fixture
 def override_get_session_page_service(client, session_page_service_mock: MagicMock):
-    client.app.dependency_overrides[get_session_page_service] = lambda: session_page_service_mock
+    client.app.dependency_overrides[get_session_page_service] = (
+        lambda: session_page_service_mock
+    )
     yield
     client.app.dependency_overrides.clear()

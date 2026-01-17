@@ -6,8 +6,8 @@ from app.context.repositories import ContextRepository
 from app.context.schemas import ContextFileCreate, ContextFileUpdate
 from app.context.services.codebase import CodebaseService
 from app.patches.schemas import ParsedDiffPatch
-from app.projects.services import ProjectService
 from app.projects.exceptions import ActiveProjectRequiredException
+from app.projects.services import ProjectService
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,9 @@ class WorkspaceService:
         self.context_repo = context_repo
         self.codebase_service = codebase_service
 
-    async def sync_context_for_diff(self, *, session_id: int, patch: ParsedDiffPatch) -> None:
+    async def sync_context_for_diff(
+        self, *, session_id: int, patch: ParsedDiffPatch
+    ) -> None:
         """Sync active context to reflect a single-file diff.
 
         Diff parsing belongs to the patches layer. This service operates on the parsed change.
@@ -50,9 +52,13 @@ class WorkspaceService:
             raise ActiveProjectRequiredException("Active project required.")
 
         # Validate existence via CodebaseService
-        await self.codebase_service.validate_file_path(project.path, file_path, must_exist=True)
+        await self.codebase_service.validate_file_path(
+            project.path, file_path, must_exist=True
+        )
 
-        existing = await self.context_repo.get_by_session_and_path(session_id, file_path)
+        existing = await self.context_repo.get_by_session_and_path(
+            session_id, file_path
+        )
         if existing:
             # todo: forgotten feature lol, hit count will affect file score in dynamic context
             update_data = ContextFileUpdate(hit_count=existing.hit_count + 1)
@@ -77,7 +83,9 @@ class WorkspaceService:
             except ValueError:
                 continue
 
-    async def remove_context_files_by_path(self, session_id: int, files: list[str]) -> None:
+    async def remove_context_files_by_path(
+        self, session_id: int, files: list[str]
+    ) -> None:
         for file_path in files:
             await self.context_repo.delete_by_session_and_path(session_id, file_path)
 
@@ -87,14 +95,20 @@ class WorkspaceService:
         """
         project = await self.project_service.get_active_project()
         if not project:
-            raise ActiveProjectRequiredException("Active project required to sync context.")
+            raise ActiveProjectRequiredException(
+                "Active project required to sync context."
+            )
 
         # 1. Delegate batch validation to CodebaseService
         # Returns a set of valid, absolute path strings
-        valid_abs_paths = await self.codebase_service.filter_and_resolve_paths(project.path, filepaths)
+        valid_abs_paths = await self.codebase_service.filter_and_resolve_paths(
+            project.path, filepaths
+        )
 
         # 2. Convert to canonical relative paths for DB storage
-        valid_incoming_paths = {os.path.relpath(p, project.path) for p in valid_abs_paths}
+        valid_incoming_paths = {
+            os.path.relpath(p, project.path) for p in valid_abs_paths
+        }
 
         # 3. Get current DB state
         current_context = await self.context_repo.list_by_session(session_id)
@@ -110,7 +124,9 @@ class WorkspaceService:
         if to_add:
             await self.add_context_files(session_id, list(to_add))
 
-    async def get_active_file_paths_abs(self, session_id: int, project_root: str) -> list[str]:
+    async def get_active_file_paths_abs(
+        self, session_id: int, project_root: str
+    ) -> list[str]:
         """
         Returns a list of absolute file paths for the active context.
         Filters out files that might have been ignored after they were added.

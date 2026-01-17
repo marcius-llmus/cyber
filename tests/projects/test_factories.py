@@ -12,7 +12,9 @@ class TestProjectsFactories:
         service = await build_project_service(db_session_mock)
         assert isinstance(service, ProjectService)
 
-    async def test_build_project_service_wires_repository_with_db(self, db_session_mock):
+    async def test_build_project_service_wires_repository_with_db(
+        self, db_session_mock
+    ):
         service = await build_project_service(db_session_mock)
         assert isinstance(service.project_repo, ProjectRepository)
         assert service.project_repo.db is db_session_mock

@@ -8,7 +8,10 @@ class FileSystemService:
     """
     Service responsible for Stateless I/O (Reading/Writing) within the Active Project.
     """
-    def __init__(self, project_service: ProjectService, codebase_service: CodebaseService):
+
+    def __init__(
+        self, project_service: ProjectService, codebase_service: CodebaseService
+    ):
         self.project_service = project_service
         self.codebase_service = codebase_service
 
@@ -19,8 +22,10 @@ class FileSystemService:
         """
         project = await self.project_service.get_active_project()
         if not project:
-            raise ActiveProjectRequiredException("Active project required to read files.")
-        
+            raise ActiveProjectRequiredException(
+                "Active project required to read files."
+            )
+
         return await self.codebase_service.read_file(project.path, file_path)
 
     async def read_files(self, file_patterns: list[str]) -> list[FileReadResult]:
@@ -29,10 +34,14 @@ class FileSystemService:
         """
         project = await self.project_service.get_active_project()
         if not project:
-            raise ActiveProjectRequiredException("Active project required to read files.")
+            raise ActiveProjectRequiredException(
+                "Active project required to read files."
+            )
 
-        files = await self.codebase_service.resolve_file_patterns(project.path, file_patterns)
-        
+        files = await self.codebase_service.resolve_file_patterns(
+            project.path, file_patterns
+        )
+
         return await self.codebase_service.read_files(project.path, files)
 
     async def list_files(self, dir_path: str = ".") -> list[str]:
@@ -41,8 +50,10 @@ class FileSystemService:
         """
         project = await self.project_service.get_active_project()
         if not project:
-            raise ActiveProjectRequiredException("Active project required to list files.")
-        
+            raise ActiveProjectRequiredException(
+                "Active project required to list files."
+            )
+
         return await self.codebase_service.list_dir(project.path, dir_path)
 
     async def write_file(self, file_path: str, content: str) -> None:
@@ -51,8 +62,10 @@ class FileSystemService:
         """
         project = await self.project_service.get_active_project()
         if not project:
-            raise ActiveProjectRequiredException("Active project required to save files.")
-        
+            raise ActiveProjectRequiredException(
+                "Active project required to save files."
+            )
+
         await self.codebase_service.write_file(project.path, file_path, content)
 
     async def get_project_file_tree(self) -> list[FileTreeNode]:

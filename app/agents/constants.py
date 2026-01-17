@@ -96,9 +96,9 @@ STRICT FORMAT RULES:
    - Header: `--- source_file` and `+++ target_file`
    - Hunks: `@@ -start,count +start,count @@`
    - Context: MUST include 3-5 lines of UNCHANGED context before and after changes.
-2. File Creation: Use `--- /dev/null` and `+++ path/to/new_file`.
-3. File Deletion: Use `--- path/to/file` and `+++ /dev/null`.
-4. Markdown: ALWAYS wrap each diff in markdown code blocks (```diff). That's how we know a patch must be applied.
+- File Creation: Use `--- /dev/null` and `+++ path/to/new_file`.
+- File Deletion: Use `--- path/to/file` and `+++ /dev/null`.
+- Markdown: ALWAYS wrap each diff in fenced code blocks (```diff). That's how we know a patch must be applied.
 
 """
 
@@ -134,7 +134,7 @@ file_path:
 """
 
 ACTIVE_CONTEXT_DESCRIPTION = """
-This section contains the FULL CONTENT of the files currently active in the session. 
+This section contains the FULL CONTENT of the files currently active in the session.
 You do not need to use tools to read a file. They are already loaded in your context.
 """
 

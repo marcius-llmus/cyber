@@ -1,9 +1,5 @@
-import pytest
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.context.models import ContextFile
-from app.context.schemas import ContextFileCreate
 from app.context.repositories import ContextRepository
+from app.context.schemas import ContextFileCreate
 
 
 async def test_create_context_file(context_repository: ContextRepository, chat_session):
@@ -48,14 +44,18 @@ async def test_delete_by_session_and_path(
     assert result is None
 
 
-async def test_delete_all_by_session(context_repository: ContextRepository, context_file):
+async def test_delete_all_by_session(
+    context_repository: ContextRepository, context_file
+):
     """Test deleting all context files for a session."""
     await context_repository.delete_all_by_session(context_file.session_id)
     results = await context_repository.list_by_session(context_file.session_id)
     assert len(results) == 0
 
 
-async def test_delete_by_session_and_id(context_repository: ContextRepository, context_file):
+async def test_delete_by_session_and_id(
+    context_repository: ContextRepository, context_file
+):
     """Test deleting a context file by ID."""
     await context_repository.delete_by_session_and_id(
         context_file.session_id, context_file.id

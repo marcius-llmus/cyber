@@ -1,7 +1,7 @@
 from enum import StrEnum
+from typing import Any
 
 from pydantic import BaseModel
-from typing import Union, Any
 
 from app.context.schemas import ContextFileListItem
 
@@ -71,15 +71,15 @@ class ContextFilesUpdatedEvent(BaseModel):
     files: list[ContextFileListItem]
 
 
-CoderEvent = Union[
-    AIMessageChunkEvent,
-    AIMessageBlockStartEvent,
-    WorkflowErrorEvent,
-    WorkflowLogEvent,
-    UsageMetricsUpdatedEvent,
-    ToolCallEvent,
-    ToolCallResultEvent,
-    AgentStateEvent,
-    SingleShotDiffAppliedEvent,
-    ContextFilesUpdatedEvent,
-]
+CoderEvent = (
+    AIMessageChunkEvent
+    | AIMessageBlockStartEvent
+    | WorkflowErrorEvent
+    | WorkflowLogEvent
+    | UsageMetricsUpdatedEvent
+    | ToolCallEvent
+    | ToolCallResultEvent
+    | AgentStateEvent
+    | SingleShotDiffAppliedEvent
+    | ContextFilesUpdatedEvent
+)

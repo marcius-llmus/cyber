@@ -1,8 +1,8 @@
 from typing import Any
 
+from llama_index.core.llms import MessageRole
 from pydantic import BaseModel
 
-from llama_index.core.llms import MessageRole
 from app.chat.enums import ChatTurnStatus
 
 

@@ -1,12 +1,16 @@
-import pytest
 from unittest.mock import AsyncMock
 
-from app.llms.exceptions import MissingLLMApiKeyException
+import pytest
+
 from app.llms.enums import LLMModel, LLMProvider, LLMRole
-from app.settings.exceptions import ContextWindowExceededException, LLMSettingsNotFoundException
-from app.settings.schemas import LLMSettingsUpdate
+from app.llms.exceptions import MissingLLMApiKeyException
 from app.llms.models import LLMSettings
 from app.llms.schemas import LLM
+from app.settings.exceptions import (
+    ContextWindowExceededException,
+    LLMSettingsNotFoundException,
+)
+from app.settings.schemas import LLMSettingsUpdate
 
 
 async def test_llm_service__get_model_metadata__returns_llm_schema(llm_service):
@@ -50,7 +54,9 @@ async def test_llm_service__get_all_llm_settings__returns_all_db_rows(
     llm_service,
 ):
     """Scenario: repo returns multiple LLMSettings."""
-    llm_service.llm_settings_repo.get_all = AsyncMock(return_value=llm_settings_seed_many_mock)
+    llm_service.llm_settings_repo.get_all = AsyncMock(
+        return_value=llm_settings_seed_many_mock
+    )
     results = await llm_service.get_all_llm_settings()
 
     assert len(results) == len(llm_settings_seed_many_mock)
@@ -71,18 +77,26 @@ async def test_llm_service__get_llm_settings__raises_when_missing(llm_service):
         await llm_service.get_llm_settings("missing")
 
 
-async def test_llm_service__get_llm_settings__returns_when_present(llm_settings_openai_coder_mock, llm_service):
+async def test_llm_service__get_llm_settings__returns_when_present(
+    llm_settings_openai_coder_mock, llm_service
+):
     """Scenario: settings exist for a model.
 
     Asserts:
         - returns the matching LLMSettings row
     """
-    llm_service.llm_settings_repo.get_by_model_name = AsyncMock(return_value=llm_settings_openai_coder_mock)
-    obj = await llm_service.get_llm_settings(str(llm_settings_openai_coder_mock.model_name))
+    llm_service.llm_settings_repo.get_by_model_name = AsyncMock(
+        return_value=llm_settings_openai_coder_mock
+    )
+    obj = await llm_service.get_llm_settings(
+        str(llm_settings_openai_coder_mock.model_name)
+    )
     assert obj.id == llm_settings_openai_coder_mock.id
 
 
-async def test_llm_service__get_coding_llm__when_coder_role_exists__returns_existing(llm_service):
+async def test_llm_service__get_coding_llm__when_coder_role_exists__returns_existing(
+    llm_service,
+):
     """Scenario: a CODER role already exists.
 
     Asserts:
@@ -102,7 +116,9 @@ async def test_llm_service__get_coding_llm__when_coder_role_exists__returns_exis
     assert coder.active_role == LLMRole.CODER
 
 
-async def test_llm_service__get_coding_llm__when_no_coder_role__assigns_default_model(llm_service, llm_settings_openai_no_role_mock):
+async def test_llm_service__get_coding_llm__when_no_coder_role__assigns_default_model(
+    llm_service, llm_settings_openai_no_role_mock
+):
     """Scenario: no CODER role exists, but the default model exists.
 
     Asserts:
@@ -119,12 +135,13 @@ async def test_llm_service__get_coding_llm__when_no_coder_role__assigns_default_
         active_role=LLMRole.CODER,
     )
     llm_service.llm_settings_repo.get_by_role = AsyncMock(return_value=None)
-    llm_service.llm_settings_repo.get_by_model_name = AsyncMock(return_value=default_row)
+    llm_service.llm_settings_repo.get_by_model_name = AsyncMock(
+        return_value=default_row
+    )
     llm_service.llm_settings_repo.update = AsyncMock(return_value=expected_return)
 
 
-async def test_llm_service__get_coding_llm__default_assignment_returns_coder_role_even_if_model_was_preloaded(
-):
+async def test_llm_service__get_coding_llm__default_assignment_returns_coder_role_even_if_model_was_preloaded():
     """Scenario: no CODER exists, but the default model row exists.
 
     This exercises a potential stale identity-map case:
@@ -164,9 +181,14 @@ async def test_llm_service__update_settings__raises_when_context_window_exceeds_
     Asserts:
         - raises ContextWindowExceededException
     """
-    llm_service.llm_settings_repo.get = AsyncMock(return_value=llm_settings_openai_no_role_mock)
+    llm_service.llm_settings_repo.get = AsyncMock(
+        return_value=llm_settings_openai_no_role_mock
+    )
     with pytest.raises(ContextWindowExceededException):
-        await llm_service.update_settings(llm_settings_openai_no_role_mock.id, LLMSettingsUpdate(context_window=99999999))
+        await llm_service.update_settings(
+            llm_settings_openai_no_role_mock.id,
+            LLMSettingsUpdate(context_window=99999999),
+        )
 
 
 async def test_llm_service__update_settings__updates_api_key_for_provider_when_api_key_set(
@@ -179,13 +201,19 @@ async def test_llm_service__update_settings__updates_api_key_for_provider_when_a
         - provider-level key update is applied
         - target settings row is updated
     """
-    llm_service.llm_settings_repo.get = AsyncMock(return_value=llm_settings_openai_no_role_mock)
-    llm_service.llm_settings_repo.update = AsyncMock(return_value=llm_settings_openai_no_role_mock)
+    llm_service.llm_settings_repo.get = AsyncMock(
+        return_value=llm_settings_openai_no_role_mock
+    )
+    llm_service.llm_settings_repo.update = AsyncMock(
+        return_value=llm_settings_openai_no_role_mock
+    )
     llm_service.llm_settings_repo.update_api_key_for_provider = AsyncMock()
 
-    updated = await llm_service.update_settings(llm_settings_openai_no_role_mock.id, LLMSettingsUpdate(api_key="sk-new"))
+    updated = await llm_service.update_settings(
+        llm_settings_openai_no_role_mock.id, LLMSettingsUpdate(api_key="sk-new")
+    )
     assert updated.id == llm_settings_openai_no_role_mock.id
-    
+
     llm_service.llm_settings_repo.update_api_key_for_provider.assert_awaited_once()
 
 
@@ -200,14 +228,21 @@ async def test_llm_service__update_coding_llm__sets_role_then_updates_settings(
         - CODER role becomes unique and assigned to the requested llm_id
         - settings updates are applied
     """
-    llm_service.llm_settings_repo.get = AsyncMock(return_value=llm_settings_openai_no_role_mock)
-    llm_service.llm_settings_repo.update = AsyncMock(return_value=llm_settings_openai_no_role_mock)
+    llm_service.llm_settings_repo.get = AsyncMock(
+        return_value=llm_settings_openai_no_role_mock
+    )
+    llm_service.llm_settings_repo.update = AsyncMock(
+        return_value=llm_settings_openai_no_role_mock
+    )
     llm_service.llm_settings_repo.set_active_role = AsyncMock()
 
-    updated = await llm_service.update_coding_llm(llm_settings_openai_no_role_mock.id, LLMSettingsUpdate(context_window=128000))
+    updated = await llm_service.update_coding_llm(
+        llm_settings_openai_no_role_mock.id, LLMSettingsUpdate(context_window=128000)
+    )
     assert updated.id == llm_settings_openai_no_role_mock.id
 
     llm_service.llm_settings_repo.set_active_role.assert_awaited_once()
+
 
 async def test_llm_service__update_settings__api_key_enforced_one_key_per_provider_by_overwrite(
     llm_service,
@@ -224,13 +259,13 @@ async def test_llm_service__update_settings__api_key_enforced_one_key_per_provid
 
     await llm_service.update_settings(
         llm_settings_openai_no_role_mock.id,
-        LLMSettingsUpdate(api_key="sk-openai-canonical")
+        LLMSettingsUpdate(api_key="sk-openai-canonical"),
     )
 
     llm_service.llm_settings_repo.update_api_key_for_provider.assert_awaited_once_with(
-        llm_settings_openai_no_role_mock.provider,
-        "sk-openai-canonical"
+        llm_settings_openai_no_role_mock.provider, "sk-openai-canonical"
     )
+
 
 @pytest.mark.parametrize(
     "provider,model_name",
@@ -255,20 +290,20 @@ async def test_llm_service__get_client__hydrates_provider_specific_client(
     """
     # Configure mock repo to return the key
     llm_service.llm_settings_repo.get_api_key_for_provider.return_value = "sk-test"
-    
-    fake_llm = LLM(model_name=model_name, provider=provider, default_context_window=128000)
+
+    fake_llm = LLM(
+        model_name=model_name, provider=provider, default_context_window=128000
+    )
     mocker.patch.object(llm_service.llm_factory, "get_llm", return_value=fake_llm)
-    
-    # We override _get_client_instance to return our fake object, 
+
+    # We override _get_client_instance to return our fake object,
     # but we want to ensure the service logic calls it with correct params.
     llm_service._get_client_instance = AsyncMock(return_value=fake_llm_client)
     client = await llm_service.get_client(model_name, temperature=0.5)
-    
+
     assert client == fake_llm_client
     llm_service._get_client_instance.assert_awaited_once_with(
-        model_name, 
-        0.5, 
-        "sk-test"
+        model_name, 0.5, "sk-test"
     )
 
 
@@ -290,11 +325,15 @@ async def test_llm_service__get_client__uses_provider_api_key_from_repo(
     )
     mocker.patch.object(llm_service.llm_factory, "get_llm", return_value=fake_llm)
     # Configure mock repo
-    llm_service.llm_settings_repo.get_api_key_for_provider.return_value = "sk-provider-key"
+    llm_service.llm_settings_repo.get_api_key_for_provider.return_value = (
+        "sk-provider-key"
+    )
 
     llm_service._get_client_instance = AsyncMock(return_value=fake_llm_client)  # type: ignore[method-assign]
 
-    await llm_service.get_client(LLMModel(llm_settings_openai_no_role_mock.model_name), temperature=0.2)
+    await llm_service.get_client(
+        LLMModel(llm_settings_openai_no_role_mock.model_name), temperature=0.2
+    )
 
     assert llm_service._get_client_instance.await_count == 1
 
@@ -324,20 +363,33 @@ async def test_llm_service__get_client__raises_when_api_key_missing(
         await llm_service.get_client(LLMModel.GPT_4_1_MINI, temperature=0.2)
 
 
-async def test_llm_service__get_client__raises_on_unsupported_provider(mocker, llm_service):
+async def test_llm_service__get_client__raises_on_unsupported_provider(
+    mocker, llm_service
+):
     """Scenario: registry returns an LLM with an unsupported provider.
 
     Asserts:
         - raises ValueError
     """
+
     class _FakeProvider(str):
         pass
 
-    fake_llm = type("FakeLLM", (), {"provider": _FakeProvider("FAKE"), "model_name": LLMModel.GPT_4O, "default_context_window": 1})
+    fake_llm = type(
+        "FakeLLM",
+        (),
+        {
+            "provider": _FakeProvider("FAKE"),
+            "model_name": LLMModel.GPT_4O,
+            "default_context_window": 1,
+        },
+    )
     mocker.patch.object(llm_service.llm_factory, "get_llm", return_value=fake_llm)
 
     repo = llm_service.llm_settings_repo
     mocker.patch.object(repo, "get_api_key_for_provider", return_value="sk-test")
 
     with pytest.raises(ValueError):
-        await llm_service._get_client_instance(LLMModel.GPT_4O, temperature=0.2, api_key="sk-test")
+        await llm_service._get_client_instance(
+            LLMModel.GPT_4O, temperature=0.2, api_key="sk-test"
+        )

@@ -1,21 +1,22 @@
 from dataclasses import dataclass
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
-from unittest.mock import AsyncMock, MagicMock
 
+from app.context.dependencies import get_context_page_service, get_context_service
+from app.context.models import ContextFile
 from app.context.repomap import RepoMap
 from app.context.repositories import ContextRepository
-from app.context.models import ContextFile
 from app.context.services import (
-    WorkspaceService,
     CodebaseService,
-    FileSystemService,
     ContextPageService,
-    SearchService,
+    FileSystemService,
     RepoMapService,
+    SearchService,
+    WorkspaceService,
 )
-from app.context.dependencies import get_context_service, get_context_page_service
 from app.projects.services import ProjectService
 from app.settings.services import SettingsService
 
@@ -50,21 +51,23 @@ def temp_codebase(tmp_path):
     project_root.mkdir()
 
     # 2. Files inside project
-    (project_root / ".gitignore").write_text("*.log\nignore_me.txt\nsecret/", encoding="utf-8")
-    
+    (project_root / ".gitignore").write_text(
+        "*.log\nignore_me.txt\nsecret/", encoding="utf-8"
+    )
+
     readme = project_root / "README.md"
     readme.write_text("# Test Project", encoding="utf-8")
-    
+
     ignored_file = project_root / "ignore_me.txt"
     ignored_file.write_text("should be ignored", encoding="utf-8")
 
     # 3. Directories
     src_dir = project_root / "src"
     src_dir.mkdir()
-    
+
     main_py = src_dir / "main.py"
     main_py.write_text("print('hello world')", encoding="utf-8")
-    
+
     utils_py = src_dir / "utils.py"
     utils_py.write_text("def add(a, b): return a + b", encoding="utf-8")
 
@@ -176,7 +179,7 @@ def omega() -> str:
 
     bin_dir = project_root / "bin"
     bin_dir.mkdir()
-    
+
     binary_file = bin_dir / "data.bin"
     # Write invalid UTF-8 bytes to ensure it triggers binary detection
     binary_file.write_bytes(b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x80\x81")
@@ -361,14 +364,18 @@ def get_file_tree_page_data_mock() -> dict:
 
 @pytest.fixture
 def override_get_context_service(client, workspace_service_mock: MagicMock):
-    client.app.dependency_overrides[get_context_service] = lambda: workspace_service_mock
+    client.app.dependency_overrides[get_context_service] = (
+        lambda: workspace_service_mock
+    )
     yield
     client.app.dependency_overrides.pop(get_context_service, None)
 
 
 @pytest.fixture
 def override_get_context_page_service(client, context_page_service_mock: MagicMock):
-    client.app.dependency_overrides[get_context_page_service] = lambda: context_page_service_mock
+    client.app.dependency_overrides[get_context_page_service] = (
+        lambda: context_page_service_mock
+    )
     yield
     client.app.dependency_overrides.pop(get_context_page_service, None)
 
@@ -379,6 +386,7 @@ def chat_session_mock(mocker: MockerFixture) -> MagicMock:
     obj = mocker.MagicMock()
     obj.id = 1
     return obj
+
 
 @pytest.fixture
 def repomap_tmp_project(tmp_path) -> dict:

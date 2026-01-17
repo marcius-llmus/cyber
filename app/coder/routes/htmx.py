@@ -1,21 +1,21 @@
-from fastapi import HTTPException, status, APIRouter, Depends, WebSocket, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from app.chat.services import ChatService
 from app.chat.dependencies import get_chat_service
+from app.chat.services import ChatService
 from app.coder.dependencies import (
+    CoderPageService,
     get_coder_page_service,
     get_coder_service,
-    CoderPageService,
 )
-from app.coder.services import CoderService
 from app.coder.presentation import WebSocketOrchestrator
+from app.coder.services import CoderService
 from app.commons.websockets import WebSocketConnectionManager
 from app.core.templating import templates
+from app.projects.exceptions import ActiveProjectRequiredException
+from app.sessions.dependencies import get_session_service
 from app.sessions.exceptions import ChatSessionNotFoundException
 from app.sessions.services import SessionService
-from app.sessions.dependencies import get_session_service
-from app.projects.exceptions import ActiveProjectRequiredException
 
 router = APIRouter()
 
@@ -32,7 +32,8 @@ async def redirect_to_session(
     except ActiveProjectRequiredException:
         page_data = await page_service.get_main_page_data(session_id=None)
         return templates.TemplateResponse(
-            "projects/pages/no_active_project.html", {"request": request, "session": None, **page_data}
+            "projects/pages/no_active_project.html",
+            {"request": request, "session": None, **page_data},
         )
 
 
@@ -61,5 +62,7 @@ async def conversation_websocket(
 ):
     ws_manager = WebSocketConnectionManager(websocket)
     await ws_manager.connect()
-    orchestrator = WebSocketOrchestrator(ws_manager=ws_manager, session_id=session_id, coder_service=coder_service)
+    orchestrator = WebSocketOrchestrator(
+        ws_manager=ws_manager, session_id=session_id, coder_service=coder_service
+    )
     await orchestrator.handle_connection()

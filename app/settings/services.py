@@ -1,7 +1,7 @@
 from app.llms.services import LLMService
+from app.settings.exceptions import SettingsNotFoundException
 from app.settings.models import Settings
 from app.settings.repositories import SettingsRepository
-from app.settings.exceptions import SettingsNotFoundException
 from app.settings.schemas import SettingsUpdate
 
 
@@ -18,7 +18,9 @@ class SettingsService:
         settings = await self.settings_repo.get(pk=1)
         if not settings:
             # This should not happen if the startup hook is successful
-            raise SettingsNotFoundException("Application settings have not been initialized.")
+            raise SettingsNotFoundException(
+                "Application settings have not been initialized."
+            )
         return settings
 
     async def update_settings(self, *, settings_in: SettingsUpdate) -> Settings:
@@ -45,10 +47,16 @@ class SettingsPageService:
         current_coder = await self.llm_service.get_coding_llm()
         llm_options = await self.llm_service.get_all_llm_settings()
 
-        return {"settings": settings, "current_coder": current_coder, "llm_options": llm_options}
+        return {
+            "settings": settings,
+            "current_coder": current_coder,
+            "llm_options": llm_options,
+        }
 
     async def get_api_key_input_data_by_id(self, llm_id: int) -> dict:
         llm_settings = await self.llm_service.llm_settings_repo.get(llm_id)
         provider = llm_settings.provider
-        api_key = await self.llm_service.llm_settings_repo.get_api_key_for_provider(provider)
+        api_key = await self.llm_service.llm_settings_repo.get_api_key_for_provider(
+            provider
+        )
         return {"provider": provider.value, "api_key": api_key}

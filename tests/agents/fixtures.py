@@ -10,8 +10,8 @@ from app.agents.repositories import WorkflowStateRepository
 from app.agents.services import AgentContextService, WorkflowService
 from app.agents.services.agent_factory import AgentFactoryService
 from app.coder.agent import CoderAgent
-from app.context.tools import FileTools, SearchTools
 from app.context.services import CodebaseService, RepoMapService, WorkspaceService
+from app.context.tools import FileTools, SearchTools
 from app.patches.tools import PatcherTools
 from app.projects.services import ProjectService
 from app.prompts.services import PromptService
@@ -140,6 +140,8 @@ def agent_factory_service(
 
 @pytest.fixture
 def override_get_workflow_service(client, workflow_service_mock: MagicMock):
-    client.app.dependency_overrides[get_workflow_service] = lambda: workflow_service_mock
+    client.app.dependency_overrides[get_workflow_service] = (
+        lambda: workflow_service_mock
+    )
     yield
     client.app.dependency_overrides.clear()

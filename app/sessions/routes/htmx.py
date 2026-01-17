@@ -1,13 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import HTMLResponse
+
 from app.commons.fastapi_htmx import htmx
 from app.projects.exceptions import ActiveProjectRequiredException
-from app.sessions.enums import SessionEventType
 from app.sessions.dependencies import get_session_page_service, get_session_service
+from app.sessions.enums import SessionEventType
 from app.sessions.exceptions import ChatSessionNotFoundException
-from app.sessions.services import SessionPageService, SessionService
 from app.sessions.schemas import UpdateSessionModeRequest
-
+from app.sessions.services import SessionPageService, SessionService
 
 router = APIRouter()
 
@@ -15,7 +15,7 @@ router = APIRouter()
 @router.get("/", response_class=HTMLResponse)
 @htmx("sessions/partials/session_list")
 async def get_session_list(
-    request: Request,
+    request: Request,  # noqa: ARG001
     service: SessionPageService = Depends(get_session_page_service),
 ):
     page_data = await service.get_sessions_page_data()
@@ -24,13 +24,15 @@ async def get_session_list(
 
 @router.post("/session/{session_id}/mode", status_code=status.HTTP_204_NO_CONTENT)
 async def update_session_mode(
-    request: Request,
+    request: Request,  # noqa: ARG001
     session_id: int,
     payload: UpdateSessionModeRequest,
     service: SessionService = Depends(get_session_service),
 ):
     try:
-        await service.set_operational_mode(session_id=session_id, mode=payload.operational_mode)
+        await service.set_operational_mode(
+            session_id=session_id, mode=payload.operational_mode
+        )
     except ChatSessionNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except ActiveProjectRequiredException as e:
@@ -41,14 +43,12 @@ async def update_session_mode(
 
 @router.delete("/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_session(
-    request: Request,
+    request: Request,  # noqa: ARG001
     session_id: int,
     service: SessionService = Depends(get_session_service),
 ):
     try:
-        was_active = await service.delete_session(
-            session_id_to_delete=session_id
-        )
+        was_active = await service.delete_session(session_id_to_delete=session_id)
 
         if was_active:
             response = Response(status_code=status.HTTP_200_OK)

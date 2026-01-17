@@ -1,24 +1,22 @@
 from fastapi import Depends
 
+from app.agents.factories import build_agent, build_workflow_service
 from app.chat.dependencies import get_chat_service
 from app.chat.factories import build_chat_service, build_chat_turn_service
 from app.chat.services import ChatService
-from app.coder.services import CoderPageService
-from app.coder.services import CoderService
-from app.usage.dependencies import get_usage_page_service
-from app.usage.services import UsagePageService
-from app.core.db import sessionmanager
-from app.agents.factories import build_agent
-from app.agents.factories import build_workflow_service
+from app.coder.factories import build_messaging_turn_event_handler
+from app.coder.services import CoderPageService, CoderService
 from app.context.dependencies import get_context_service
 from app.context.factories import build_workspace_service
 from app.context.services import WorkspaceService
+from app.core.db import sessionmanager
 from app.patches.factories import build_diff_patch_service
 from app.sessions.factories import build_session_service
-from app.usage.factories import build_usage_service
-from app.coder.factories import build_messaging_turn_event_handler
 from app.settings.dependencies import get_settings_service
 from app.settings.services import SettingsService
+from app.usage.dependencies import get_usage_page_service
+from app.usage.factories import build_usage_service
+from app.usage.services import UsagePageService
 
 
 async def get_coder_page_service(
@@ -33,6 +31,7 @@ async def get_coder_page_service(
         context_service=context_service,
         settings_service=settings_service,
     )
+
 
 async def get_coder_service() -> CoderService:
     return CoderService(

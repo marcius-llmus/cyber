@@ -1,16 +1,15 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
 from pytest_mock import MockerFixture
 
 from app.llms.dependencies import get_llm_service
 from app.llms.enums import LLMModel, LLMProvider, LLMRole
 from app.llms.factories import build_llm_factory_instance
 from app.llms.models import LLMSettings
-from app.llms.services import LLMService
-from app.llms.repositories import LLMSettingsRepository
-from app.llms.schemas import LLM
 from app.llms.registry import LLMFactory
+from app.llms.repositories import LLMSettingsRepository
+from app.llms.services import LLMService
 
 
 def _fake_llm_model_name_for_provider(provider: LLMProvider) -> LLMModel:

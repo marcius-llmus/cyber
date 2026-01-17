@@ -1,4 +1,5 @@
 """Factory tests for the agents app."""
+
 from unittest.mock import AsyncMock
 
 import pytest
@@ -9,8 +10,12 @@ from app.agents.factories import (
     build_agent_factory_service,
     build_workflow_service,
 )
-from app.agents.services import AgentContextService, AgentFactoryService, WorkflowService
 from app.agents.repositories import WorkflowStateRepository
+from app.agents.services import (
+    AgentContextService,
+    AgentFactoryService,
+    WorkflowService,
+)
 
 
 class TestAgentsFactories:
@@ -190,7 +195,9 @@ class TestAgentsFactories:
         coder_agent_mock,
     ):
         """Thin build_agent factory should delegate to AgentFactoryService.build_agent and return it."""
-        agent_factory_service_mock.build_agent = AsyncMock(return_value=coder_agent_mock)
+        agent_factory_service_mock.build_agent = AsyncMock(
+            return_value=coder_agent_mock
+        )
 
         build_agent_factory_service_mock = mocker.patch(
             "app.agents.factories.build_agent_factory_service",
@@ -201,7 +208,9 @@ class TestAgentsFactories:
 
         assert agent is coder_agent_mock
         build_agent_factory_service_mock.assert_awaited_once_with(db_session_mock)
-        agent_factory_service_mock.build_agent.assert_awaited_once_with(session_id=123, turn_id="t1")
+        agent_factory_service_mock.build_agent.assert_awaited_once_with(
+            session_id=123, turn_id="t1"
+        )
 
     async def test_build_agent_propagates_error_from_agent_factory_service(
         self,
@@ -210,7 +219,9 @@ class TestAgentsFactories:
         agent_factory_service_mock,
     ):
         """Thin build_agent factory should surface exceptions raised by AgentFactoryService.build_agent."""
-        agent_factory_service_mock.build_agent = AsyncMock(side_effect=ValueError("Boom"))
+        agent_factory_service_mock.build_agent = AsyncMock(
+            side_effect=ValueError("Boom")
+        )
         build_agent_factory_service_mock = mocker.patch(
             "app.agents.factories.build_agent_factory_service",
             new=AsyncMock(return_value=agent_factory_service_mock),
@@ -220,4 +231,6 @@ class TestAgentsFactories:
             await build_agent(db=db_session_mock, session_id=123, turn_id=None)
 
         build_agent_factory_service_mock.assert_awaited_once_with(db_session_mock)
-        agent_factory_service_mock.build_agent.assert_awaited_once_with(session_id=123, turn_id=None)
+        agent_factory_service_mock.build_agent.assert_awaited_once_with(
+            session_id=123, turn_id=None
+        )

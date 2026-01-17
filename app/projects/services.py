@@ -1,4 +1,5 @@
 import os
+
 import aiofiles.os
 
 from app.core.config import settings
@@ -36,20 +37,20 @@ class ProjectService:
         fs_project_paths = await self._get_fs_project_paths()
 
         db_projects = await self.project_repo.list()
-        
+
         # Ensure strict directory matching by appending separator
         root_prefix = os.path.join(settings.PROJECTS_ROOT_DIR, "")
-        
+
         db_projects_in_root = {
-            p.path: p 
-            for p in db_projects 
-            if p.path.startswith(root_prefix)
+            p.path: p for p in db_projects if p.path.startswith(root_prefix)
         }
 
         # Add new projects
         for path in fs_project_paths:
             if path not in db_projects_in_root:
-                await self.project_repo.create(obj_in=ProjectCreate(name=os.path.basename(path), path=path))
+                await self.project_repo.create(
+                    obj_in=ProjectCreate(name=os.path.basename(path), path=path)
+                )
 
         # Remove old projects
         for path, project in db_projects_in_root.items():

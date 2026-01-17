@@ -1,16 +1,18 @@
-from fastapi import APIRouter, Request, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import HTMLResponse
+
 from app.chat.dependencies import get_chat_service
 from app.chat.services import ChatService
-from app.projects.exceptions import ActiveProjectRequiredException
 from app.commons.fastapi_htmx import htmx
+from app.projects.exceptions import ActiveProjectRequiredException
 
 router = APIRouter()
+
 
 @router.post("/clear", response_class=HTMLResponse)
 @htmx("chat/partials/message_list")
 async def clear_chat(
-    request: Request,
+    request: Request,  # noqa: ARG001
     chat_service: ChatService = Depends(get_chat_service),
 ):
     try:

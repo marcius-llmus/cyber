@@ -2,11 +2,12 @@ import logging
 from typing import Annotated
 
 from pydantic import Field
-from app.core.db import DatabaseSessionManager
-from app.settings.models import Settings
+
 from app.commons.tools import BaseToolSet
 from app.context.factories import build_filesystem_service, build_search_service
 from app.context.schemas import FileStatus
+from app.core.db import DatabaseSessionManager
+from app.settings.models import Settings
 
 logger = logging.getLogger(__name__)
 
@@ -122,7 +123,9 @@ NOTES:
 """
 
 
-GREP_IGNORE_CASE_DESCRIPTION = "Set to True to perform a case-insensitive search. Defaults to True."
+GREP_IGNORE_CASE_DESCRIPTION = (
+    "Set to True to perform a case-insensitive search. Defaults to True."
+)
 
 LIST_FILES_PATH_DESCRIPTION = """
 The relative path of the directory to list. Defaults to '.' (root).
@@ -131,15 +134,14 @@ The relative path of the directory to list. Defaults to '.' (root).
 
 class FileTools(BaseToolSet):
     """Tools for reading files from the codebase."""
-    spec_functions = ["read_files"] # "list_files"
+
+    spec_functions = ["read_files"]  # "list_files"
 
     async def read_files(
         self,
         file_patterns: Annotated[
             list[str],
-            Field(
-                description=FILE_PATTERNS_DESCRIPTION
-            ),
+            Field(description=FILE_PATTERNS_DESCRIPTION),
         ],
     ) -> str:
         """
@@ -156,7 +158,7 @@ class FileTools(BaseToolSet):
             async with self.db.session() as session:
                 fs_service = await build_filesystem_service(session)
                 results = await fs_service.read_files(file_patterns)
-                
+
                 if not results:
                     return "No files found matching the file patterns."
 
@@ -165,8 +167,10 @@ class FileTools(BaseToolSet):
                     if result.status == FileStatus.SUCCESS:
                         output.append(f"## File: {result.file_path}\n{result.content}")
                     else:
-                        output.append(f"## File: {result.file_path}\n[Error reading file: {result.status} - {result.error_message}]")
-                
+                        output.append(
+                            f"## File: {result.file_path}\n[Error reading file: {result.status} - {result.error_message}]"
+                        )
+
                 return "\n\n".join(output)
 
         except Exception as e:
@@ -177,9 +181,7 @@ class FileTools(BaseToolSet):
         self,
         dir_path: Annotated[
             str,
-            Field(
-                description=LIST_FILES_PATH_DESCRIPTION
-            ),
+            Field(description=LIST_FILES_PATH_DESCRIPTION),
         ] = ".",
     ) -> str:
         """
@@ -205,6 +207,7 @@ class FileTools(BaseToolSet):
 
 class SearchTools(BaseToolSet):
     """Tools for high-level understanding via AST/Repo Maps (Tier 1)."""
+
     spec_functions = ["grep"]
 
     def __init__(
@@ -219,21 +222,15 @@ class SearchTools(BaseToolSet):
         self,
         search_pattern: Annotated[
             str | list[str],
-            Field(
-                description=GREP_PATTERN_DESCRIPTION
-            ),
+            Field(description=GREP_PATTERN_DESCRIPTION),
         ],
         file_patterns: Annotated[
             list[str],
-            Field(
-                description=FILE_PATTERNS_DESCRIPTION
-            ),
+            Field(description=FILE_PATTERNS_DESCRIPTION),
         ] = None,
         ignore_case: Annotated[
             bool,
-            Field(
-                description=GREP_IGNORE_CASE_DESCRIPTION
-            ),
+            Field(description=GREP_IGNORE_CASE_DESCRIPTION),
         ] = True,
     ) -> str:
         """
@@ -276,7 +273,9 @@ class SearchTools(BaseToolSet):
         try:
             async with self.db.session() as session:
                 search_service = await build_search_service(session)
-                return await search_service.grep(search_pattern, file_patterns, ignore_case)
+                return await search_service.grep(
+                    search_pattern, file_patterns, ignore_case
+                )
         except Exception as e:
             logger.error(f"SearchTools.grep failed: {e}", exc_info=True)
             return f"Error searching code: {str(e)}"

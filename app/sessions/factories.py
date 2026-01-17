@@ -1,7 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.projects.factories import build_project_service
 from app.sessions.repositories import ChatSessionRepository
 from app.sessions.services import SessionService
-from app.projects.factories import build_project_service
 
 
 async def build_session_service(db: AsyncSession) -> SessionService:

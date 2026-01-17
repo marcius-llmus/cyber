@@ -1,10 +1,11 @@
 import logging
+
 from llama_index.core.workflow import Context, Workflow
 
 from app.agents.repositories import WorkflowStateRepository
 
-
 logger = logging.getLogger(__name__)
+
 
 class WorkflowService:
     def __init__(self, workflow_repo: WorkflowStateRepository):
