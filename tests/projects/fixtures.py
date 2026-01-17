@@ -21,6 +21,7 @@ async def project(db_session: AsyncSession) -> Project:
     await db_session.refresh(proj)
     return proj
 
+
 @pytest.fixture
 async def project_inactive(db_session: AsyncSession) -> Project:
     uid = uuid.uuid4()

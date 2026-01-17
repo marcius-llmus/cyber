@@ -30,6 +30,7 @@ class _MessageStateAccumulator:
     Encapsulates the in-memory state of a message being generated.
     This mirrors the 'blocks' and 'tool_calls' columns in the DB.
     """
+
     def __init__(self):
         self.blocks: list[dict[str, Any]] = []
         self.current_text_block_id: str | None = None
@@ -40,11 +41,9 @@ class _MessageStateAccumulator:
         """Appends text, creating a new block if necessary. Returns block_id."""
         if self.current_text_block_id is None:
             self.current_text_block_id = str(uuid.uuid4())
-            self.blocks.append({
-                "type": "text",
-                "block_id": self.current_text_block_id,
-                "content": ""
-            })
+            self.blocks.append(
+                {"type": "text", "block_id": self.current_text_block_id, "content": ""}
+            )
 
         # Append to the last block (assuming it matches current ID)
         self.blocks[-1]["content"] += delta
@@ -52,19 +51,21 @@ class _MessageStateAccumulator:
         return self.current_text_block_id
 
     def add_tool_call(self, run_id: str, tool_id: str, name: str, kwargs: dict):
-        self.current_text_block_id = None # Reset text block on tool call
-        self.blocks.append({
-            "type": "tool",
-            "tool_run_id": run_id,
-            "tool_name": name,
-            "tool_call_data": {
-                "id": tool_id,
-                "name": name,
-                "kwargs": kwargs,
-                "run_id": run_id,
-                "output": None,
+        self.current_text_block_id = None  # Reset text block on tool call
+        self.blocks.append(
+            {
+                "type": "tool",
+                "tool_run_id": run_id,
+                "tool_name": name,
+                "tool_call_data": {
+                    "id": tool_id,
+                    "name": name,
+                    "kwargs": kwargs,
+                    "run_id": run_id,
+                    "output": None,
+                },
             }
-        })
+        )
 
     # todo not ideal, but for the small amount of items, it is ok
     def add_tool_result(self, run_id: str, output: str):
@@ -82,6 +83,7 @@ class MessagingTurnEventHandler:
     Handles the translation of LlamaIndex events into CoderEvents for a specific turn.
     Holds the state (accumulator) for the duration of the stream.
     """
+
     def __init__(self):
         self._accumulator = _MessageStateAccumulator()
         self.handlers: dict[type, Callable[[Any], AsyncGenerator[CoderEvent]]] = {
@@ -103,7 +105,9 @@ class MessagingTurnEventHandler:
         async for coder_event in handler(event):
             yield coder_event
 
-    async def _handle_agent_stream_event(self, event: AgentStream) -> AsyncGenerator[CoderEvent]:
+    async def _handle_agent_stream_event(
+        self, event: AgentStream
+    ) -> AsyncGenerator[CoderEvent]:
         if event.delta:
             prev_block_id = self._accumulator.current_text_block_id
             block_id = self._accumulator.append_text(event.delta)
@@ -113,7 +117,9 @@ class MessagingTurnEventHandler:
 
             yield AIMessageChunkEvent(delta=event.delta, block_id=block_id)
 
-    async def _handle_tool_call_event(self, event: ToolCall) -> AsyncGenerator[CoderEvent]:
+    async def _handle_tool_call_event(
+        self, event: ToolCall
+    ) -> AsyncGenerator[CoderEvent]:
         yield AgentStateEvent(status=f"Calling tool `{event.tool_name}`...")
 
         tool_event = await self._build_tool_call_event(event)
@@ -121,23 +127,33 @@ class MessagingTurnEventHandler:
             run_id=tool_event.tool_run_id,
             tool_id=tool_event.tool_id,
             name=tool_event.tool_name,
-            kwargs=tool_event.tool_kwargs
+            kwargs=tool_event.tool_kwargs,
         )
         yield tool_event
 
-    async def _handle_tool_call_result_event(self, event: ToolCallResult) -> AsyncGenerator[CoderEvent]:
+    async def _handle_tool_call_result_event(
+        self, event: ToolCallResult
+    ) -> AsyncGenerator[CoderEvent]:
         result_event = await self._build_tool_call_result_event(event)
-        self._accumulator.add_tool_result(run_id=result_event.tool_run_id, output=result_event.tool_output)
+        self._accumulator.add_tool_result(
+            run_id=result_event.tool_run_id, output=result_event.tool_output
+        )
         yield result_event
 
-    async def _handle_agent_input_event(self, event: AgentInput) -> AsyncGenerator[CoderEvent, None]: # noqa
+    async def _handle_agent_input_event(
+        self, event: AgentInput
+    ) -> AsyncGenerator[CoderEvent, None]:  # noqa
         yield AgentStateEvent(status="Agent is planning next steps...")
 
-    async def _handle_agent_output_event(self, event: AgentOutput) -> AsyncGenerator[CoderEvent, None]: # noqa
+    async def _handle_agent_output_event(
+        self, event: AgentOutput
+    ) -> AsyncGenerator[CoderEvent, None]:  # noqa
         content = ""
         if event.response and event.response.content:
             content = f" Output: {event.response.content[:50]}..."
-        yield WorkflowLogEvent(message=f"Agent step completed.{content}", level=LogLevel.INFO)
+        yield WorkflowLogEvent(
+            message=f"Agent step completed.{content}", level=LogLevel.INFO
+        )
         yield AgentStateEvent(status="")
 
     async def _build_tool_call_event(self, event: ToolCall) -> ToolCallEvent:
@@ -149,7 +165,9 @@ class MessagingTurnEventHandler:
             tool_run_id=unique_id,
         )
 
-    async def _build_tool_call_result_event(self, event: ToolCallResult) -> ToolCallResultEvent:
+    async def _build_tool_call_result_event(
+        self, event: ToolCallResult
+    ) -> ToolCallResultEvent:
         content = str(event.tool_output.content)
         unique_id = self._get_run_id(event.tool_kwargs, event.tool_name)
 

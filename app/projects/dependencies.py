@@ -7,8 +7,11 @@ from app.projects.repositories import ProjectRepository
 from app.projects.services import ProjectPageService, ProjectService
 
 
-async def get_project_repository(db: AsyncSession = Depends(get_db)) -> ProjectRepository:
+async def get_project_repository(
+    db: AsyncSession = Depends(get_db),
+) -> ProjectRepository:
     return ProjectRepository(db=db)
+
 
 async def get_project_service(
     db: AsyncSession = Depends(get_db),

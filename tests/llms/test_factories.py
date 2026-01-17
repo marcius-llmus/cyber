@@ -20,10 +20,14 @@ async def test_build_llm_factory_instance__returns_llm_factory_singleton():
     factory1 = await build_llm_factory_instance()
     factory2 = await build_llm_factory_instance()
     assert isinstance(factory1, LLMFactory)
-    assert factory1 is factory2 # different from others. here, we WANT the same .-. (lru cached)
+    assert (
+        factory1 is factory2
+    )  # different from others. here, we WANT the same .-. (lru cached)
 
 
-async def test_build_llm_service__returns_llm_service(db_session_mock, mocker, llm_factory_instance_mock):
+async def test_build_llm_service__returns_llm_service(
+    db_session_mock, mocker, llm_factory_instance_mock
+):
     """Scenario: build_llm_service is called with a DB session.
 
     Asserts:
@@ -39,7 +43,9 @@ async def test_build_llm_service__returns_llm_service(db_session_mock, mocker, l
     build_factory_instance_mock.assert_awaited_once()
 
 
-async def test_build_llm_service__wires_repository_and_factory(db_session_mock, mocker, llm_factory_instance_mock):
+async def test_build_llm_service__wires_repository_and_factory(
+    db_session_mock, mocker, llm_factory_instance_mock
+):
     """Scenario: build_llm_service builds all dependencies.
 
     Asserts:
@@ -57,7 +63,9 @@ async def test_build_llm_service__wires_repository_and_factory(db_session_mock, 
     build_factory_instance_mock.assert_awaited_once()
 
 
-async def test_build_llm_service__factory_is_cached_between_calls(db_session_mock, mocker, llm_factory_instance_mock):
+async def test_build_llm_service__factory_is_cached_between_calls(
+    db_session_mock, mocker, llm_factory_instance_mock
+):
     """Scenario: build_llm_service called multiple times.
 
     Asserts:

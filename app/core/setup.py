@@ -7,6 +7,7 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+
 def initialize_workspace() -> None:
     """
     Ensures the workspace directories exist and are seeded with default examples.

@@ -28,7 +28,7 @@ logging.basicConfig(
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI): # noqa
+async def lifespan(app: FastAPI):  # noqa
     """
     Ensures that the default application settings are created on startup.
     Also ensures that the workspace directories exist and are seeded.

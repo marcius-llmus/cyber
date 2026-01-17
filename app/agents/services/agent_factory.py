@@ -45,16 +45,32 @@ class AgentFactoryService:
         tools: list[BaseTool] = []
 
         # Read-only tools: CODING, ASK, PLANNER
-        if operational_mode in [OperationalMode.CODING, OperationalMode.ASK, OperationalMode.PLANNER]:
-            search_tools = SearchTools(db=sessionmanager, settings=settings, session_id=session_id)
+        if operational_mode in [
+            OperationalMode.CODING,
+            OperationalMode.ASK,
+            OperationalMode.PLANNER,
+        ]:
+            search_tools = SearchTools(
+                db=sessionmanager, settings=settings, session_id=session_id
+            )
             tools.extend(search_tools.to_tool_list())
 
-            file_tools = FileTools(db=sessionmanager, settings=settings, session_id=session_id, turn_id=turn_id)
+            file_tools = FileTools(
+                db=sessionmanager,
+                settings=settings,
+                session_id=session_id,
+                turn_id=turn_id,
+            )
             tools.extend(file_tools.to_tool_list())
 
         # Write tools (patcher): CODING only
         if operational_mode == OperationalMode.CODING:
-            patcher_tools = PatcherTools(db=sessionmanager, settings=settings, session_id=session_id, turn_id=turn_id)
+            patcher_tools = PatcherTools(
+                db=sessionmanager,
+                settings=settings,
+                session_id=session_id,
+                turn_id=turn_id,
+            )
             tools.extend(patcher_tools.to_tool_list())
 
         system_prompt = await self.agent_context_service.build_system_prompt(

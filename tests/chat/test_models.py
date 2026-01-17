@@ -30,7 +30,9 @@ class TestMessageModel:
 
     async def test_message_blocks_default_empty_list(self, db_session, chat_session):
         """Message.blocks defaults to an empty list when not explicitly set."""
-        message = Message(session_id=chat_session.id, turn_id="t1", role=MessageRole.USER)
+        message = Message(
+            session_id=chat_session.id, turn_id="t1", role=MessageRole.USER
+        )
         db_session.add(message)
         await db_session.flush()
         await db_session.refresh(message)
@@ -59,7 +61,9 @@ class TestMessageModel:
 
     async def test_message_timestamp_defaults_to_now(self, db_session, chat_session):
         """Message.timestamp defaults to server time on insert."""
-        message = Message(session_id=chat_session.id, turn_id="t1", role=MessageRole.USER)
+        message = Message(
+            session_id=chat_session.id, turn_id="t1", role=MessageRole.USER
+        )
         db_session.add(message)
         await db_session.flush()
         await db_session.refresh(message)
@@ -90,7 +94,9 @@ class TestChatTurnModel:
         await db_session.refresh(turn)
         assert turn.created_at is not None
 
-    async def test_chat_turn_updated_at_defaults_to_now_and_updates_on_change(self, db_session, chat_session):
+    async def test_chat_turn_updated_at_defaults_to_now_and_updates_on_change(
+        self, db_session, chat_session
+    ):
         """ChatTurn.updated_at defaults to server time and updates when the row is modified."""
         turn = ChatTurn(id="t1", session_id=chat_session.id)
         db_session.add(turn)

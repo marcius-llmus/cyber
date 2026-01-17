@@ -20,7 +20,9 @@ async def initialize_application_settings(db: AsyncSession) -> None:
     llm_service = await build_llm_service(db)
     all_llms = await llm_service.get_all_models()
     for llm in all_llms:
-        existing_llm_setting = await llm_service.llm_settings_repo.get_by_model_name(llm.model_name)
+        existing_llm_setting = await llm_service.llm_settings_repo.get_by_model_name(
+            llm.model_name
+        )
         if not existing_llm_setting:
             logger.info(f"Seeding new LLM: {llm.model_name}")
             await llm_service.llm_settings_repo.create(
@@ -42,10 +44,14 @@ async def initialize_application_settings(db: AsyncSession) -> None:
     logger.info("Initializing application settings...")
 
     # Set the default coding LLM for the main settings
-    default_llm = await llm_service.llm_settings_repo.get_by_model_name(LLMModel.GPT_4_1_MINI)
+    default_llm = await llm_service.llm_settings_repo.get_by_model_name(
+        LLMModel.GPT_4_1_MINI
+    )
     if not default_llm:
         # This should be unreachable if the factories contains GPT_4_1, but it's a safe fallback.
-        raise RuntimeError("Default LLM model GPT-4.1-mini not found after seeding. Check llms.factories._MODEL_REGISTRY.")
+        raise RuntimeError(
+            "Default LLM model GPT-4.1-mini not found after seeding. Check llms.factories._MODEL_REGISTRY."
+        )
 
     # Promote default to Coder
     await llm_service.llm_settings_repo.set_active_role(default_llm.id, LLMRole.CODER)

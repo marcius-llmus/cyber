@@ -41,7 +41,11 @@ class TestWorkflowStateModel:
         assert retrieved.state == state_data
 
         # Test non-nullable constraint
-        new_session = ChatSession(name="Invalid Session", operational_mode=OperationalMode.CODING, project_id=project_id)
+        new_session = ChatSession(
+            name="Invalid Session",
+            operational_mode=OperationalMode.CODING,
+            project_id=project_id,
+        )
         db_session.add(new_session)
         await db_session.flush()
 

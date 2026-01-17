@@ -49,6 +49,7 @@ class FileTreeNode(BaseModel):
     Represents a node in the file system (File or Folder).
     Pure domain object, unaware of UI selection state.
     """
+
     name: str
     path: str
     is_dir: bool

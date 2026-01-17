@@ -17,12 +17,14 @@ class WorkflowStateRepository(BaseRepository[WorkflowState]):
         if not isinstance(state, dict):
             raise ValueError("state must be a dict")
 
-        stmt = insert(self.model).values(
-            session_id=session_id, state=state
-        ).on_conflict_do_update(
-            index_elements=[self.model.session_id],
-            set_={"state": state}
-        ).returning(self.model)
+        stmt = (
+            insert(self.model)
+            .values(session_id=session_id, state=state)
+            .on_conflict_do_update(
+                index_elements=[self.model.session_id], set_={"state": state}
+            )
+            .returning(self.model)
+        )
 
         result = await self.db.execute(stmt)
         await self.db.flush()

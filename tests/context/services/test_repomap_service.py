@@ -13,8 +13,19 @@ from app.settings.models import Settings
 
 
 @pytest.fixture
-def service(workspace_service_mock, codebase_service_mock, settings_service_mock, project_service_mock):
-    return RepoMapService(workspace_service_mock, codebase_service_mock, settings_service_mock, project_service_mock)
+def service(
+    workspace_service_mock,
+    codebase_service_mock,
+    settings_service_mock,
+    project_service_mock,
+):
+    return RepoMapService(
+        workspace_service_mock,
+        codebase_service_mock,
+        settings_service_mock,
+        project_service_mock,
+    )
+
 
 async def test_generate_repo_map_no_project(service, project_service_mock):
     project_service_mock.get_active_project = AsyncMock(return_value=None)
@@ -23,29 +34,45 @@ async def test_generate_repo_map_no_project(service, project_service_mock):
 
     project_service_mock.get_active_project.assert_awaited_once_with()
 
+
 async def test_generate_repo_map_success(
     service,
     workspace_service_mock,
     codebase_service_mock,
     settings_service_mock,
     project_service_mock,
-    mocker
+    mocker,
 ):
     # 1. Setup Mocks
     project = Project(id=1, name="p", path="/tmp/proj")
     project_service_mock.get_active_project = AsyncMock(return_value=project)
 
     # Codebase returns relative paths
-    codebase_service_mock.resolve_file_patterns = AsyncMock(return_value=["src/main.py", "README.md"])
+    codebase_service_mock.resolve_file_patterns = AsyncMock(
+        return_value=["src/main.py", "README.md"]
+    )
 
     # Context returns absolute paths
-    workspace_service_mock.get_active_file_paths_abs = AsyncMock(return_value=["/tmp/proj/src/main.py"])
+    workspace_service_mock.get_active_file_paths_abs = AsyncMock(
+        return_value=["/tmp/proj/src/main.py"]
+    )
 
     # Mentioned files resolution
-    codebase_service_mock.filter_and_resolve_paths = AsyncMock(return_value={"/tmp/proj/other.py"})
+    codebase_service_mock.filter_and_resolve_paths = AsyncMock(
+        return_value={"/tmp/proj/other.py"}
+    )
 
     # Settings
-    settings_service_mock.get_settings = AsyncMock(return_value=Settings(ast_token_limit=2000, max_history_length=0, grep_token_limit=0, diff_patches_auto_open=True, diff_patches_auto_apply=True, coding_llm_temperature=0.0))
+    settings_service_mock.get_settings = AsyncMock(
+        return_value=Settings(
+            ast_token_limit=2000,
+            max_history_length=0,
+            grep_token_limit=0,
+            diff_patches_auto_open=True,
+            diff_patches_auto_apply=True,
+            coding_llm_temperature=0.0,
+        )
+    )
 
     # Patch RepoMap
     repomap_cls = mocker.patch("app.context.services.repomap.RepoMap")
@@ -57,7 +84,7 @@ async def test_generate_repo_map_success(
         session_id=1,
         mentioned_filenames={"other.py"},
         mentioned_idents={"Foo", "Bar"},
-        include_active_content=False
+        include_active_content=False,
     )
 
     # 3. Assert
@@ -78,12 +105,18 @@ async def test_generate_repo_map_success(
 
     project_service_mock.get_active_project.assert_awaited_once_with()
     codebase_service_mock.resolve_file_patterns.assert_awaited_once_with("/tmp/proj")
-    workspace_service_mock.get_active_file_paths_abs.assert_awaited_once_with(1, "/tmp/proj")
-    codebase_service_mock.filter_and_resolve_paths.assert_awaited_once_with("/tmp/proj", ["other.py"])
+    workspace_service_mock.get_active_file_paths_abs.assert_awaited_once_with(
+        1, "/tmp/proj"
+    )
+    codebase_service_mock.filter_and_resolve_paths.assert_awaited_once_with(
+        "/tmp/proj", ["other.py"]
+    )
     settings_service_mock.get_settings.assert_awaited_once_with()
 
 
-async def test_repomap_extract_tags_unknown_extension_returns_empty(repomap_instance, repomap_tmp_project):
+async def test_repomap_extract_tags_unknown_extension_returns_empty(
+    repomap_instance, repomap_tmp_project
+):
     tags = await repomap_instance.extract_tags(repomap_tmp_project["unknown"])
     assert tags == []
 
@@ -99,7 +132,9 @@ async def test_repomap_extract_tags_empty_file_returns_empty(tmp_path):
     assert tags == []
 
 
-async def test_repomap_extract_tags_python_finds_definitions_and_references(repomap_instance, repomap_tmp_project):
+async def test_repomap_extract_tags_python_finds_definitions_and_references(
+    repomap_instance, repomap_tmp_project
+):
     defs_tags = await repomap_instance.extract_tags(repomap_tmp_project["defs"])
     names_kinds = {(t.name, t.kind) for t in defs_tags}
 
@@ -135,7 +170,9 @@ async def test_repomap_rank_files_empty_repo_returns_empty_rankings(tmp_path):
     assert defs == {}
 
 
-async def test_repomap_rank_files_ranks_defining_file_higher_when_referenced(repomap_instance, repomap_tmp_project):
+async def test_repomap_rank_files_ranks_defining_file_higher_when_referenced(
+    repomap_instance, repomap_tmp_project
+):
     ranked, _definitions = await repomap_instance._rank_files()
     defs_rel = os.path.relpath(repomap_tmp_project["defs"], repomap_tmp_project["root"])
 
@@ -159,13 +196,19 @@ async def test_repomap_rank_files_private_ident_downweighted(repomap_tmp_project
 
     ranked, _definitions = await rm._rank_files()
 
-    public_rel = os.path.relpath(repomap_tmp_project["public_defs"], repomap_tmp_project["root"])
-    hidden_rel = os.path.relpath(repomap_tmp_project["hidden_defs"], repomap_tmp_project["root"])
+    public_rel = os.path.relpath(
+        repomap_tmp_project["public_defs"], repomap_tmp_project["root"]
+    )
+    hidden_rel = os.path.relpath(
+        repomap_tmp_project["hidden_defs"], repomap_tmp_project["root"]
+    )
 
     assert ranked[public_rel] > ranked[hidden_rel]
 
 
-async def test_repomap_rank_files_mentioned_idents_boost_overrides_private_downweight(repomap_tmp_project):
+async def test_repomap_rank_files_mentioned_idents_boost_overrides_private_downweight(
+    repomap_tmp_project,
+):
     rm = RepoMap(
         all_files=[
             repomap_tmp_project["public_defs"],
@@ -181,13 +224,19 @@ async def test_repomap_rank_files_mentioned_idents_boost_overrides_private_downw
 
     ranked, _definitions = await rm._rank_files()
 
-    public_rel = os.path.relpath(repomap_tmp_project["public_defs"], repomap_tmp_project["root"])
-    hidden_rel = os.path.relpath(repomap_tmp_project["hidden_defs"], repomap_tmp_project["root"])
+    public_rel = os.path.relpath(
+        repomap_tmp_project["public_defs"], repomap_tmp_project["root"]
+    )
+    hidden_rel = os.path.relpath(
+        repomap_tmp_project["hidden_defs"], repomap_tmp_project["root"]
+    )
 
     assert ranked[hidden_rel] >= ranked[public_rel]
 
 
-async def test_repomap_generate_includes_structure_active_context_and_ranked_definitions(repomap_tmp_project):
+async def test_repomap_generate_includes_structure_active_context_and_ranked_definitions(
+    repomap_tmp_project,
+):
     rm = RepoMap(
         all_files=[
             repomap_tmp_project["defs"],
@@ -211,7 +260,9 @@ async def test_repomap_generate_includes_structure_active_context_and_ranked_def
     assert "core" in out
 
 
-async def test_repomap_generate_include_active_content_false_omits_active_context(repomap_tmp_project):
+async def test_repomap_generate_include_active_content_false_omits_active_context(
+    repomap_tmp_project,
+):
     rm = RepoMap(
         all_files=[
             repomap_tmp_project["defs"],
@@ -226,7 +277,9 @@ async def test_repomap_generate_include_active_content_false_omits_active_contex
     assert "#### Active Context" not in out
 
 
-async def test_repomap_generate_respects_token_limit_file_structure_truncates(repomap_tmp_project):
+async def test_repomap_generate_respects_token_limit_file_structure_truncates(
+    repomap_tmp_project,
+):
     root = repomap_tmp_project["root"]
     many_files = []
     for i in range(200):
@@ -244,7 +297,9 @@ async def test_repomap_generate_respects_token_limit_file_structure_truncates(re
     assert "... (file list truncated)" in out
 
 
-async def test_repomap_generate_ranked_definitions_truncates_with_notice(repomap_tmp_project):
+async def test_repomap_generate_ranked_definitions_truncates_with_notice(
+    repomap_tmp_project,
+):
     # Small limit to force truncation during ranked definitions.
     rm = RepoMap(
         all_files=[
@@ -270,7 +325,9 @@ async def test_repomap_generate_omits_ranked_definitions_when_no_defs_or_refs(tm
     f = root / "a.py"
     f.write_text("x = 1\n", encoding="utf-8")
 
-    rm = RepoMap(all_files=[str(f)], active_context_files=[], root=str(root), token_limit=10_000)
+    rm = RepoMap(
+        all_files=[str(f)], active_context_files=[], root=str(root), token_limit=10_000
+    )
     out = await rm.generate(include_active_content=False)
 
     assert "### Repository Map" in out
@@ -278,7 +335,9 @@ async def test_repomap_generate_omits_ranked_definitions_when_no_defs_or_refs(tm
     assert "#### Ranked Definitions" not in out
 
 
-async def test_repomap_generate_ranked_definitions_skips_active_files(repomap_tmp_project):
+async def test_repomap_generate_ranked_definitions_skips_active_files(
+    repomap_tmp_project,
+):
     rm = RepoMap(
         all_files=[
             repomap_tmp_project["defs"],
@@ -302,7 +361,9 @@ async def test_repomap_generate_ranked_definitions_skips_active_files(repomap_tm
     assert f"{defs_rel}:\n" not in ranked_section
 
 
-async def test_repomap_generate_active_context_omitted_when_header_exceeds_token_limit(repomap_tmp_project):
+async def test_repomap_generate_active_context_omitted_when_header_exceeds_token_limit(
+    repomap_tmp_project,
+):
     rm = RepoMap(
         all_files=[
             repomap_tmp_project["defs"],
@@ -319,7 +380,9 @@ async def test_repomap_generate_active_context_omitted_when_header_exceeds_token
     assert "#### Active Context" not in out
 
 
-async def test_repomap_generate_active_file_skipped_when_block_exceeds_token_limit(tmp_path):
+async def test_repomap_generate_active_file_skipped_when_block_exceeds_token_limit(
+    tmp_path,
+):
     root = tmp_path / "project"
     root.mkdir()
 
@@ -349,7 +412,9 @@ async def test_repomap_extract_tags_returns_empty_when_query_file_missing(tmp_pa
     f = root / "a.py"
     f.write_text("def core():\n    return 1\n", encoding="utf-8")
 
-    rm = RepoMap(all_files=[str(f)], active_context_files=[], root=str(root), token_limit=10_000)
+    rm = RepoMap(
+        all_files=[str(f)], active_context_files=[], root=str(root), token_limit=10_000
+    )
     empty_queries = tmp_path / "empty_queries"
     empty_queries.mkdir()
     rm.queries_dir = empty_queries
@@ -358,8 +423,14 @@ async def test_repomap_extract_tags_returns_empty_when_query_file_missing(tmp_pa
     assert tags == []
 
 
-async def test_repomap_rank_files_active_context_referencer_boost_changes_rank(repomap_tmp_project):
-    all_files = [repomap_tmp_project["defs"], repomap_tmp_project["use1"], repomap_tmp_project["use2"]]
+async def test_repomap_rank_files_active_context_referencer_boost_changes_rank(
+    repomap_tmp_project,
+):
+    all_files = [
+        repomap_tmp_project["defs"],
+        repomap_tmp_project["use1"],
+        repomap_tmp_project["use2"],
+    ]
 
     rm_base = RepoMap(
         all_files=all_files,
@@ -385,8 +456,14 @@ async def test_repomap_rank_files_active_context_referencer_boost_changes_rank(r
     assert ranked_boosted[defs_rel] > ranked_base[defs_rel]
 
 
-async def test_repomap_rank_files_mentioned_filenames_referencer_boost_changes_rank(repomap_tmp_project):
-    all_files = [repomap_tmp_project["defs"], repomap_tmp_project["use1"], repomap_tmp_project["use2"]]
+async def test_repomap_rank_files_mentioned_filenames_referencer_boost_changes_rank(
+    repomap_tmp_project,
+):
+    all_files = [
+        repomap_tmp_project["defs"],
+        repomap_tmp_project["use1"],
+        repomap_tmp_project["use2"],
+    ]
 
     rm_base = RepoMap(
         all_files=all_files,
@@ -412,7 +489,9 @@ async def test_repomap_rank_files_mentioned_filenames_referencer_boost_changes_r
     assert ranked_boosted[defs_rel] > ranked_base[defs_rel]
 
 
-async def test_repomap_add_active_files_content_continues_on_missing_file(repomap_tmp_project, tmp_path):
+async def test_repomap_add_active_files_content_continues_on_missing_file(
+    repomap_tmp_project, tmp_path
+):
     missing = str(tmp_path / "missing.py")
     rm = RepoMap(
         all_files=[repomap_tmp_project["defs"], repomap_tmp_project["use1"]],
@@ -427,7 +506,9 @@ async def test_repomap_add_active_files_content_continues_on_missing_file(repoma
     assert f"{use1_rel}:\n```py" in out
 
 
-async def test_repomap_ranked_definitions_excludes_files_without_definitions(repomap_tmp_project, tmp_path):
+async def test_repomap_ranked_definitions_excludes_files_without_definitions(
+    repomap_tmp_project, tmp_path
+):
     # A file that calls functions but defines nothing (e.g. a script)
     # It should be in the graph (as a referencer) but excluded from Ranked Definitions snippets.
     root = Path(repomap_tmp_project["root"])

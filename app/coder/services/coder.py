@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 class CoderService:
     def __init__(
         self,
-        db: DatabaseSessionManager, # this is not a session, but the manager
+        db: DatabaseSessionManager,  # this is not a session, but the manager
         chat_service_factory: Callable[[AsyncSession], Awaitable[ChatService]],
         session_service_factory: Callable[[AsyncSession], Awaitable[SessionService]],
         workflow_service_factory: Callable[[AsyncSession], Awaitable[WorkflowService]],
@@ -72,20 +72,29 @@ class CoderService:
             yield AgentStateEvent(status="Thinking...")
 
             async with UsageCollector() as event_collector:
-                workflow = await self._build_workflow(session_id=session_id, turn_id=turn_id)
-                ctx = await self._get_workflow_context(session_id=session_id, workflow=workflow)
+                workflow = await self._build_workflow(
+                    session_id=session_id, turn_id=turn_id
+                )
+                ctx = await self._get_workflow_context(
+                    session_id=session_id, workflow=workflow
+                )
                 chat_history = await self._get_chat_history(session_id=session_id)
 
                 try:
                     handler = workflow.run(
-                        user_msg=user_message, chat_history=chat_history, ctx=ctx, max_iterations=settings.AGENT_MAX_ITERATIONS
+                        user_msg=user_message,
+                        chat_history=chat_history,
+                        ctx=ctx,
+                        max_iterations=settings.AGENT_MAX_ITERATIONS,
                     )
 
                     async for event in handler.stream_events():
                         async for coder_event in messaging_turn_handler.handle(event):
                             yield coder_event
 
-                        async for usage_event in self._process_new_usage(session_id, event_collector):
+                        async for usage_event in self._process_new_usage(
+                            session_id, event_collector
+                        ):
                             yield usage_event
 
                     logger.info(f"Workflow stream finished for session {session_id}.")
@@ -99,8 +108,14 @@ class CoderService:
                         chat_service = await self.chat_service_factory(session)
                         session_service = await self.session_service_factory(session)
 
-                        effective_mode = await session_service.get_operational_mode(session_id=session_id)
-                        logger.info("Session %s effective operational mode: %s", session_id, effective_mode)
+                        effective_mode = await session_service.get_operational_mode(
+                            session_id=session_id
+                        )
+                        logger.info(
+                            "Session %s effective operational mode: %s",
+                            session_id,
+                            effective_mode,
+                        )
 
                         # it returns only AI message
                         ai_message = await chat_service.save_messages_for_turn(
@@ -111,7 +126,9 @@ class CoderService:
                         )
                         ai_blocks = list(ai_message.blocks or [])
 
-                    await self._mark_turn_succeeded(session_id=session_id, turn_id=turn_id)
+                    await self._mark_turn_succeeded(
+                        session_id=session_id, turn_id=turn_id
+                    )
 
                     if effective_mode == OperationalMode.SINGLE_SHOT:
                         yield AgentStateEvent(status="Applying patches...")
@@ -124,16 +141,22 @@ class CoderService:
                             yield event
                         yield AgentStateEvent(status="")
 
-                    async for usage_event in self._process_new_usage(session_id, event_collector):
+                    async for usage_event in self._process_new_usage(
+                        session_id, event_collector
+                    ):
                         yield usage_event
 
                 except Exception as e:
-                    yield await self._handle_workflow_exception(e, original_message=user_message)
+                    yield await self._handle_workflow_exception(
+                        e, original_message=user_message
+                    )
                 finally:
                     # Safety check: Log if any events were left behind (e.g., due to a crash before final save)
                     unprocessed_count = event_collector.unprocessed_count
                     if unprocessed_count > 0:
-                        logger.warning(f"Session {session_id}: {unprocessed_count} usage events were not processed/persisted.")
+                        logger.warning(
+                            f"Session {session_id}: {unprocessed_count} usage events were not processed/persisted."
+                        )
 
         return turn_id, _stream()
 
@@ -148,8 +171,10 @@ class CoderService:
 
     async def _get_chat_history(self, *, session_id: int) -> Any:
         async with self.db.session() as session:
-            chat_service = await self.chat_service_factory(session) # db session
-            return await chat_service.get_chat_history(session_id) # chat session (unrelated to db)
+            chat_service = await self.chat_service_factory(session)  # db session
+            return await chat_service.get_chat_history(
+                session_id
+            )  # chat session (unrelated to db)
 
     async def _process_single_shot_diffs(
         self,
@@ -204,8 +229,7 @@ class CoderService:
 
                 files = await context_service.get_active_context(session_id)
                 files_data = [
-                    ContextFileListItem(id=f.id, file_path=f.file_path)
-                    for f in files
+                    ContextFileListItem(id=f.id, file_path=f.file_path) for f in files
                 ]
 
             yield ContextFilesUpdatedEvent(session_id=session_id, files=files_data)
@@ -227,7 +251,9 @@ class CoderService:
             turn_service = await self.turn_service_factory(session)
             await turn_service.mark_succeeded(session_id=session_id, turn_id=turn_id)
 
-    async def _process_new_usage(self, session_id: int, collector: UsageCollector) -> AsyncGenerator[CoderEvent]:
+    async def _process_new_usage(
+        self, session_id: int, collector: UsageCollector
+    ) -> AsyncGenerator[CoderEvent]:
         """Helper to consume new events from collector and yield metrics updates."""
         new_events = collector.consume()
         if not new_events:
@@ -241,18 +267,22 @@ class CoderService:
         # globally dispatched events in batch, this is the wae o7
         if metrics.errors:
             for error in metrics.errors:
-                yield WorkflowLogEvent(message=f"Usage Tracking Error: {error}", level=LogLevel.ERROR)
+                yield WorkflowLogEvent(
+                    message=f"Usage Tracking Error: {error}", level=LogLevel.ERROR
+                )
 
         yield UsageMetricsUpdatedEvent(
             session_cost=metrics.session_cost,
             monthly_cost=metrics.monthly_cost,
             input_tokens=metrics.input_tokens,
             output_tokens=metrics.output_tokens,
-            cached_tokens=metrics.cached_tokens
+            cached_tokens=metrics.cached_tokens,
         )
 
     @staticmethod
-    async def _handle_workflow_exception(e: Exception, original_message: str) -> WorkflowErrorEvent:
+    async def _handle_workflow_exception(
+        e: Exception, original_message: str
+    ) -> WorkflowErrorEvent:
         error_message = str(e)
         logger.error(f"Workflow execution failed: {error_message}", exc_info=True)
         # The log event is removed to conform to the single-return contract.

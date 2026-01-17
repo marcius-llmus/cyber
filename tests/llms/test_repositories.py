@@ -26,7 +26,9 @@ async def test_llm_settings_repository__get_by_model_name__returns_row_when_pres
     Asserts:
         - returns matching row
     """
-    result = await llm_settings_repository.get_by_model_name(llm_settings_openai_coder.model_name)
+    result = await llm_settings_repository.get_by_model_name(
+        llm_settings_openai_coder.model_name
+    )
     assert result is not None
     assert result.id == llm_settings_openai_coder.id
 
@@ -66,13 +68,15 @@ async def test_llm_settings_repository__update_api_key_for_provider__updates_all
         - changes are flushed (visible in subsequent reads in same session)
     """
     # Create initial row
-    db_session.add(LLMSettings(
-        model_name=model_name,
-        provider=provider,
-        api_key="old-key",
-        context_window=1000,
-        active_role=None,
-    ))
+    db_session.add(
+        LLMSettings(
+            model_name=model_name,
+            provider=provider,
+            api_key="old-key",
+            context_window=1000,
+            active_role=None,
+        )
+    )
     await db_session.flush()
 
     new_key = "sk-new-key-123"
@@ -104,13 +108,15 @@ async def test_llm_settings_repository__update_api_key_for_provider__can_clear_k
         - get_api_key_for_provider returns None afterwards
     """
     # Create initial row
-    db_session.add(LLMSettings(
-        model_name=model_name,
-        provider=provider,
-        api_key="sk-existing",
-        context_window=1000,
-        active_role=None,
-    ))
+    db_session.add(
+        LLMSettings(
+            model_name=model_name,
+            provider=provider,
+            api_key="sk-existing",
+            context_window=1000,
+            active_role=None,
+        )
+    )
     await db_session.flush()
 
     await llm_settings_repository.update_api_key_for_provider(provider, None)
@@ -137,13 +143,15 @@ async def test_llm_settings_repository__get_api_key_for_provider__returns_first_
         - get_api_key_for_provider returns a string
     """
     api_key = "sk-test-key"
-    db_session.add(LLMSettings(
-        model_name=model_name,
-        provider=provider,
-        api_key=api_key,
-        context_window=1000,
-        active_role=None,
-    ))
+    db_session.add(
+        LLMSettings(
+            model_name=model_name,
+            provider=provider,
+            api_key=api_key,
+            context_window=1000,
+            active_role=None,
+        )
+    )
     await db_session.flush()
 
     key = await llm_settings_repository.get_api_key_for_provider(provider)
@@ -222,7 +230,9 @@ async def test_llm_settings_repository__set_active_role__clears_existing_and_set
     assert old_coder.id == llm_settings_openai_coder.id
 
     # Switch role
-    await llm_settings_repository.set_active_role(llm_settings_openai_no_role.id, LLMRole.CODER)
+    await llm_settings_repository.set_active_role(
+        llm_settings_openai_no_role.id, LLMRole.CODER
+    )
 
     # Verify new state
     new_coder = await llm_settings_repository.get_by_role(LLMRole.CODER)

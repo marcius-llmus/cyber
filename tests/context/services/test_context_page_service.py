@@ -10,7 +10,10 @@ from app.projects.models import Project
 
 @pytest.fixture
 def service(workspace_service_mock, file_system_service_mock, project_service_mock):
-    return ContextPageService(workspace_service_mock, file_system_service_mock, project_service_mock)
+    return ContextPageService(
+        workspace_service_mock, file_system_service_mock, project_service_mock
+    )
+
 
 async def test_get_file_tree_no_project(service, project_service_mock):
     """Should return empty tree if no active project."""
@@ -21,7 +24,10 @@ async def test_get_file_tree_no_project(service, project_service_mock):
 
     project_service_mock.get_active_project.assert_awaited_once_with()
 
-async def test_get_file_tree_success(service, project_service_mock, workspace_service_mock, file_system_service_mock):
+
+async def test_get_file_tree_success(
+    service, project_service_mock, workspace_service_mock, file_system_service_mock
+):
     """Should return transformed tree with selection state."""
     # 1. Setup Project
     project_mock = Project(id=1, name="MyProject", path="/tmp/proj")
@@ -32,12 +38,19 @@ async def test_get_file_tree_success(service, project_service_mock, workspace_se
     # - root_file.py
     # - src/
     #   - main.py (Selected)
-    file_system_service_mock.get_project_file_tree = AsyncMock(return_value=[
-        FileTreeNode(name="root_file.py", path="root_file.py", is_dir=False),
-        FileTreeNode(name="src", path="src", is_dir=True, children=[
-            FileTreeNode(name="main.py", path="src/main.py", is_dir=False)
-        ])
-    ])
+    file_system_service_mock.get_project_file_tree = AsyncMock(
+        return_value=[
+            FileTreeNode(name="root_file.py", path="root_file.py", is_dir=False),
+            FileTreeNode(
+                name="src",
+                path="src",
+                is_dir=True,
+                children=[
+                    FileTreeNode(name="main.py", path="src/main.py", is_dir=False)
+                ],
+            ),
+        ]
+    )
 
     # 3. Setup Active Context (Selected files)
     context_file = ContextFile(session_id=1, file_path="src/main.py")
@@ -60,7 +73,9 @@ async def test_get_file_tree_success(service, project_service_mock, workspace_se
 
     # Check src folder
     src_dir = next(c for c in children if c["name"] == "src")
-    assert "selected" not in src_dir  # Folders don't get selected state usually, or depends on implementation
+    assert (
+        "selected" not in src_dir
+    )  # Folders don't get selected state usually, or depends on implementation
 
     # Check main.py (Selected)
     main_py = src_dir["children"][0]
@@ -72,9 +87,13 @@ async def test_get_file_tree_success(service, project_service_mock, workspace_se
     workspace_service_mock.get_active_context.assert_awaited_once_with(1)
     project_service_mock.get_active_project.assert_awaited_once_with()
 
+
 async def test_get_context_files_page_data(service, workspace_service_mock):
     """Should return active context files."""
-    files = [ContextFile(id=1, session_id=99, file_path="a.py"), ContextFile(id=2, session_id=99, file_path="b.py")]
+    files = [
+        ContextFile(id=1, session_id=99, file_path="a.py"),
+        ContextFile(id=2, session_id=99, file_path="b.py"),
+    ]
     workspace_service_mock.get_active_context = AsyncMock(return_value=files)
 
     data = await service.get_context_files_page_data(session_id=99)

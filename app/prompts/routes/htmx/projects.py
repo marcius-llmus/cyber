@@ -14,7 +14,7 @@ router = APIRouter()
 @router.get("/new/project", response_class=HTMLResponse)
 @htmx("prompts/partials/prompt_form")
 async def get_new_project_prompt_form(
-    request: Request,
+    request: Request,  # noqa: ARG001
     page_service: PromptPageService = Depends(get_prompt_page_service),
 ):
     try:
@@ -27,7 +27,7 @@ async def get_new_project_prompt_form(
 @router.get("/project/list", response_class=HTMLResponse)
 @htmx("prompts/partials/prompt_list")
 async def get_project_prompts_list(
-    request: Request,
+    request: Request,  # noqa: ARG001
     page_service: PromptPageService = Depends(get_prompt_page_service),
 ):
     return await page_service.get_project_prompts_list_data()
@@ -36,7 +36,7 @@ async def get_project_prompts_list(
 @router.post("/project", response_class=HTMLResponse)
 @htmx("prompts/partials/prompt_item")
 async def create_project_prompt(
-    request: Request,
+    request: Request,  # noqa: ARG001
     prompt_in: PromptCreate,
     service: PromptService = Depends(get_prompt_service),
     page_service: PromptPageService = Depends(get_prompt_page_service),
@@ -52,12 +52,14 @@ async def create_project_prompt(
 @router.get("/project/{prompt_id}/edit", response_class=HTMLResponse)
 @htmx("prompts/partials/prompt_form")
 async def get_edit_project_prompt_form(
-    request: Request,
+    request: Request,  # noqa: ARG001
     prompt_id: int,
     page_service: PromptPageService = Depends(get_prompt_page_service),
 ):
     try:
-        context = await page_service.get_edit_project_prompt_form_context(prompt_id=prompt_id)
+        context = await page_service.get_edit_project_prompt_form_context(
+            prompt_id=prompt_id
+        )
         return context
     except PromptNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
@@ -66,7 +68,7 @@ async def get_edit_project_prompt_form(
 @router.get("/project/{prompt_id}/view", response_class=HTMLResponse)
 @htmx("prompts/partials/prompt_item")
 async def get_project_prompt_view(
-    request: Request,
+    request: Request,  # noqa: ARG001
     prompt_id: int,
     page_service: PromptPageService = Depends(get_prompt_page_service),
 ):
@@ -80,7 +82,7 @@ async def get_project_prompt_view(
 @router.put("/project/{prompt_id}", response_class=HTMLResponse)
 @htmx("prompts/partials/prompt_item")
 async def update_project_prompt(
-    request: Request,
+    request: Request,  # noqa: ARG001
     prompt_id: int,
     prompt_in: PromptUpdate,
     service: PromptService = Depends(get_prompt_service),

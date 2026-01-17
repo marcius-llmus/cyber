@@ -45,7 +45,9 @@ def settings_service(
     settings_repository_mock: MagicMock, llm_service_mock: MagicMock
 ) -> SettingsService:
     """Provides a real SettingsService with mocked dependencies for unit testing."""
-    return SettingsService(settings_repo=settings_repository_mock, llm_service=llm_service_mock)
+    return SettingsService(
+        settings_repo=settings_repository_mock, llm_service=llm_service_mock
+    )
 
 
 @pytest.fixture
@@ -65,6 +67,8 @@ def llm_factory_instance_mock(mocker: MockerFixture) -> MagicMock:
 
 @pytest.fixture
 def override_get_settings_service(client, settings_service_mock: MagicMock):
-    client.app.dependency_overrides[get_settings_service] = lambda: settings_service_mock
+    client.app.dependency_overrides[get_settings_service] = (
+        lambda: settings_service_mock
+    )
     yield
     client.app.dependency_overrides.clear()

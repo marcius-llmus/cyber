@@ -8,7 +8,9 @@ from app.settings.repositories import SettingsRepository
 from app.settings.services import SettingsPageService, SettingsService
 
 
-async def get_settings_repository(db: AsyncSession = Depends(get_db)) -> SettingsRepository:
+async def get_settings_repository(
+    db: AsyncSession = Depends(get_db),
+) -> SettingsRepository:
     return SettingsRepository(db=db)
 
 
@@ -24,6 +26,5 @@ async def get_settings_page_service(
 ) -> SettingsPageService:
     llm_service = await build_llm_service(db)
     return SettingsPageService(
-        settings_service=settings_service,
-        llm_service=llm_service
+        settings_service=settings_service, llm_service=llm_service
     )

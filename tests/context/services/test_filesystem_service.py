@@ -47,13 +47,19 @@ async def test_read_files_success(service, project_service_mock, codebase_servic
     project_service_mock.get_active_project = AsyncMock(return_value=project)
 
     # Mock resolution and reading
-    codebase_service_mock.resolve_file_patterns = AsyncMock(return_value=["a.py", "b.py"])
+    codebase_service_mock.resolve_file_patterns = AsyncMock(
+        return_value=["a.py", "b.py"]
+    )
     codebase_service_mock.read_files = AsyncMock(return_value=[object(), object()])
 
     await service.read_files(["*.py"])
 
-    codebase_service_mock.resolve_file_patterns.assert_awaited_once_with("/tmp/proj", ["*.py"])
-    codebase_service_mock.read_files.assert_awaited_once_with("/tmp/proj", ["a.py", "b.py"])
+    codebase_service_mock.resolve_file_patterns.assert_awaited_once_with(
+        "/tmp/proj", ["*.py"]
+    )
+    codebase_service_mock.read_files.assert_awaited_once_with(
+        "/tmp/proj", ["a.py", "b.py"]
+    )
     project_service_mock.get_active_project.assert_awaited_once_with()
 
 
@@ -86,11 +92,15 @@ async def test_write_file_no_project(service, project_service_mock):
 
 
 async def test_write_file_success(service, project_service_mock, codebase_service_mock):
-    project_service_mock.get_active_project = AsyncMock(return_value=Project(id=1, name="p", path="/tmp/proj"))
+    project_service_mock.get_active_project = AsyncMock(
+        return_value=Project(id=1, name="p", path="/tmp/proj")
+    )
 
     await service.write_file("test.py", "content")
 
-    codebase_service_mock.write_file.assert_awaited_once_with("/tmp/proj", "test.py", "content")
+    codebase_service_mock.write_file.assert_awaited_once_with(
+        "/tmp/proj", "test.py", "content"
+    )
     project_service_mock.get_active_project.assert_awaited_once_with()
 
 
@@ -101,8 +111,12 @@ async def test_get_project_file_tree_no_project(service, project_service_mock):
     project_service_mock.get_active_project.assert_awaited_once_with()
 
 
-async def test_get_project_file_tree_success(service, project_service_mock, codebase_service_mock):
-    project_service_mock.get_active_project = AsyncMock(return_value=Project(id=1, name="p", path="/tmp/proj"))
+async def test_get_project_file_tree_success(
+    service, project_service_mock, codebase_service_mock
+):
+    project_service_mock.get_active_project = AsyncMock(
+        return_value=Project(id=1, name="p", path="/tmp/proj")
+    )
     tree = [FileTreeNode(name="root", path="root", is_dir=True)]
     codebase_service_mock.build_file_tree = AsyncMock(return_value=tree)
 

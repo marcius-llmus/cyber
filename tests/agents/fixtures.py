@@ -140,6 +140,8 @@ def agent_factory_service(
 
 @pytest.fixture
 def override_get_workflow_service(client, workflow_service_mock: MagicMock):
-    client.app.dependency_overrides[get_workflow_service] = lambda: workflow_service_mock
+    client.app.dependency_overrides[get_workflow_service] = (
+        lambda: workflow_service_mock
+    )
     yield
     client.app.dependency_overrides.clear()

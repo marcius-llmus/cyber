@@ -53,6 +53,7 @@ async def test_validate_file_path(temp_codebase):
     path = await service.validate_file_path(root, "new_file.py", must_exist=False)
     assert str(path).endswith("new_file.py")
 
+
 async def test_validate_directory_path(temp_codebase):
     """Test validate_directory_path behavior."""
     service = CodebaseService()
@@ -74,6 +75,7 @@ async def test_validate_directory_path(temp_codebase):
     with pytest.raises(ValueError, match="Directory not found"):
         await service.validate_directory_path(root, "ghost_dir")
 
+
 async def test_list_dir(temp_codebase):
     """Test list_dir returns filtered file list."""
     service = CodebaseService()
@@ -85,12 +87,15 @@ async def test_list_dir(temp_codebase):
     assert "src/" in results
     assert "bin/" in results
     assert "ignore_me.txt" not in results
-    assert "logs/" in results  # Directories are listed even if contents are ignored, unless dir is ignored
+    assert (
+        "logs/" in results
+    )  # Directories are listed even if contents are ignored, unless dir is ignored
 
     # Subdir listing
     results = await service.list_dir(root, "src")
     assert "main.py" in results
     assert "utils.py" in results
+
 
 async def test_read_file(temp_codebase):
     """Test read_file returns content."""
@@ -117,16 +122,17 @@ async def test_read_file(temp_codebase):
     assert result.status == FileStatus.SUCCESS
     assert result.content == ""
 
+
 async def test_filter_and_resolve_paths(temp_codebase):
     """Test filtering of paths."""
     service = CodebaseService()
     root = temp_codebase.root
 
     inputs = [
-        "src/main.py",          # Valid
-        "ignore_me.txt",        # Ignored
-        "../outside.txt",       # Outside
-        "ghost.py"              # Missing
+        "src/main.py",  # Valid
+        "ignore_me.txt",  # Ignored
+        "../outside.txt",  # Outside
+        "ghost.py",  # Missing
     ]
 
     # Note: filter_and_resolve_paths uses must_exist=True internally
@@ -134,6 +140,7 @@ async def test_filter_and_resolve_paths(temp_codebase):
 
     assert len(results) == 1
     assert Path(temp_codebase.main_py).resolve() in [Path(p) for p in results]
+
 
 async def test_resolve_file_patterns(temp_codebase):
     """Test resolving glob patterns."""
@@ -149,6 +156,7 @@ async def test_resolve_file_patterns(temp_codebase):
     results = await service.resolve_file_patterns(root, ["src/*.py"])
     assert "src/main.py" in results
     assert "src/utils.py" in results
+
 
 async def test_build_file_tree(temp_codebase):
     """Test tree building."""
@@ -176,6 +184,7 @@ async def test_build_file_tree(temp_codebase):
     assert "utils.py" in src_children
     assert "regex_cases.txt" in src_children
     assert "glob_cases" in src_children
+
 
 async def test_write_file(temp_codebase):
     """Test writing files."""
@@ -223,17 +232,23 @@ async def test_resolve_file_patterns_complex(temp_codebase):
     # If passed literally, glob might treat [name] as character class.
 
     # Literal attempt (likely fails to match specific file, might match nothing or wrong thing)
-    files_literal = await service.resolve_file_patterns(root, ["src/glob_cases/weird[name].txt"])
+    files_literal = await service.resolve_file_patterns(
+        root, ["src/glob_cases/weird[name].txt"]
+    )
     assert len(files_literal) == 0
 
     # Escaped attempt (Python glob uses [[] to escape [)
-    files_escaped = await service.resolve_file_patterns(root, ["src/glob_cases/weird[[]name].txt"])
+    files_escaped = await service.resolve_file_patterns(
+        root, ["src/glob_cases/weird[[]name].txt"]
+    )
     assert len(files_escaped) == 1
     assert files_escaped[0].endswith("weird[name].txt")
 
     # 4. Mixed valid and ignored
     # *.log is ignored. src/regex_cases.txt is valid.
-    files = await service.resolve_file_patterns(root, ["src/regex_cases.txt", "logs/*.log"])
+    files = await service.resolve_file_patterns(
+        root, ["src/regex_cases.txt", "logs/*.log"]
+    )
     assert len(files) == 1
     assert "regex_cases.txt" in files[0]
 

@@ -8,7 +8,9 @@ from app.patches.models import DiffPatch
 class DiffPatchRepository(BaseRepository[DiffPatch]):
     model = DiffPatch
 
-    async def list_pending_by_turn(self, *, session_id: int, turn_id: str) -> list[DiffPatch]:
+    async def list_pending_by_turn(
+        self, *, session_id: int, turn_id: str
+    ) -> list[DiffPatch]:
         stmt = (
             select(self.model)
             .where(self.model.session_id == session_id)

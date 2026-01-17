@@ -32,7 +32,7 @@ async def delete_blueprint_prompt(  # noqa: ARG001
 @router.post("/from-blueprint", response_class=HTMLResponse)
 @htmx("prompts/partials/blueprint_list")
 async def create_prompt_from_blueprint(
-    request: Request,
+    request: Request,  # noqa: ARG001
     blueprint_in: BlueprintRequest,
     service: PromptService = Depends(get_prompt_service),
     page_service: PromptPageService = Depends(get_prompt_page_service),
@@ -47,7 +47,7 @@ async def create_prompt_from_blueprint(
 @router.get("/blueprint/list", response_class=HTMLResponse)
 @htmx("prompts/partials/blueprint_list")
 async def get_blueprint_list(
-    request: Request,
+    request: Request,  # noqa: ARG001
     page_service: PromptPageService = Depends(get_prompt_page_service),
 ):
     return await page_service.get_blueprint_prompts_list_data()

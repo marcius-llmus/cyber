@@ -20,7 +20,9 @@ class ChatSession(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     created_at = Column(DateTime, nullable=False, server_default=func.now())
-    updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
+    updated_at = Column(
+        DateTime, nullable=False, server_default=func.now(), onupdate=func.now()
+    )
     is_active = Column(Boolean, default=False, nullable=False, server_default="f")
     operational_mode = Column(
         Enum(OperationalMode),
@@ -32,11 +34,16 @@ class ChatSession(Base):
         nullable=False,
         server_default=ContextStrategy.GREP,
     )
-    project_id = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    project_id = Column(
+        Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
+    )
 
     project = relationship("Project", back_populates="chat_sessions", lazy="joined")
     messages = relationship(
-        "Message", back_populates="session", cascade="all, delete-orphan", lazy="selectin"
+        "Message",
+        back_populates="session",
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )
     diff_patches = relationship(
         "DiffPatch",
@@ -45,10 +52,16 @@ class ChatSession(Base):
         lazy="selectin",
     )
     context_files = relationship(
-        "ContextFile", back_populates="session", cascade="all, delete-orphan", lazy="selectin"
+        "ContextFile",
+        back_populates="session",
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )
     prompt_attachments = relationship(
-        "SessionPromptAttachment", back_populates="session", cascade="all, delete-orphan", lazy="selectin"
+        "SessionPromptAttachment",
+        back_populates="session",
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )
     workflow_state = relationship(
         "WorkflowState",

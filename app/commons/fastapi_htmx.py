@@ -5,12 +5,11 @@ import logging
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from functools import wraps
-from typing import Union
 
 from fastapi import HTTPException, Request
 from fastapi.templating import Jinja2Templates
 
-TemplatePath = Union[Jinja2Templates, dict[str, Jinja2Templates]]
+TemplatePath = Jinja2Templates | dict[str, Jinja2Templates]
 TemplateName = str
 templates_path: TemplatePath | None = None
 templates_file_extension: str | None = None
@@ -38,7 +37,9 @@ class MissingFullPageTemplateError(HTTPException):
     """Fullpage request not a corresponding template configured for url rewriting and sessions to work."""
 
     def __init__(self) -> None:  # noqa: D107
-        super().__init__(status_code=400, detail="Ressource cannot be accessed directly.")
+        super().__init__(
+            status_code=400, detail="Ressource cannot be accessed directly."
+        )
         logging.debug(
             "Route is not configured to be queried directly. Please specify a fullpage template + data for that."
         )
@@ -62,7 +63,9 @@ class HXRequest(Request):
     hx_request: bool = False
 
 
-def _get_template_name(name: TemplateSpec | str, file_extension: str | None) -> TemplateFileInfo:
+def _get_template_name(
+    name: TemplateSpec | str, file_extension: str | None
+) -> TemplateFileInfo:
     if isinstance(name, TemplateSpec) and isinstance(templates_path, dict):
         try:
             templates_collection_path = templates_path[name.collection_name]
@@ -81,7 +84,9 @@ def _get_template_name(name: TemplateSpec | str, file_extension: str | None) -> 
 
     template_file_name_in_collection = f"{template_name_in_collection}.{file_extension}"
 
-    return TemplateFileInfo(collection=templates_collection_path, file_name=template_file_name_in_collection)
+    return TemplateFileInfo(
+        collection=templates_collection_path, file_name=template_file_name_in_collection
+    )
 
 
 def htmx(  # noqa: C901
@@ -125,7 +130,10 @@ def htmx(  # noqa: C901
                     response = await full_template_constructor(**kwargs)
                 else:
                     response = full_template_constructor(**kwargs)
-            elif not request_is_fullpage_request and partial_template_constructor is not None:
+            elif (
+                not request_is_fullpage_request
+                and partial_template_constructor is not None
+            ):
                 if inspect.iscoroutinefunction(partial_template_constructor):
                     response = await partial_template_constructor(**kwargs)
                 else:
@@ -158,7 +166,9 @@ def htmx(  # noqa: C901
                     "before using the '@htmx(...)' decorator"
                 )
 
-            template = _get_template_name(name=template_name, file_extension=template_extension)
+            template = _get_template_name(
+                name=template_name, file_extension=template_extension
+            )
             return template.collection.TemplateResponse(
                 template.file_name,
                 {
@@ -173,7 +183,10 @@ def htmx(  # noqa: C901
 
 
 def _is_fullpage_request(request: Request) -> bool:
-    return "HX-Request" not in request.headers or request.headers["HX-Request"].lower() != "true"
+    return (
+        "HX-Request" not in request.headers
+        or request.headers["HX-Request"].lower() != "true"
+    )
 
 
 def htmx_init(templates: TemplatePath, file_extension: str = "jinja2"):

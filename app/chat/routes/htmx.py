@@ -8,10 +8,11 @@ from app.projects.exceptions import ActiveProjectRequiredException
 
 router = APIRouter()
 
+
 @router.post("/clear", response_class=HTMLResponse)
 @htmx("chat/partials/message_list")
 async def clear_chat(
-    request: Request,
+    request: Request,  # noqa: ARG001
     chat_service: ChatService = Depends(get_chat_service),
 ):
     try:

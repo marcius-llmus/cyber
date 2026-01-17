@@ -11,5 +11,5 @@ __all__ = [
     "ContextPageService",
     "SearchService",
     "FileSystemService",
-    "CodebaseService"
+    "CodebaseService",
 ]

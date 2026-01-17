@@ -13,7 +13,7 @@ router = APIRouter()
 @router.get("/session/{session_id}/file-tree", response_class=HTMLResponse)
 @htmx("context/partials/file_tree")
 async def get_file_tree(
-    request: Request,
+    request: Request,  # noqa: ARG001
     session_id: int,
     service: ContextPageService = Depends(get_context_page_service),
 ):
@@ -33,7 +33,7 @@ async def batch_update_context_files(
     page_data = await page_service.get_context_files_page_data(session_id)
     return templates.TemplateResponse(
         "context/partials/context_file_list_items.html",
-        {"request": request, **page_data}
+        {"request": request, **page_data},
     )
 
 
@@ -48,11 +48,13 @@ async def clear_all_context_files(
     page_data = await page_service.get_context_files_page_data(session_id)
     return templates.TemplateResponse(
         "context/partials/context_file_list_items.html",
-        {"request": request, **page_data}
+        {"request": request, **page_data},
     )
 
 
-@router.delete("/session/{session_id}/files/{context_file_id}", response_class=HTMLResponse)
+@router.delete(
+    "/session/{session_id}/files/{context_file_id}", response_class=HTMLResponse
+)
 async def remove_context_file(
     request: Request,
     session_id: int,
@@ -64,5 +66,5 @@ async def remove_context_file(
     page_data = await page_service.get_context_files_page_data(session_id)
     return templates.TemplateResponse(
         "context/partials/context_file_list_items.html",
-        {"request": request, **page_data}
+        {"request": request, **page_data},
     )

@@ -32,7 +32,9 @@ async def test_llm_settings__can_be_persisted(db_session):
         "context_window",
     ],
 )
-async def test_llm_settings__required_fields__enforced_by_db(field_name: str, db_session):
+async def test_llm_settings__required_fields__enforced_by_db(
+    field_name: str, db_session
+):
     """Scenario: attempt to persist LLMSettings with a missing required field.
 
     Asserts:

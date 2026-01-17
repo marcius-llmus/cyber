@@ -18,7 +18,9 @@ async def test_get_session_repository_returns_repo(db_session_mock):
     assert repo.db is db_session_mock
 
 
-async def test_get_session_service_returns_service(db_session_mock, mocker, session_service_mock):
+async def test_get_session_service_returns_service(
+    db_session_mock, mocker, session_service_mock
+):
     """Verify dependency delegates to build_session_service and returns its result."""
     build_session_service_mock = mocker.patch(
         "app.sessions.dependencies.build_session_service",
@@ -44,9 +46,13 @@ async def test_get_session_service_propagates_error(db_session_mock, mocker):
     build_session_service_mock.assert_awaited_once_with(db_session_mock)
 
 
-async def test_get_session_page_service_returns_service(session_service_mock: MagicMock, project_service_mock: MagicMock):
+async def test_get_session_page_service_returns_service(
+    session_service_mock: MagicMock, project_service_mock: MagicMock
+):
     """Verify dependency returns SessionPageService."""
-    service = await get_session_page_service(session_service=session_service_mock, project_service=project_service_mock)
+    service = await get_session_page_service(
+        session_service=session_service_mock, project_service=project_service_mock
+    )
     assert isinstance(service, SessionPageService)
     assert service.session_service is session_service_mock
     assert service.project_service is project_service_mock

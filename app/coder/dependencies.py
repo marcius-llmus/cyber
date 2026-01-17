@@ -32,6 +32,7 @@ async def get_coder_page_service(
         settings_service=settings_service,
     )
 
+
 async def get_coder_service() -> CoderService:
     return CoderService(
         db=sessionmanager,

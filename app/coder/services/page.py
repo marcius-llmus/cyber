@@ -27,7 +27,9 @@ class CoderPageService:
 
     async def get_main_page_data(self, session_id: int | None = None) -> dict:
         """Aggregates data from various services for the main page view."""
-        if session_id and (session := await self.chat_service.get_session_by_id(session_id=session_id)):
+        if session_id and (
+            session := await self.chat_service.get_session_by_id(session_id=session_id)
+        ):
             usage_data = await self.usage_page_service.get_session_metrics_page_data()
             context_files = await self.context_service.get_active_context(session.id)
             page_data = {

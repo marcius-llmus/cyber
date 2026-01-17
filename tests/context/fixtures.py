@@ -51,7 +51,9 @@ def temp_codebase(tmp_path):
     project_root.mkdir()
 
     # 2. Files inside project
-    (project_root / ".gitignore").write_text("*.log\nignore_me.txt\nsecret/", encoding="utf-8")
+    (project_root / ".gitignore").write_text(
+        "*.log\nignore_me.txt\nsecret/", encoding="utf-8"
+    )
 
     readme = project_root / "README.md"
     readme.write_text("# Test Project", encoding="utf-8")
@@ -362,14 +364,18 @@ def get_file_tree_page_data_mock() -> dict:
 
 @pytest.fixture
 def override_get_context_service(client, workspace_service_mock: MagicMock):
-    client.app.dependency_overrides[get_context_service] = lambda: workspace_service_mock
+    client.app.dependency_overrides[get_context_service] = (
+        lambda: workspace_service_mock
+    )
     yield
     client.app.dependency_overrides.pop(get_context_service, None)
 
 
 @pytest.fixture
 def override_get_context_page_service(client, context_page_service_mock: MagicMock):
-    client.app.dependency_overrides[get_context_page_service] = lambda: context_page_service_mock
+    client.app.dependency_overrides[get_context_page_service] = (
+        lambda: context_page_service_mock
+    )
     yield
     client.app.dependency_overrides.pop(get_context_page_service, None)
 
@@ -380,6 +386,7 @@ def chat_session_mock(mocker: MockerFixture) -> MagicMock:
     obj = mocker.MagicMock()
     obj.id = 1
     return obj
+
 
 @pytest.fixture
 def repomap_tmp_project(tmp_path) -> dict:

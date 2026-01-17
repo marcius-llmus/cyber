@@ -12,8 +12,12 @@ class TestProjectRepository:
         project_repository: ProjectRepository,
         project: Project,
     ) -> None:
-        await project_repository.create(obj_in=ProjectCreate(name="B Project", path="/tmp/b"))
-        await project_repository.create(obj_in=ProjectCreate(name="A Project", path="/tmp/a"))
+        await project_repository.create(
+            obj_in=ProjectCreate(name="B Project", path="/tmp/b")
+        )
+        await project_repository.create(
+            obj_in=ProjectCreate(name="A Project", path="/tmp/a")
+        )
 
         result = await project_repository.list()
         names = [p.name for p in result]
@@ -34,10 +38,14 @@ class TestProjectRepository:
         # Deactivate the default project fixture to start with 0 active
         await project_repository.deactivate(project)
 
-        await project_repository.create(obj_in=ProjectCreate(name="Inactive", path="/tmp/inactive"))
+        await project_repository.create(
+            obj_in=ProjectCreate(name="Inactive", path="/tmp/inactive")
+        )
         if active_count == 1:
             # Create exactly ONE active project
-            created = await project_repository.create(obj_in=ProjectCreate(name="Active", path="/tmp/active"))
+            created = await project_repository.create(
+                obj_in=ProjectCreate(name="Active", path="/tmp/active")
+            )
             await project_repository.activate(created)
 
         active = await project_repository.get_active()
@@ -53,7 +61,9 @@ class TestProjectRepository:
         project: Project,
     ) -> None:
         # The 'project' fixture is already active. Create ONE more to force exception.
-        active_2 = await project_repository.create(obj_in=ProjectCreate(name="Active 2", path="/tmp/a2"))
+        active_2 = await project_repository.create(
+            obj_in=ProjectCreate(name="Active 2", path="/tmp/a2")
+        )
         await project_repository.activate(active_2)
 
         with pytest.raises(MultipleActiveProjectsException):

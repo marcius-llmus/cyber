@@ -60,9 +60,7 @@ class PatcherTools(BaseToolSet):
 
     async def apply_diff(
         self,
-        file_path: Annotated[
-            str, Field(description=FILE_PATH_DESCRIPTION)
-        ],
+        file_path: Annotated[str, Field(description=FILE_PATH_DESCRIPTION)],
         diff: Annotated[str, Field(description=APPLY_DIFF_DESCRIPTION)],
     ) -> str:
         """

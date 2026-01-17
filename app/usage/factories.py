@@ -18,8 +18,9 @@ async def build_usage_service(db: AsyncSession) -> UsageService:
         usage_repo=usage_repo,
         global_usage_repo=global_repo,
         llm_service=llm_service,
-        settings_service=settings_service
+        settings_service=settings_service,
     )
+
 
 @lru_cache
 def build_price_updater() -> UpdatePrices:

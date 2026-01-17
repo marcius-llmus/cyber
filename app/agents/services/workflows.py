@@ -6,6 +6,7 @@ from app.agents.repositories import WorkflowStateRepository
 
 logger = logging.getLogger(__name__)
 
+
 class WorkflowService:
     def __init__(self, workflow_repo: WorkflowStateRepository):
         self.workflow_repo = workflow_repo

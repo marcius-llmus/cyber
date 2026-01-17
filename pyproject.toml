@@ -56,6 +56,9 @@ exclude = ["venv", ".venv", "alembic"]
 target-version = "py313"
 exclude = ["alembic"]
 
+[tool.ruff.format]
+exclude = ["alembic"]
+
 [tool.black]
 line-length = 88
 target-version = ["py313"]
@@ -78,6 +81,8 @@ ignore = [
     "B008",  # do not perform function calls in argument defaults
     "W191",  # indentation contains tabs
     "B904",  # Allow raising exceptions without from e, for HTTPException
+    "ARG001", # FastAPI routes often receive Request for templating/context
+    "T201",   # Allow prints in seeds/examples
 ]
 
 [tool.ruff.lint.pyupgrade]

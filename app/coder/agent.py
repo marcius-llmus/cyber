@@ -16,6 +16,7 @@ class CoderAgent(FunctionAgent):
     This ensures that tool calls and their results can be reliably matched in the UI,
     even if the LLM returns duplicate tool_ids (e.g. Gemini).
     """
+
     # todo: just for future reference: this is a hack. that's a way to track tool exec
     #       when it starts and it finishes through an injected custom kwarg "_run_id"
     @staticmethod

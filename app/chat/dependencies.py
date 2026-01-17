@@ -8,7 +8,9 @@ from app.chat.services.turn import ChatTurnService
 from app.commons.dependencies import get_db
 
 
-async def get_message_repository(db: AsyncSession = Depends(get_db)) -> MessageRepository:
+async def get_message_repository(
+    db: AsyncSession = Depends(get_db),
+) -> MessageRepository:
     return MessageRepository(db=db)
 
 

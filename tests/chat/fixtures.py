@@ -70,7 +70,9 @@ def override_get_chat_service(client, chat_service_mock: MagicMock):
 
 @pytest.fixture
 def override_get_chat_turn_service(client, chat_turn_service_mock: MagicMock):
-    client.app.dependency_overrides[get_chat_turn_service] = lambda: chat_turn_service_mock
+    client.app.dependency_overrides[get_chat_turn_service] = (
+        lambda: chat_turn_service_mock
+    )
     yield
     client.app.dependency_overrides.clear()
 

@@ -34,16 +34,22 @@ class RepoMapService:
     ) -> str:
         project = await self.project_service.get_active_project()
         if not project:
-            raise ActiveProjectRequiredException("Active project required to generate repo map.")
+            raise ActiveProjectRequiredException(
+                "Active project required to generate repo map."
+            )
 
         # Gather all files (Relative) -> Convert to Absolute for TreeSitter
         all_files_rel = await self.codebase_service.resolve_file_patterns(project.path)
         all_files_abs = [os.path.join(project.path, f) for f in all_files_rel]
 
-        active_files_abs = await self.context_service.get_active_file_paths_abs(session_id, project.path)
+        active_files_abs = await self.context_service.get_active_file_paths_abs(
+            session_id, project.path
+        )
 
         if mentioned_filenames:
-            mentioned_filenames = await self.codebase_service.filter_and_resolve_paths(project.path, list(mentioned_filenames))
+            mentioned_filenames = await self.codebase_service.filter_and_resolve_paths(
+                project.path, list(mentioned_filenames)
+            )
         else:
             mentioned_filenames = set()
 

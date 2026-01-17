@@ -9,6 +9,7 @@ class BaseToolSet(BaseToolSpec):
     Base Class for a set of Agent Tools, inheriting from LlamaIndex BaseToolSpec.
     Enforces standardized initialization with DB and Settings.
     """
+
     def __init__(
         self,
         db: DatabaseSessionManager,

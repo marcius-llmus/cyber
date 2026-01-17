@@ -30,4 +30,5 @@ Roadmap
 - Currently, we map max token for grep and repo map, but total summed input (Context Window) is not tracking
 - Check the amount of events received by usage handler (seems spammy)
 - Fix context search folders search and folder select functionalities
+- Add llm thinking levels options
 

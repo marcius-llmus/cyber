@@ -13,7 +13,9 @@ class TestChatSchemas:
             MessageCreate(session_id=1, turn_id="t1", role="INVALID", blocks=[])
 
         # Valid case
-        msg = MessageCreate(session_id=1, turn_id="t1", role=MessageRole.USER, blocks=[])
+        msg = MessageCreate(
+            session_id=1, turn_id="t1", role=MessageRole.USER, blocks=[]
+        )
         assert msg.role == MessageRole.USER
 
     async def test_turn_request_requires_user_content(self):

@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     BLUEPRINTS_ROOT_DIR: str = "workspace/blueprints"
     LOG_LEVEL: LogLevel = LogLevel.INFO
     OBSERVABILITY_ENABLED: bool = False
-    AGENT_MAX_ITERATIONS: int = 11 # todo: safety until stable enough (change later)
+    AGENT_MAX_ITERATIONS: int = 21  # todo: safety until stable enough (change later)
     LLM_TIMEOUT: float = 600.0
 
     @property
@@ -27,9 +27,10 @@ class Settings(BaseSettings):
         return str(BASE_DIR / "app/context/repomap/queries")
 
     @field_validator("PROJECTS_ROOT_DIR", "BLUEPRINTS_ROOT_DIR")
-    def make_absolute(cls, v: str) -> str: # noqa
+    def make_absolute(cls, v: str) -> str:  # noqa
         if not Path(v).is_absolute():
             return str(BASE_DIR / v)
         return v
+
 
 settings = Settings()

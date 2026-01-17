@@ -10,15 +10,23 @@ from app.sessions.models import ChatSession
 from app.sessions.repositories import ChatSessionRepository
 
 
-async def test_list_by_project_ordering(db_session: AsyncSession, chat_session_repository: ChatSessionRepository, project: Project):
+async def test_list_by_project_ordering(
+    db_session: AsyncSession,
+    chat_session_repository: ChatSessionRepository,
+    project: Project,
+):
     """Verify sessions are listed by created_at desc."""
     # Create earlier session
-    session1 = ChatSession(name="Old", project_id=project.id, created_at=datetime.datetime(2023, 1, 1))
+    session1 = ChatSession(
+        name="Old", project_id=project.id, created_at=datetime.datetime(2023, 1, 1)
+    )
     db_session.add(session1)
     await db_session.flush()
 
     # Create newer session
-    session2 = ChatSession(name="New", project_id=project.id, created_at=datetime.datetime(2023, 1, 2))
+    session2 = ChatSession(
+        name="New", project_id=project.id, created_at=datetime.datetime(2023, 1, 2)
+    )
     db_session.add(session2)
     await db_session.flush()
 
@@ -28,13 +36,21 @@ async def test_list_by_project_ordering(db_session: AsyncSession, chat_session_r
     assert sessions[1].id == session1.id
 
 
-async def test_get_most_recent_by_project(db_session: AsyncSession, chat_session_repository: ChatSessionRepository, project: Project):
+async def test_get_most_recent_by_project(
+    db_session: AsyncSession,
+    chat_session_repository: ChatSessionRepository,
+    project: Project,
+):
     """Verify returns the latest session."""
-    session1 = ChatSession(name="Old", project_id=project.id, created_at=datetime.datetime(2023, 1, 1))
+    session1 = ChatSession(
+        name="Old", project_id=project.id, created_at=datetime.datetime(2023, 1, 1)
+    )
     db_session.add(session1)
     await db_session.flush()
 
-    session2 = ChatSession(name="New", project_id=project.id, created_at=datetime.datetime(2023, 1, 2))
+    session2 = ChatSession(
+        name="New", project_id=project.id, created_at=datetime.datetime(2023, 1, 2)
+    )
     db_session.add(session2)
     await db_session.flush()
 
@@ -44,7 +60,9 @@ async def test_get_most_recent_by_project(db_session: AsyncSession, chat_session
 
 
 async def test_deactivate_all_for_project(
-    db_session: AsyncSession, chat_session_repository: ChatSessionRepository, project: Project
+    db_session: AsyncSession,
+    chat_session_repository: ChatSessionRepository,
+    project: Project,
 ):
     """Verify batch deactivation."""
     session1 = ChatSession(name="S1", project_id=project.id, is_active=True)
@@ -60,7 +78,11 @@ async def test_deactivate_all_for_project(
     assert not session2.is_active
 
 
-async def test_get_with_messages(db_session: AsyncSession, chat_session_repository: ChatSessionRepository, chat_session: ChatSession):
+async def test_get_with_messages(
+    db_session: AsyncSession,
+    chat_session_repository: ChatSessionRepository,
+    chat_session: ChatSession,
+):
     """Verify specific fetch with eager loading."""
     fetched = await chat_session_repository.get_with_messages(chat_session.id)
     assert fetched is not None
@@ -69,7 +91,11 @@ async def test_get_with_messages(db_session: AsyncSession, chat_session_reposito
     assert fetched.messages == []
 
 
-async def test_activate(db_session: AsyncSession, chat_session_repository: ChatSessionRepository, chat_session: ChatSession):
+async def test_activate(
+    db_session: AsyncSession,
+    chat_session_repository: ChatSessionRepository,
+    chat_session: ChatSession,
+):
     """Verify activation persistence and refresh."""
     assert not chat_session.is_active
 

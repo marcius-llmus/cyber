@@ -9,7 +9,9 @@ from app.projects.dependencies import get_project_service
 from app.projects.services import ProjectService
 
 
-async def get_context_repository(db: AsyncSession = Depends(get_db)) -> ContextRepository:
+async def get_context_repository(
+    db: AsyncSession = Depends(get_db),
+) -> ContextRepository:
     return ContextRepository(db)
 
 

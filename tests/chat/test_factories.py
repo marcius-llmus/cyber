@@ -76,12 +76,16 @@ class TestChatFactories:
         build_session_service_mock.assert_awaited_once_with(db_session_mock)
         build_project_service_mock.assert_awaited_once_with(db_session_mock)
 
-    async def test_build_chat_turn_service_returns_chat_turn_service(self, db_session_mock):
+    async def test_build_chat_turn_service_returns_chat_turn_service(
+        self, db_session_mock
+    ):
         """build_chat_turn_service returns a ChatTurnService instance."""
         service = await build_chat_turn_service(db=db_session_mock)
         assert isinstance(service, ChatTurnService)
 
-    async def test_build_chat_turn_service_wires_chat_turn_repository_with_db(self, db_session_mock):
+    async def test_build_chat_turn_service_wires_chat_turn_repository_with_db(
+        self, db_session_mock
+    ):
         """build_chat_turn_service binds ChatTurnRepository to the provided AsyncSession."""
         service = await build_chat_turn_service(db=db_session_mock)
         assert isinstance(service.turn_repo, ChatTurnRepository)

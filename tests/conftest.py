@@ -35,6 +35,7 @@ pytest_plugins = [
     "tests.context.fixtures",
 ]
 
+
 @pytest.fixture(scope="session")
 async def engine() -> AsyncGenerator[AsyncEngine]:
     engine = create_async_engine(

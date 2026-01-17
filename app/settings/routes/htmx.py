@@ -23,7 +23,9 @@ async def get_settings_form(
         page_data = await service.get_settings_page_data()
     except SettingsNotFoundException as e:
         # This is a server error, as settings should always be initialized
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
     return templates.TemplateResponse(
         "settings/partials/settings_form.html", {"request": request, **page_data}
     )
@@ -44,13 +46,16 @@ async def get_api_key_input(
 
 @router.post("/")
 async def update_settings(
-    request: Request,
+    request: Request,  # noqa: ARG001
     settings_in: SettingsUpdate,
     service: SettingsService = Depends(get_settings_service),
 ):
     try:
         await service.update_settings(settings_in=settings_in)
-        return Response(status_code=status.HTTP_204_NO_CONTENT, headers={"HX-Trigger": "settingsSaved"})
+        return Response(
+            status_code=status.HTTP_204_NO_CONTENT,
+            headers={"HX-Trigger": "settingsSaved"},
+        )
     except (SettingsNotFoundException, LLMSettingsNotFoundException) as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except ContextWindowExceededException as e:

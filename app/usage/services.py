@@ -23,7 +23,7 @@ class UsageService:
         usage_repo: UsageRepository,
         global_usage_repo: GlobalUsageRepository,
         llm_service: LLMService,
-        settings_service: SettingsService
+        settings_service: SettingsService,
     ):
         self.usage_repo = usage_repo
         self.global_usage_repo = global_usage_repo
@@ -38,24 +38,34 @@ class UsageService:
 
             # 1. Extract Identity from Event Tags (Injected by InstrumentedLLMMixin)
             if not (tags := event.tags):
-                raise ValueError("Event tags are missing. Ensure InstrumentedLLM is being used.")
+                raise ValueError(
+                    "Event tags are missing. Ensure InstrumentedLLM is being used."
+                )
 
             provider_id = tags["__provider_id__"]
             model_name = tags["__model_name__"]
             flavor = tags["__api_flavor__"]
 
             if not provider_id or not model_name:
-                raise ValueError("Event missing required instrumentation tags (__provider_id__, __model_name__).")
+                raise ValueError(
+                    "Event missing required instrumentation tags (__provider_id__, __model_name__)."
+                )
 
-            cost, input_t, output_t, cached_t = await self._calculate_event_usage(event, provider_id, model_name, flavor)
+            cost, input_t, output_t, cached_t = await self._calculate_event_usage(
+                event, provider_id, model_name, flavor
+            )
 
             await self._update_usage_repositories(
                 session_id, provider_id, cost, input_t, output_t, cached_t
             )
         except Exception as e:
-            raise UsageTrackingException(f"Failed to track usage event: {str(e)}") from e
+            raise UsageTrackingException(
+                f"Failed to track usage event: {str(e)}"
+            ) from e
 
-    async def process_batch(self, session_id: int, events: list[BaseEvent]) -> SessionMetrics:
+    async def process_batch(
+        self, session_id: int, events: list[BaseEvent]
+    ) -> SessionMetrics:
         """
         Processes a batch of raw instrumentation events.
         Updates costs and returns the final calculated metrics for the session.
@@ -80,7 +90,7 @@ class UsageService:
         cost: Decimal,
         input_tokens: int,
         output_tokens: int,
-        cached_tokens: int
+        cached_tokens: int,
     ) -> SessionMetrics:
         session_usage = await self.usage_repo.increment_usage(
             session_id, cost, input_tokens, output_tokens, cached_tokens
@@ -102,7 +112,7 @@ class UsageService:
             monthly_cost=float(total_global_cost),
             input_tokens=session_usage.input_tokens,
             output_tokens=session_usage.output_tokens,
-            cached_tokens=session_usage.cached_tokens
+            cached_tokens=session_usage.cached_tokens,
         )
 
     async def get_session_metrics(self, session_id: int) -> SessionMetrics:
@@ -116,11 +126,11 @@ class UsageService:
             monthly_cost=float(total_global_cost),
             input_tokens=usage.input_tokens,
             output_tokens=usage.output_tokens,
-            cached_tokens=usage.cached_tokens
+            cached_tokens=usage.cached_tokens,
         )
 
     async def _calculate_event_usage(
-         self, event, provider_id: str, model_ref: str, flavor: str
+        self, event, provider_id: str, model_ref: str, flavor: str
     ) -> tuple[Decimal, int, int, int]:
         """
         Helper to extract usage from a single response object using existing logic.
@@ -128,11 +138,15 @@ class UsageService:
         """
         raw_data = self._normalize_raw_data(event.response.raw, flavor)
         # Use genai-prices to extract usage and calculate price
-        extraction_data = extract_usage(raw_data, provider_id=provider_id, api_flavor=flavor)
+        extraction_data = extract_usage(
+            raw_data, provider_id=provider_id, api_flavor=flavor
+        )
         usage_data = extraction_data.usage
         # btw, the example at https://github.com/pydantic/genai-prices/blob/main/packages/python/README.md
         # didn't work very well. model was not present if calc_price was called from extract_usage
-        price_data = calc_price(usage_data, model_ref=model_ref, provider_id=provider_id) # noqa
+        price_data = calc_price(
+            usage_data, model_ref=model_ref, provider_id=provider_id
+        )  # noqa
 
         cost = Decimal(str(price_data.total_price))
 

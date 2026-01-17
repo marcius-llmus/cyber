@@ -40,10 +40,16 @@ class TestAgentFactoryService:
         )
 
         settings_service_mock.get_settings = AsyncMock(return_value=settings)
-        llm_service_mock.get_coding_llm = AsyncMock(return_value=llm_settings_coder_mock)
+        llm_service_mock.get_coding_llm = AsyncMock(
+            return_value=llm_settings_coder_mock
+        )
         llm_service_mock.get_client = AsyncMock(return_value=fake_llm_client)
-        session_service_mock.get_operational_mode = AsyncMock(return_value=OperationalMode.CHAT)
-        agent_context_service_mock.build_system_prompt = AsyncMock(return_value="PROMPT")
+        session_service_mock.get_operational_mode = AsyncMock(
+            return_value=OperationalMode.CHAT
+        )
+        agent_context_service_mock.build_system_prompt = AsyncMock(
+            return_value="PROMPT"
+        )
 
         coder_agent_cls_mock = mocker.patch(
             "app.agents.services.agent_factory.CoderAgent",
@@ -88,12 +94,21 @@ class TestAgentFactoryService:
                 grep_token_limit=4000,
             )
         )
-        llm_service_mock.get_coding_llm = AsyncMock(return_value=llm_settings_coder_mock)
+        llm_service_mock.get_coding_llm = AsyncMock(
+            return_value=llm_settings_coder_mock
+        )
         llm_service_mock.get_client = AsyncMock(return_value=fake_llm_client)
 
-        session_service_mock.get_operational_mode = AsyncMock(return_value=OperationalMode.CHAT)
-        agent_context_service_mock.build_system_prompt = AsyncMock(return_value="PROMPT")
-        mocker.patch("app.agents.services.agent_factory.CoderAgent", return_value=coder_agent_mock)
+        session_service_mock.get_operational_mode = AsyncMock(
+            return_value=OperationalMode.CHAT
+        )
+        agent_context_service_mock.build_system_prompt = AsyncMock(
+            return_value="PROMPT"
+        )
+        mocker.patch(
+            "app.agents.services.agent_factory.CoderAgent",
+            return_value=coder_agent_mock,
+        )
 
         await agent_factory_service.build_agent(session_id=999)
 
@@ -120,12 +135,21 @@ class TestAgentFactoryService:
                 grep_token_limit=4000,
             )
         )
-        llm_service_mock.get_coding_llm = AsyncMock(return_value=llm_settings_coder_mock)
+        llm_service_mock.get_coding_llm = AsyncMock(
+            return_value=llm_settings_coder_mock
+        )
         llm_service_mock.get_client = AsyncMock(return_value=fake_llm_client)
 
-        session_service_mock.get_operational_mode = AsyncMock(return_value=OperationalMode.PLANNER)
-        agent_context_service_mock.build_system_prompt = AsyncMock(return_value="PROMPT")
-        mocker.patch("app.agents.services.agent_factory.CoderAgent", return_value=coder_agent_mock)
+        session_service_mock.get_operational_mode = AsyncMock(
+            return_value=OperationalMode.PLANNER
+        )
+        agent_context_service_mock.build_system_prompt = AsyncMock(
+            return_value="PROMPT"
+        )
+        mocker.patch(
+            "app.agents.services.agent_factory.CoderAgent",
+            return_value=coder_agent_mock,
+        )
 
         await agent_factory_service.build_agent(session_id=1)
 
@@ -171,10 +195,14 @@ class TestAgentFactoryService:
             grep_token_limit=4000,
         )
         settings_service_mock.get_settings = AsyncMock(return_value=settings)
-        llm_service_mock.get_coding_llm = AsyncMock(return_value=llm_settings_coder_mock)
+        llm_service_mock.get_coding_llm = AsyncMock(
+            return_value=llm_settings_coder_mock
+        )
         llm_service_mock.get_client = AsyncMock(return_value=fake_llm_client)
         session_service_mock.get_operational_mode = AsyncMock(return_value=mode)
-        agent_context_service_mock.build_system_prompt = AsyncMock(return_value="PROMPT")
+        agent_context_service_mock.build_system_prompt = AsyncMock(
+            return_value="PROMPT"
+        )
 
         search_tools_cls_mock = mocker.patch(
             "app.agents.services.agent_factory.SearchTools",
@@ -248,12 +276,21 @@ class TestAgentFactoryService:
             grep_token_limit=4000,
         )
         settings_service_mock.get_settings = AsyncMock(return_value=settings)
-        llm_service_mock.get_coding_llm = AsyncMock(return_value=llm_settings_coder_mock)
+        llm_service_mock.get_coding_llm = AsyncMock(
+            return_value=llm_settings_coder_mock
+        )
         llm_service_mock.get_client = AsyncMock(return_value=fake_llm_client)
-        session_service_mock.get_operational_mode = AsyncMock(return_value=OperationalMode.CODING)
-        agent_context_service_mock.build_system_prompt = AsyncMock(return_value="PROMPT")
+        session_service_mock.get_operational_mode = AsyncMock(
+            return_value=OperationalMode.CODING
+        )
+        agent_context_service_mock.build_system_prompt = AsyncMock(
+            return_value="PROMPT"
+        )
 
-        mocker.patch("app.agents.services.agent_factory.SearchTools", return_value=search_tools_inst)
+        mocker.patch(
+            "app.agents.services.agent_factory.SearchTools",
+            return_value=search_tools_inst,
+        )
         file_tools_cls_mock = mocker.patch(
             "app.agents.services.agent_factory.FileTools",
             return_value=file_tools_inst,
@@ -262,7 +299,10 @@ class TestAgentFactoryService:
             "app.agents.services.agent_factory.PatcherTools",
             return_value=patcher_tools_inst,
         )
-        mocker.patch("app.agents.services.agent_factory.CoderAgent", return_value=coder_agent_mock)
+        mocker.patch(
+            "app.agents.services.agent_factory.CoderAgent",
+            return_value=coder_agent_mock,
+        )
 
         await agent_factory_service.build_agent(session_id=1, turn_id="turn_123")
 
@@ -299,7 +339,9 @@ class TestAgentFactoryService:
                 grep_token_limit=4000,
             )
         )
-        llm_service_mock.get_coding_llm = AsyncMock(return_value=llm_settings_coder_mock)
+        llm_service_mock.get_coding_llm = AsyncMock(
+            return_value=llm_settings_coder_mock
+        )
         llm_service_mock.get_client = AsyncMock(side_effect=ValueError("Boom"))
 
         with pytest.raises(ValueError, match="Boom"):
@@ -326,10 +368,16 @@ class TestAgentFactoryService:
                 grep_token_limit=4000,
             )
         )
-        llm_service_mock.get_coding_llm = AsyncMock(return_value=llm_settings_coder_mock)
+        llm_service_mock.get_coding_llm = AsyncMock(
+            return_value=llm_settings_coder_mock
+        )
         llm_service_mock.get_client = AsyncMock(return_value=fake_llm_client)
-        session_service_mock.get_operational_mode = AsyncMock(return_value=OperationalMode.CHAT)
-        agent_context_service_mock.build_system_prompt = AsyncMock(side_effect=ValueError("Boom"))
+        session_service_mock.get_operational_mode = AsyncMock(
+            return_value=OperationalMode.CHAT
+        )
+        agent_context_service_mock.build_system_prompt = AsyncMock(
+            side_effect=ValueError("Boom")
+        )
 
         with pytest.raises(ValueError, match="Boom"):
             await agent_factory_service.build_agent(session_id=1)

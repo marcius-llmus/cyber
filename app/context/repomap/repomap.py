@@ -59,7 +59,9 @@ class RepoMap:
 
         # 3. Add Full Content of Active Files (Context)
         if include_active_content:
-            current_tokens = await self._add_active_files_content(output_parts, current_tokens)
+            current_tokens = await self._add_active_files_content(
+                output_parts, current_tokens
+            )
 
         # 4. Add Ranked Definitions from Other Files
         # We pass the responsibility of checking limits and adding headers to the method
@@ -152,14 +154,24 @@ class RepoMap:
                     kind = "ref"
 
                 if kind:
-                    tags.append(Tag(name=node.text.decode("utf8"), kind=kind, line=node.start_point[0]))
+                    tags.append(
+                        Tag(
+                            name=node.text.decode("utf8"),
+                            kind=kind,
+                            line=node.start_point[0],
+                        )
+                    )
 
             return tags
 
         except Exception as e:
-            raise RepoMapExtractionException(f"Failed to extract tags from {file_path}: {str(e)}") from e
+            raise RepoMapExtractionException(
+                f"Failed to extract tags from {file_path}: {str(e)}"
+            ) from e
 
-    async def _rank_files(self) -> tuple[dict[str, float], dict[tuple[str, str], list[Tag]]]:
+    async def _rank_files(
+        self,
+    ) -> tuple[dict[str, float], dict[tuple[str, str], list[Tag]]]:
         """
         Builds a dependency graph and runs PageRank to identify important files and definitions.
         """
@@ -231,7 +243,9 @@ class RepoMap:
 
         return ranked, definitions
 
-    async def _add_active_files_content(self, output_parts: list[str], current_tokens: int) -> int:
+    async def _add_active_files_content(
+        self, output_parts: list[str], current_tokens: int
+    ) -> int:
         """
         Adds full content of active files.
         """
@@ -252,7 +266,7 @@ class RepoMap:
                     content = await f.read()
 
                 header = f"{rel_path}:\n"
-                ext = Path(rel_path).suffix.lstrip('.')
+                ext = Path(rel_path).suffix.lstrip(".")
                 block = f"```{ext}\n{content}\n```\n"
 
                 tokens = self._estimate_token_count(header + block)
@@ -267,7 +281,9 @@ class RepoMap:
 
         return current_tokens
 
-    async def _add_ranked_definitions(self, output_parts: list[str], current_tokens: int) -> None:
+    async def _add_ranked_definitions(
+        self, output_parts: list[str], current_tokens: int
+    ) -> None:
         """
         Adds ranked snippets from the repository.
         """
@@ -277,7 +293,7 @@ class RepoMap:
 
         header = "#### Ranked Definitions\n"
         if current_tokens + self._estimate_token_count(header) > self.token_limit:
-             return
+            return
         output_parts.append(header)
         current_tokens += self._estimate_token_count(header)
 
@@ -287,13 +303,13 @@ class RepoMap:
         # Active files are already added in full, so we skip them here
         active_rel_paths = {self._get_rel_path(f) for f in self.active_context_files}
 
-        for rel_path, rank in sorted_files:
+        for rel_path, _rank in sorted_files:
             if rel_path in active_rel_paths:
                 continue
 
             # Get all tags for this file
             file_tags = []
-            for (f, name), tags in definitions.items():
+            for (f, _name), tags in definitions.items():
                 if f == rel_path:
                     file_tags.extend(tags)
 
@@ -301,7 +317,7 @@ class RepoMap:
                 continue
 
             # Identify lines of interest (definitions)
-            lois = sorted(list(set(tag.line for tag in file_tags)))
+            lois = sorted({tag.line for tag in file_tags})
 
             try:
                 abs_path = os.path.join(self.root, rel_path)
@@ -317,7 +333,9 @@ class RepoMap:
                 entry_tokens = self._estimate_token_count(entry)
 
                 if current_tokens + entry_tokens > self.token_limit:
-                    output_parts.append("\n... (remaining definitions truncated due to token limit)\n")
+                    output_parts.append(
+                        "\n... (remaining definitions truncated due to token limit)\n"
+                    )
                     return
 
                 output_parts.append(entry)

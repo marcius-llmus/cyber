@@ -10,6 +10,7 @@ class ContextPageService:
     """
     Adapts domain data for HTML rendering.
     """
+
     def __init__(
         self,
         context_service: WorkspaceService,
@@ -43,7 +44,9 @@ class ContextPageService:
         }
         return {"file_tree": root_node}
 
-    def _transform_tree(self, nodes: list[FileTreeNode], active_paths: set[str]) -> list[dict[str, Any]]:
+    def _transform_tree(
+        self, nodes: list[FileTreeNode], active_paths: set[str]
+    ) -> list[dict[str, Any]]:
         ui_nodes = []
         for node in nodes:
             ui_node: dict[str, Any] = {
@@ -54,7 +57,9 @@ class ContextPageService:
 
             if node.is_dir:
                 if node.children:
-                    ui_node["children"] = self._transform_tree(node.children, active_paths)
+                    ui_node["children"] = self._transform_tree(
+                        node.children, active_paths
+                    )
             else:
                 ui_node["selected"] = node.path in active_paths
 

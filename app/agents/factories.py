@@ -55,4 +55,6 @@ async def build_agent_factory_service(db: AsyncSession) -> AgentFactoryService:
 
 async def build_agent(db: AsyncSession, session_id: int, turn_id: str | None = None):
     agent_factory_service = await build_agent_factory_service(db)
-    return await agent_factory_service.build_agent(session_id=session_id, turn_id=turn_id)
+    return await agent_factory_service.build_agent(
+        session_id=session_id, turn_id=turn_id
+    )
