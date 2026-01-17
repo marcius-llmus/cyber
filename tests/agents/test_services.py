@@ -374,7 +374,7 @@ class TestAgentContextService:
         prompt = await agent_context_service.build_system_prompt(session_id=1, operational_mode=OperationalMode.CODING)
         
         assert "<!--" in prompt
-        assert "AUTHORITATIVE source of truth" in prompt
+        assert "This section contains the source of truth" in prompt
 
     async def test_build_system_prompt_active_context_includes_description_comment(
         self,
