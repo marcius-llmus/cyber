@@ -1,14 +1,7 @@
 Fix:
-- Add single shot (no tool call, process diffs directly with regex, non agentic)
-- Operational mode check
-- Must focus on last message
-- Check partial file truncation and full per file file cut on context size checking
 - By some reason, Readme (markdowns dif patching) are not working
-- Fix context search folders
 - Apply patch should be able analyse if patch was applied correctly and raise if not
 - On page load, scroll to the end
-- Check the amount of events received by usage handler (seems spammy)
-- SHALL MAKE EXPLICIT THAT ASK CANNOT WRITE
 
 --------
 Roadmap
@@ -28,15 +21,13 @@ Roadmap
 - Add connected websocket status feedback
 - Allow multiple tabs open for multiple sessions
 - Add option to make diff patch in message history (send applied patches un chat history)
-- Cache persists after cleaning history?
 - Add per session settings (overrides)
 - Add pre creation of diffs then optionally applying existing pending diffs (per message or per turn).
 - Add list folders tool for when repo map is not enough (could be a condition)
 - Fix _estimate_token_count on repo map
 - Improve Repo Map. Upper level folders should always be visible truncation on lower levels.
   Folders take precedence over files which take precedence over file signatures
+- Currently, we map max token for grep and repo map, but total summed input (Context Window) is not tracking
+- Check the amount of events received by usage handler (seems spammy)
+- Fix context search folders search and folder select functionalities
 
-
---------
-Bugs
-still calling tools to read files already loaded
