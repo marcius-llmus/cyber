@@ -47,6 +47,7 @@ class RepoMapService:
 
         settings = await self.settings_service.get_settings()
 
+        # todo: create a factory service for it (just like in agents)
         repo_mapper = RepoMap(
             all_files=all_files_abs,
             active_context_files=active_files_abs,
