@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from llama_index.core.tools import BaseTool
 
-from app.agents.services import AgentContextService
+from app.agents.services.agents_context import (
+    AgentContextService,  # here we call directly as it is a local
+)
 from app.coder.agent import CoderAgent
 from app.context.tools import FileTools, SearchTools
 from app.core.db import sessionmanager

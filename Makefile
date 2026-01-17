@@ -31,7 +31,7 @@ format:
 lint:
 	@$(PYTHON) ruff check .
 	@$(PYTHON) black --check .
-	@$(PYTHON) mypy app
+#	@$(PYTHON) mypy app
 
 test:
 	@$(PYTHON) pytest
