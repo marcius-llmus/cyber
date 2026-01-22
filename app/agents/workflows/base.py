@@ -1,35 +1,39 @@
 import inspect
+import uuid
 import warnings
+from collections.abc import Sequence
+from typing import Any, cast
 
 from llama_index.core.agent.utils import generate_structured_response
-from llama_index.core.llms.llm import ToolSelection
-from llama_index.core.tools import ToolOutput
-
-from typing import List, Sequence, Dict, Any, cast, Union, Optional
-
-from llama_index.core.agent.workflow.base_agent import BaseWorkflowAgent, DEFAULT_MAX_ITERATIONS
+from llama_index.core.agent.workflow.base_agent import (
+    DEFAULT_MAX_ITERATIONS,
+    BaseWorkflowAgent,
+)
 from llama_index.core.agent.workflow.workflow_events import (
     AgentInput,
     AgentOutput,
     AgentStream,
-    ToolCallResult, ToolCall, AgentStreamStructuredOutput,
+    AgentStreamStructuredOutput,
 )
 from llama_index.core.base.llms.types import ChatResponse
 from llama_index.core.bridge.pydantic import BaseModel, Field
 from llama_index.core.llms import ChatMessage
+from llama_index.core.llms.llm import ToolSelection
 from llama_index.core.memory import BaseMemory
-from llama_index.core.tools import AsyncBaseTool
+from llama_index.core.tools import AsyncBaseTool, ToolOutput
 from llama_index.core.workflow import Context
 from workflows import step
 from workflows.errors import WorkflowRuntimeError
 from workflows.events import StopEvent
+
+from app.agents.workflows.workflow_events import ToolCall, ToolCallResult
 
 
 class CustomFunctionAgent(BaseWorkflowAgent):
     """Function calling agent implementation."""
 
     scratchpad_key: str = "scratchpad"
-    initial_tool_choice: Optional[str] = Field(
+    initial_tool_choice: str | None = Field(
         default=None,
         description="The tool to try and force to call on the first iteration of the agent.",
     )
@@ -46,6 +50,7 @@ class CustomFunctionAgent(BaseWorkflowAgent):
                 tool_name=ev.tool_name,
                 tool_kwargs=ev.tool_kwargs,
                 tool_id=ev.tool_id,
+                internal_tool_call_id=ev.internal_tool_call_id,
             )
         )
 
@@ -68,6 +73,7 @@ class CustomFunctionAgent(BaseWorkflowAgent):
             tool_name=ev.tool_name,
             tool_kwargs=ev.tool_kwargs,
             tool_id=ev.tool_id,
+            internal_tool_call_id=ev.internal_tool_call_id,
             tool_output=result,
             return_direct=tool.metadata.return_direct if tool else False,
         )
@@ -77,8 +83,8 @@ class CustomFunctionAgent(BaseWorkflowAgent):
 
     @step
     async def aggregate_tool_results(
-            self, ctx: Context, ev: ToolCallResult
-    ) -> Union[AgentInput, StopEvent, None]:
+        self, ctx: Context, ev: ToolCallResult
+    ) -> AgentInput | StopEvent | None:
         """Aggregate tool results and return the next agent input."""
         num_tool_calls = await ctx.store.get("num_tool_calls", default=0)
         if num_tool_calls == 0:
@@ -93,7 +99,7 @@ class CustomFunctionAgent(BaseWorkflowAgent):
         memory: BaseMemory = await ctx.store.get("memory")
 
         # track tool calls made during a .run() call
-        cur_tool_calls: List[ToolCallResult] = await ctx.store.get(
+        cur_tool_calls: list[ToolCallResult] = await ctx.store.get(
             "current_tool_calls", default=[]
         )
         cur_tool_calls.extend(tool_call_results)
@@ -102,8 +108,8 @@ class CustomFunctionAgent(BaseWorkflowAgent):
         await self.handle_tool_call_results(ctx, tool_call_results, memory)
 
         if any(
-                tool_call_result.return_direct and not tool_call_result.tool_output.is_error
-                for tool_call_result in tool_call_results
+            tool_call_result.return_direct and not tool_call_result.tool_output.is_error
+            for tool_call_result in tool_call_results
         ):
             # if any tool calls return directly and it's not an error tool call, take the first one
             return_direct_tool = next(
@@ -142,7 +148,7 @@ class CustomFunctionAgent(BaseWorkflowAgent):
         return AgentInput(input=input_messages, current_agent_name=self.name)
 
     async def _get_response(
-        self, current_llm_input: List[ChatMessage], tools: Sequence[AsyncBaseTool]
+        self, current_llm_input: list[ChatMessage], tools: Sequence[AsyncBaseTool]
     ) -> ChatResponse:
         chat_kwargs = {
             "chat_history": current_llm_input,
@@ -155,16 +161,14 @@ class CustomFunctionAgent(BaseWorkflowAgent):
             self.initial_tool_choice is not None
             and current_llm_input[-1].role == "user"
         ):
-            chat_kwargs["tool_choice"] = self.initial_tool_choice # noqa
+            chat_kwargs["tool_choice"] = self.initial_tool_choice  # noqa
 
-        return await self.llm.achat_with_tools(  # type: ignore
-            **chat_kwargs
-        )
+        return await self.llm.achat_with_tools(**chat_kwargs)  # type: ignore
 
     @step
     async def parse_agent_output(
-            self, ctx: Context, ev: AgentOutput
-    ) -> Union[StopEvent, AgentInput, ToolCall, None]:
+        self, ctx: Context, ev: AgentOutput
+    ) -> StopEvent | AgentInput | ToolCall | None:
         max_iterations = await ctx.store.get(
             "max_iterations", default=DEFAULT_MAX_ITERATIONS
         )
@@ -198,7 +202,7 @@ class CustomFunctionAgent(BaseWorkflowAgent):
             # important: messages should always be fetched after calling finalize, otherwise they do not contain the agent's response
             output = await self.finalize(ctx, ev, memory)
             messages = await memory.aget()
-            cur_tool_calls: List[ToolCallResult] = await ctx.store.get(
+            cur_tool_calls: list[ToolCallResult] = await ctx.store.get(
                 "current_tool_calls", default=[]
             )
             output.tool_calls.extend(cur_tool_calls)  # type: ignore
@@ -211,13 +215,13 @@ class CustomFunctionAgent(BaseWorkflowAgent):
                         )
                     else:
                         output.structured_response = cast(
-                            Dict[str, Any], self.structured_output_fn(messages)
+                            dict[str, Any], self.structured_output_fn(messages)
                         )
                     ctx.write_event_to_stream(
                         AgentStreamStructuredOutput(output=output.structured_response)
                     )
                 except Exception as e:
-                    warnings.warn(
+                    warnings.warn(  # noqa
                         f"There was a problem with the generation of the structured output: {e}"
                     )
             if self.output_cls is not None:
@@ -235,7 +239,7 @@ class CustomFunctionAgent(BaseWorkflowAgent):
                         AgentStreamStructuredOutput(output=output.structured_response)
                     )
                 except Exception as e:
-                    warnings.warn(
+                    warnings.warn(  # noqa
                         f"There was a problem with the generation of the structured output: {e}"
                     )
 
@@ -251,6 +255,9 @@ class CustomFunctionAgent(BaseWorkflowAgent):
                     tool_name=tool_call.tool_name,
                     tool_kwargs=tool_call.tool_kwargs,
                     tool_id=tool_call.tool_id,
+                    internal_tool_call_id=str(  # this is our internal version
+                        uuid.uuid4()
+                    ),
                 )
             )
 
@@ -259,7 +266,7 @@ class CustomFunctionAgent(BaseWorkflowAgent):
     async def _get_streaming_response(
         self,
         ctx: Context,
-        current_llm_input: List[ChatMessage],
+        current_llm_input: list[ChatMessage],
         tools: Sequence[AsyncBaseTool],
     ) -> ChatResponse:
         chat_kwargs = {
@@ -273,11 +280,9 @@ class CustomFunctionAgent(BaseWorkflowAgent):
             self.initial_tool_choice is not None
             and current_llm_input[-1].role == "user"
         ):
-            chat_kwargs["tool_choice"] = self.initial_tool_choice # noqa
+            chat_kwargs["tool_choice"] = self.initial_tool_choice  # noqa
 
-        response = await self.llm.astream_chat_with_tools(  # type: ignore
-            **chat_kwargs
-        )
+        response = await self.llm.astream_chat_with_tools(**chat_kwargs)  # type: ignore
         # last_chat_response will be used later, after the loop.
         # We initialize it so it's valid even when 'response' is empty
         last_chat_response = ChatResponse(message=ChatMessage())
@@ -308,7 +313,7 @@ class CustomFunctionAgent(BaseWorkflowAgent):
     async def take_step(
         self,
         ctx: Context,
-        llm_input: List[ChatMessage],
+        llm_input: list[ChatMessage],
         tools: Sequence[AsyncBaseTool],
         memory: BaseMemory,
     ) -> AgentOutput:
@@ -316,7 +321,7 @@ class CustomFunctionAgent(BaseWorkflowAgent):
         if not self.llm.metadata.is_function_calling_model:
             raise ValueError("LLM must be a FunctionCallingLLM")
 
-        scratchpad: List[ChatMessage] = await ctx.store.get(
+        scratchpad: list[ChatMessage] = await ctx.store.get(
             self.scratchpad_key, default=[]
         )
         current_llm_input = [*llm_input, *scratchpad]
@@ -353,10 +358,10 @@ class CustomFunctionAgent(BaseWorkflowAgent):
         )
 
     async def handle_tool_call_results(
-        self, ctx: Context, results: List[ToolCallResult], memory: BaseMemory
+        self, ctx: Context, results: list[ToolCallResult], memory: BaseMemory
     ) -> None:
         """Handle tool call results for function calling agent."""
-        scratchpad: List[ChatMessage] = await ctx.store.get(
+        scratchpad: list[ChatMessage] = await ctx.store.get(
             self.scratchpad_key, default=[]
         )
 
@@ -392,7 +397,7 @@ class CustomFunctionAgent(BaseWorkflowAgent):
 
         Adds all in-progress messages to memory.
         """
-        scratchpad: List[ChatMessage] = await ctx.store.get(
+        scratchpad: list[ChatMessage] = await ctx.store.get(
             self.scratchpad_key, default=[]
         )
         await memory.aput_messages(scratchpad)

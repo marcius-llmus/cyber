@@ -1,6 +1,6 @@
-from typing import Dict, Any
+from typing import Any
 
-from pydantic import BaseModel, Field, field_validator, ValidationError
+from pydantic import BaseModel, Field, ValidationError, field_validator
 
 
 class ToolSelection(BaseModel):
@@ -8,11 +8,11 @@ class ToolSelection(BaseModel):
 
     tool_id: str = Field(description="Tool ID to select.")
     tool_name: str = Field(description="Tool name to select.")
-    tool_kwargs: Dict[str, Any] = Field(description="Keyword arguments for the tool.")
+    tool_kwargs: dict[str, Any] = Field(description="Keyword arguments for the tool.")
 
-    @field_validator("tool_kwargs", mode="wrap") # noqa
+    @field_validator("tool_kwargs", mode="wrap")  # noqa
     @classmethod
-    def ignore_non_dict_arguments(cls, v: Any, handler: Any) -> Dict[str, Any]:
+    def ignore_non_dict_arguments(cls, v: Any, handler: Any) -> dict[str, Any]:
         try:
             return handler(v)
         except ValidationError:

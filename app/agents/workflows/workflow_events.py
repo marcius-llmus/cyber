@@ -8,6 +8,7 @@ class ToolCall(Event):
     tool_name: str
     tool_kwargs: dict
     tool_id: str
+    internal_tool_call_id: str
 
 
 class ToolCallResult(Event):
@@ -16,5 +17,6 @@ class ToolCallResult(Event):
     tool_name: str
     tool_kwargs: dict
     tool_id: str
+    internal_tool_call_id: str
     tool_output: ToolOutput
     return_direct: bool
