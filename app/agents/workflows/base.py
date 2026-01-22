@@ -5,7 +5,7 @@ from llama_index.core.agent.utils import generate_structured_response
 from llama_index.core.llms.llm import ToolSelection
 from llama_index.core.tools import ToolOutput
 
-from typing import List, Sequence, Dict, Any, cast, Union
+from typing import List, Sequence, Dict, Any, cast, Union, Optional
 
 from llama_index.core.agent.workflow.base_agent import BaseWorkflowAgent, DEFAULT_MAX_ITERATIONS
 from llama_index.core.agent.workflow.workflow_events import (
@@ -29,7 +29,7 @@ class CustomFunctionAgent(BaseWorkflowAgent):
     """Function calling agent implementation."""
 
     scratchpad_key: str = "scratchpad"
-    initial_tool_choice = Field(
+    initial_tool_choice: Optional[str] = Field(
         default=None,
         description="The tool to try and force to call on the first iteration of the agent.",
     )
@@ -155,7 +155,7 @@ class CustomFunctionAgent(BaseWorkflowAgent):
             self.initial_tool_choice is not None
             and current_llm_input[-1].role == "user"
         ):
-            chat_kwargs["tool_choice"] = self.initial_tool_choice
+            chat_kwargs["tool_choice"] = self.initial_tool_choice # noqa
 
         return await self.llm.achat_with_tools(  # type: ignore
             **chat_kwargs
@@ -273,7 +273,7 @@ class CustomFunctionAgent(BaseWorkflowAgent):
             self.initial_tool_choice is not None
             and current_llm_input[-1].role == "user"
         ):
-            chat_kwargs["tool_choice"] = self.initial_tool_choice
+            chat_kwargs["tool_choice"] = self.initial_tool_choice # noqa
 
         response = await self.llm.astream_chat_with_tools(  # type: ignore
             **chat_kwargs

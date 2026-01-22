@@ -2,15 +2,15 @@ import uuid
 from collections.abc import Sequence
 from copy import deepcopy
 
-from llama_index.core.agent.workflow.function_agent import FunctionAgent
 from llama_index.core.agent.workflow.workflow_events import AgentOutput
 from llama_index.core.llms import ChatMessage
 from llama_index.core.memory import BaseMemory
 from llama_index.core.tools import AsyncBaseTool, ToolOutput
 from llama_index.core.workflow import Context
+from app.agents.workflows.base import CustomFunctionAgent
 
 
-class CoderAgent(FunctionAgent):
+class CoderAgent(CustomFunctionAgent):
     """
     Custom agent that injects a correlation ID (_run_id) into tool calls.
     This ensures that tool calls and their results can be reliably matched in the UI,
