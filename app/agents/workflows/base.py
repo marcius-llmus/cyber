@@ -1,8 +1,9 @@
+import functools
 import inspect
 import uuid
 import warnings
 from collections.abc import Sequence
-from typing import Any, cast
+from typing import Any, cast, Optional, Type
 
 from llama_index.core.agent.utils import generate_structured_response
 from llama_index.core.agent.workflow.base_agent import (
@@ -26,6 +27,7 @@ from workflows import step
 from workflows.errors import WorkflowRuntimeError
 from workflows.events import StopEvent
 
+from app.agents.tools.function_tool import FunctionTool
 from app.agents.workflows.workflow_events import ToolCall, ToolCallResult
 
 
@@ -389,6 +391,40 @@ class CustomFunctionAgent(BaseWorkflowAgent):
 
         await ctx.store.set(self.scratchpad_key, scratchpad)
 
+    async def _call_tool(
+            self,
+            ctx: Context,
+            tool: AsyncBaseTool,
+            tool_input: dict,
+    ) -> ToolOutput:
+        """Call the given tool with the given input."""
+        try:
+            if (
+                    isinstance(tool, FunctionTool)
+                    and tool.requires_context
+                    and tool.ctx_param_name is not None
+            ):
+                new_tool_input = {**tool_input, tool.ctx_param_name: ctx}
+                tool_output = await tool.acall(**new_tool_input)
+            else:
+                tool_output = await tool.acall(**tool_input)
+        except Exception as e:
+            # raise to wait
+            waiting_for_event_exception = _get_waiting_for_event_exception()
+            if waiting_for_event_exception and isinstance(
+                    e, waiting_for_event_exception
+            ):
+                raise
+            tool_output = ToolOutput(
+                content=str(e),
+                tool_name=tool.metadata.get_name(),
+                raw_input=tool_input,
+                raw_output=str(e),
+                is_error=True,
+                exception=e,
+            )
+
+        return tool_output
     async def finalize(
         self, ctx: Context, output: AgentOutput, memory: BaseMemory
     ) -> AgentOutput:
@@ -406,3 +442,15 @@ class CustomFunctionAgent(BaseWorkflowAgent):
         await ctx.store.set(self.scratchpad_key, [])
 
         return output
+
+
+@functools.lru_cache(maxsize=1)
+def _get_waiting_for_event_exception() -> Optional[Type[Exception]]:
+    try:
+        # Special exception introduced in workflows 2.9.0 as a way to fully pause waiting steps.
+        # If it exists, check for it and re-raise
+        from workflows.runtime.types.results import WaitingForEvent
+
+        return WaitingForEvent
+    except ImportError:
+        return None
