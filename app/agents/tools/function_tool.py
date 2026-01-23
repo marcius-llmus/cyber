@@ -1,18 +1,15 @@
 import inspect
 from collections.abc import Callable
-from typing import (
-    Any,
-)
+from typing import Any
 
 from llama_index.core.tools import FunctionTool
+from llama_index.core.tools.tool_spec.base import AsyncCallable
 from llama_index.core.tools.types import ToolMetadata, ToolOutput
-
-from llamaindex_internals.base import AsyncCallable
 
 
 def _is_internal_tool_call_id_param(param: inspect.Parameter) -> bool:
     """Check if a parameter is an injected internal tool call id."""
-    return (param.name == "internal_tool_call_id") and (param.annotation == str)
+    return (param.name == "internal_tool_call_id") and (param.annotation is str)
 
 
 class CustomFunctionTool(FunctionTool):

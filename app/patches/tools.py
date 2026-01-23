@@ -40,7 +40,6 @@ class PatcherTools(BaseToolSet):
 
     spec_functions = ["apply_diff"]
 
-
     # NOTE: tool_run_id is UI-only. Diff patches are stored by (session_id, turn_id).
 
     @staticmethod
@@ -63,7 +62,7 @@ class PatcherTools(BaseToolSet):
         self,
         file_path: Annotated[str, Field(description=FILE_PATH_DESCRIPTION)],
         diff: Annotated[str, Field(description=APPLY_DIFF_DESCRIPTION)],
-        internal_tool_call_id: str
+        internal_tool_call_id: str,
     ) -> str:
         """
         Submits a unified diff patch for a specific file.

@@ -1,5 +1,6 @@
 import uuid
 
+from llama_index.core.agent import FunctionAgent
 from llama_index.core.agent.workflow.base_agent import (
     DEFAULT_MAX_ITERATIONS,
     _get_waiting_for_event_exception,  # noqa
@@ -19,11 +20,11 @@ from workflows.events import StopEvent
 
 from app.agents.tools.function_tool import CustomFunctionTool
 from app.agents.workflows.workflow_events import ToolCall, ToolCallResult
-from llamaindex_internals.function_agent import FunctionAgent
 
 
 class CustomFunctionAgent(FunctionAgent):
     """Function calling agent implementation."""
+
     @step
     async def call_tool(self, ctx: Context, ev: ToolCall) -> ToolCallResult:
         """Calls the tool and handles the result."""
@@ -170,7 +171,6 @@ class CustomFunctionAgent(FunctionAgent):
         if not ev.tool_calls:
             # important: messages should always be fetched after calling finalize, otherwise they do not contain the agent's response
             output = await self.finalize(ctx, ev, memory)
-            messages = await memory.aget()
             cur_tool_calls: list[ToolCallResult] = await ctx.store.get(
                 "current_tool_calls", default=[]
             )
@@ -196,7 +196,7 @@ class CustomFunctionAgent(FunctionAgent):
 
         return None
 
-    async def _call_tool( # noqa: overrides typing
+    async def _call_tool(  # noqa  # pyright: ignore[reportIncompatibleMethodOverride]
         self,
         ctx: Context,
         tool: AsyncBaseTool,
@@ -228,7 +228,7 @@ class CustomFunctionAgent(FunctionAgent):
             # raise to wait
             waiting_for_event_exception = _get_waiting_for_event_exception()
             if waiting_for_event_exception and isinstance(
-                    e, waiting_for_event_exception
+                e, waiting_for_event_exception
             ):
                 raise
             tool_output = ToolOutput(
