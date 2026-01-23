@@ -1,17 +1,12 @@
-import inspect
 import uuid
-import warnings
-from typing import Any, cast
 
-from llama_index.core.agent.utils import generate_structured_response
 from llama_index.core.agent.workflow.base_agent import (
-    DEFAULT_MAX_ITERATIONS,  # noqa
-    _get_waiting_for_event_exception,
+    DEFAULT_MAX_ITERATIONS,
+    _get_waiting_for_event_exception,  # noqa
 )
 from llama_index.core.agent.workflow.workflow_events import (
     AgentInput,
     AgentOutput,
-    AgentStreamStructuredOutput,
 )
 from llama_index.core.llms import ChatMessage
 from llama_index.core.llms.llm import ToolSelection
@@ -180,42 +175,6 @@ class CustomFunctionAgent(FunctionAgent):
                 "current_tool_calls", default=[]
             )
             output.tool_calls.extend(cur_tool_calls)  # type: ignore
-
-            if self.structured_output_fn is not None:
-                try:
-                    if inspect.iscoroutinefunction(self.structured_output_fn):
-                        output.structured_response = await self.structured_output_fn(
-                            messages
-                        )
-                    else:
-                        output.structured_response = cast(
-                            dict[str, Any], self.structured_output_fn(messages)
-                        )
-                    ctx.write_event_to_stream(
-                        AgentStreamStructuredOutput(output=output.structured_response)
-                    )
-                except Exception as e:
-                    warnings.warn(  # noqa
-                        f"There was a problem with the generation of the structured output: {e}"
-                    )
-            if self.output_cls is not None:
-                try:
-                    llm_input = [*messages]
-                    if self.system_prompt:
-                        llm_input = [
-                            ChatMessage(role="system", content=self.system_prompt),
-                            *llm_input,
-                        ]
-                    output.structured_response = await generate_structured_response(
-                        messages=llm_input, llm=self.llm, output_cls=self.output_cls
-                    )
-                    ctx.write_event_to_stream(
-                        AgentStreamStructuredOutput(output=output.structured_response)
-                    )
-                except Exception as e:
-                    warnings.warn(  # noqa
-                        f"There was a problem with the generation of the structured output: {e}"
-                    )
 
             await ctx.store.set("current_tool_calls", [])
 
