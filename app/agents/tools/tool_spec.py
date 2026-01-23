@@ -5,8 +5,9 @@ from inspect import signature
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple, Type, Union
 
 from llama_index.core.bridge.pydantic import BaseModel
-from llama_index.core.tools.function_tool import FunctionTool
 from llama_index.core.tools.types import ToolMetadata
+
+from app.agents.tools.function_tool import FunctionTool
 
 AsyncCallable = Callable[..., Awaitable[Any]]
 
