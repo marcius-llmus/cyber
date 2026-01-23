@@ -32,6 +32,8 @@ from llama_index.core.tools.types import AsyncBaseTool, ToolMetadata, ToolOutput
 from llama_index.core.tools.utils import create_schema_from_function
 from llama_index.core.schema import BaseNode, Document
 from llama_index.core.workflow.context import Context
+from workflows.events import Event
+
 
 AsyncCallable = Callable[..., Awaitable[Any]]
 
@@ -39,6 +41,11 @@ AsyncCallable = Callable[..., Awaitable[Any]]
 def _is_context_param(param_annotation: Any) -> bool:
     """Check if a parameter annotation is Context or Context[SomeType]."""
     return param_annotation == Context or (get_origin(param_annotation) is Context)
+
+
+def _is_internal_tool_call_id_param(param: inspect.Parameter) -> bool:
+    """Check if a parameter is an injected internal tool call id."""
+    return (param.name == "internal_tool_call_id") and (param.annotation == str)
 
 
 def sync_to_async(fn: Callable[..., Any]) -> AsyncCallable:
@@ -106,6 +113,9 @@ class FunctionTool(AsyncBaseTool):
         self.requires_context = any(
             _is_context_param(param.annotation) for param in sig.parameters.values()
         )
+        self.requires_internal_tool_call_id = any(
+            _is_internal_tool_call_id_param(param) for param in sig.parameters.values()
+        )
         self.ctx_param_name = (
             next(
                 param.name
@@ -113,6 +123,15 @@ class FunctionTool(AsyncBaseTool):
                 if _is_context_param(param.annotation)
             )
             if self.requires_context
+            else None
+        )
+        self.internal_tool_call_id_param_name = (
+            next(
+                param.name
+                for param in sig.parameters.values()
+                if _is_internal_tool_call_id_param(param)
+            )
+            if self.requires_internal_tool_call_id
             else None
         )
 
@@ -186,11 +205,15 @@ class FunctionTool(AsyncBaseTool):
 
             # 2. Filter context and self in a single pass
             ctx_param_name = None
+            internal_tool_call_id_param_name = None
             has_self = False
             filtered_params = []
             for param in fn_sig.parameters.values():
                 if _is_context_param(param.annotation):
                     ctx_param_name = param.name
+                    continue
+                if _is_internal_tool_call_id_param(param):
+                    internal_tool_call_id_param_name = param.name
                     continue
                 if param.name == "self":
                     has_self = True
@@ -222,6 +245,8 @@ class FunctionTool(AsyncBaseTool):
                 ignore_fields = []
                 if ctx_param_name:
                     ignore_fields.append(ctx_param_name)
+                if internal_tool_call_id_param_name:
+                    ignore_fields.append(internal_tool_call_id_param_name)
                 if has_self:
                     ignore_fields.append("self")
                 ignore_fields.extend(partial_params.keys())
