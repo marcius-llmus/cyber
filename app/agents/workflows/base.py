@@ -136,7 +136,7 @@ class CustomFunctionAgent(FunctionAgent):
         return AgentInput(input=input_messages, current_agent_name=self.name)
 
     @step
-    async def parse_agent_output( # IMPORTANT NOTE: WE REMOVED STRUCTURED OUTPUT
+    async def parse_agent_output(  # IMPORTANT NOTE: WE REMOVED STRUCTURED OUTPUT
         self, ctx: Context, ev: AgentOutput
     ) -> StopEvent | AgentInput | ToolCall | None:
         max_iterations = await ctx.store.get(
