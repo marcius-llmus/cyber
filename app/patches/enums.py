@@ -8,6 +8,8 @@ class DiffPatchStatus(StrEnum):
     FAILED = "FAILED"
 
 
-class PatchStrategy(StrEnum):
-    LLM_GATHER = "LLM_GATHER"
-    PROGRAMMATIC = "PROGRAMMATIC"
+class PatchProcessorType(StrEnum):
+    """How a stored patch text should be interpreted/applied."""
+
+    UDIFF_LLM = "UDIFF_LLM"
+    CODEX_APPLY = "CODEX_APPLY"

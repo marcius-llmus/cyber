@@ -1,4 +1,4 @@
-"""Add diff patches auto apply
+"""Add diff patches auto apply and processor type
 
 Revision ID: dafaa737d147
 Revises: c2d757907f05
@@ -24,9 +24,17 @@ def upgrade() -> None:
         batch_op.add_column(
             sa.Column("diff_patches_auto_apply", sa.Boolean(), server_default="t", nullable=False)
         )
+        batch_op.add_column(
+            sa.Column(
+                "diff_patch_processor_type",
+                sa.Enum("UDIFF_LLM", "CODEX_APPLY", name="patchprocessortype"),
+                nullable=False,
+            )
+        )
 
 
 def downgrade() -> None:
     """Downgrade schema."""
     with op.batch_alter_table("settings", schema=None) as batch_op:
         batch_op.drop_column("diff_patches_auto_apply")
+        batch_op.drop_column("diff_patch_processor_type")
