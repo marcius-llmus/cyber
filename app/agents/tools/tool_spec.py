@@ -1,13 +1,11 @@
 """Base tool spec class."""
 
 import asyncio
-from inspect import signature
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple, Type, Union
-
-from llama_index.core.bridge.pydantic import BaseModel
 from llama_index.core.tools.types import ToolMetadata
 
-from app.agents.tools.function_tool import FunctionTool
+from app.agents.tools.function_tool import CustomFunctionTool
+from llamaindex_internals.base import BaseToolSpec
 
 AsyncCallable = Callable[..., Awaitable[Any]]
 
@@ -16,56 +14,13 @@ AsyncCallable = Callable[..., Awaitable[Any]]
 SPEC_FUNCTION_TYPE = Union[str, Tuple[str, str]]
 
 
-class BaseToolSpec:
+class CustomBaseToolSpec(BaseToolSpec):
     """Base tool spec class."""
-
-    # list of functions that you'd want to convert to spec
-    spec_functions: List[SPEC_FUNCTION_TYPE]
-
-    def get_fn_schema_from_fn_name(
-        self, fn_name: str, spec_functions: Optional[List[SPEC_FUNCTION_TYPE]] = None
-    ) -> Optional[Type[BaseModel]]:
-        """
-        NOTE: This function is deprecated and kept only for backwards compatibility.
-
-        Return map from function name.
-
-        Return type is Optional, meaning that the schema can be None.
-        In this case, it's up to the downstream tool implementation to infer the schema.
-
-        """
-        return None
-
-    def get_metadata_from_fn_name(
-        self, fn_name: str, spec_functions: Optional[List[SPEC_FUNCTION_TYPE]] = None
-    ) -> Optional[ToolMetadata]:
-        """
-        NOTE: This function is deprecated and kept only for backwards compatibility.
-
-        Return map from function name.
-
-        Return type is Optional, meaning that the schema can be None.
-        In this case, it's up to the downstream tool implementation to infer the schema.
-
-        """
-        schema = self.get_fn_schema_from_fn_name(fn_name, spec_functions=spec_functions)
-        if schema is None:
-            return None
-
-        func = getattr(self, fn_name)
-        name = fn_name
-        docstring = func.__doc__ or ""
-        description = f"{name}{signature(func)}\n{docstring}"
-        fn_schema = self.get_fn_schema_from_fn_name(
-            fn_name, spec_functions=spec_functions
-        )
-        return ToolMetadata(name=name, description=description, fn_schema=fn_schema)
-
     def to_tool_list(
         self,
         spec_functions: Optional[List[SPEC_FUNCTION_TYPE]] = None,
         func_to_metadata_mapping: Optional[Dict[str, ToolMetadata]] = None,
-    ) -> List[FunctionTool]:
+    ) -> List[CustomFunctionTool]:
         """Convert tool spec to list of tools."""
         spec_functions = spec_functions or self.spec_functions
         func_to_metadata_mapping = func_to_metadata_mapping or {}
@@ -95,7 +50,7 @@ class BaseToolSpec:
                     "spec_functions must be of type: List[Union[str, Tuple[str, str]]]"
                 )
 
-            tool = FunctionTool.from_defaults(
+            tool = CustomFunctionTool.from_defaults(
                 fn=func_sync,
                 async_fn=func_async,
                 tool_metadata=metadata,
