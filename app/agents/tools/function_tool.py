@@ -64,13 +64,12 @@ class CustomFunctionTool(FunctionTool):
         """Sync Call."""
         all_kwargs = {**self.partial_params, **kwargs}
         if (
-                self.requires_internal_tool_call_id
-                and self.internal_tool_call_id_param_name is not None
+            self.requires_internal_tool_call_id
+            and self.internal_tool_call_id_param_name is not None
         ):
             if self.internal_tool_call_id_param_name not in all_kwargs:
                 raise ValueError("internal_tool_call_id is required for this tool")
-        return super().call(**all_kwargs)
-
+        return super().call(*args, **all_kwargs)
 
     async def acall(self, *args: Any, **kwargs: Any) -> ToolOutput:
         """Async Call."""
@@ -81,4 +80,4 @@ class CustomFunctionTool(FunctionTool):
         ):
             if self.internal_tool_call_id_param_name not in all_kwargs:
                 raise ValueError("internal_tool_call_id is required for this tool")
-        return await super().acall(**all_kwargs)
+        return await super().acall(*args, **all_kwargs)
