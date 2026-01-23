@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.llms.enums import LLMModel, LLMRole
 from app.llms.factories import build_llm_service
+from app.patches.enums import PatchProcessorType
 from app.settings.repositories import SettingsRepository
 from app.settings.schemas import LLMSettingsCreate, SettingsCreate
 
@@ -64,6 +65,7 @@ async def initialize_application_settings(db: AsyncSession) -> None:
             grep_token_limit=4000,
             diff_patches_auto_open=True,
             diff_patches_auto_apply=True,
+            diff_patch_processor_type=PatchProcessorType.CODEX_APPLY,
         )
     )
     await db.commit()
