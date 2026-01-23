@@ -199,14 +199,13 @@ class WebSocketOrchestrator:
         ).render(tool_context)
         await self.ws_manager.send_html(html_response)
 
-        # 2. If it is apply_diff, ADDITIONALLY render the Visual Diff Card (Inline Stream)
+        # 2. If it is apply_patch, ADDITIONALLY render the Visual Diff Card (Inline Stream)
         # todo: in coder service, check for tool call event type and create diff row from there
-        if event.tool_name == "apply_diff":
-            file_path = event.tool_kwargs.get("file_path", "unknown")
-            diff = event.tool_kwargs.get("diff", "")
+        if event.tool_name == "apply_patch":
+            patch_text = event.tool_kwargs.get("patch", "")
 
             # Calculate stats
-            lines = diff.splitlines()
+            lines = patch_text.splitlines()
             additions = sum(
                 1
                 for line in lines
@@ -220,8 +219,8 @@ class WebSocketOrchestrator:
 
             diff_context = {
                 "tool_id": event.tool_id,
-                "file_path": file_path,
-                "diff": diff,
+                "file_path": "(patch)",
+                "diff": patch_text,
                 "turn_id": turn_id,
                 "additions": additions,
                 "deletions": deletions,
@@ -254,7 +253,7 @@ class WebSocketOrchestrator:
         await self.ws_manager.send_html(html_response)
 
         # 2. If it's a Diff Patch, ALSO update the Inline Visual Card
-        if event.tool_name == "apply_diff":
+        if event.tool_name == "apply_patch":
             diff_context = {"tool_id": event.tool_id, "tool_run_id": event.tool_run_id}
             diff_template = templates.get_template(
                 "patches/partials/diff_patch_result.html"
