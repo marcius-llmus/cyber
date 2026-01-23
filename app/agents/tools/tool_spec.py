@@ -2,13 +2,10 @@
 
 import asyncio
 
-from llama_index.core.tools.tool_spec.base import BaseToolSpec
+from llama_index.core.tools.tool_spec.base import SPEC_FUNCTION_TYPE, BaseToolSpec
 from llama_index.core.tools.types import ToolMetadata
 
 from app.agents.tools.function_tool import CustomFunctionTool
-
-# TODO: deprecate the Tuple (there's no use for it)
-SPEC_FUNCTION_TYPE = str | tuple[str, str]
 
 
 class CustomBaseToolSpec(BaseToolSpec):
