@@ -396,13 +396,13 @@ class CustomFunctionAgent(BaseWorkflowAgent):
 
         await ctx.store.set(self.scratchpad_key, scratchpad)
 
-    async def _call_tool(
+    async def _call_tool( # noqa: overrides typing
         self,
         ctx: Context,
         tool: AsyncBaseTool,
         tool_input: dict,
         *,
-        internal_tool_call_id: str | None = None,
+        internal_tool_call_id: str,
     ) -> ToolOutput:
         """Call the given tool with the given input."""
         try:
@@ -441,6 +441,7 @@ class CustomFunctionAgent(BaseWorkflowAgent):
             )
 
         return tool_output
+
     async def finalize(
         self, ctx: Context, output: AgentOutput, memory: BaseMemory
     ) -> AgentOutput:
