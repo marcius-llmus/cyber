@@ -27,7 +27,7 @@ from workflows import step
 from workflows.errors import WorkflowRuntimeError
 from workflows.events import StopEvent
 
-from app.agents.tools.function_tool import FunctionTool
+from app.agents.tools.function_tool import CustomFunctionTool
 from app.agents.workflows.workflow_events import ToolCall, ToolCallResult
 
 
@@ -406,7 +406,7 @@ class CustomFunctionAgent(BaseWorkflowAgent):
     ) -> ToolOutput:
         """Call the given tool with the given input."""
         try:
-            if isinstance(tool, FunctionTool):
+            if isinstance(tool, CustomFunctionTool):
                 new_tool_input = dict(tool_input)
 
                 if tool.requires_context and tool.ctx_param_name is not None:
