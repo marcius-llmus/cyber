@@ -28,6 +28,7 @@ from app.context.services import WorkspaceService
 from app.core.config import settings
 from app.core.db import DatabaseSessionManager
 from app.core.enums import OperationalMode
+from app.patches.enums import PatchProcessorType
 from app.sessions.services import SessionService
 from app.usage.event_handlers import UsageCollector
 
@@ -186,46 +187,55 @@ class CoderService:
         diff_patch_service = await self.diff_patch_service_factory()
 
         results: list[dict[str, Any]] = []
-        parsed_patches = []
+        representations: list[Any] = []
 
         extracted = diff_patch_service.extract_diffs_from_blocks(
             turn_id=turn_id,
             session_id=session_id,
             blocks=blocks,
+            processor_type=PatchProcessorType.UDIFF_LLM,
         )
 
         # todo: make it async parallel
         for diff_patch in extracted:
-            diff_patch_file_path = diff_patch.parsed.path
-            parsed_patches.append(diff_patch.parsed)
-
             result = await diff_patch_service.process_diff(diff_patch)
             results.append(result)
 
+            representations.append(result.representation)
+
             yield SingleShotDiffAppliedEvent(
-                file_path=diff_patch_file_path,
+                file_path="(patch)",
                 output=str(result),
             )
 
         # we must make sure that created and deleted files
         # are added and remove from active context
-        if parsed_patches:
+        if representations:
             async with self.db.session() as session:
                 context_service = await self.context_service_factory(session)
-                for patch in parsed_patches:
-                    try:
-                        await context_service.sync_context_for_diff(
-                            session_id=session_id,
-                            patch=patch,
-                        )
-                    except Exception as e:
-                        yield WorkflowLogEvent(
-                            message=(
-                                "Failed to sync context from diff "
-                                f"(session_id={session_id}): {e}"
-                            ),
-                            level=LogLevel.ERROR,
-                        )
+
+                for representation in representations:
+                    for patch in representation.patches:
+                        if not (
+                            patch.is_added_file
+                            or patch.is_removed_file
+                            or patch.is_rename
+                        ):
+                            continue
+
+                        try:
+                            await context_service.sync_context_for_diff(
+                                session_id=session_id,
+                                patch=patch,
+                            )
+                        except Exception as e:
+                            yield WorkflowLogEvent(
+                                message=(
+                                    "Failed to sync context from diff "
+                                    f"(session_id={session_id}): {e}"
+                                ),
+                                level=LogLevel.ERROR,
+                            )
 
                 files = await context_service.get_active_context(session_id)
                 files_data = [
