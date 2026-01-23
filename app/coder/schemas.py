@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import Any
+from typing import Any, TypeAlias, Union
 
 from pydantic import BaseModel
 
@@ -71,7 +71,7 @@ class ContextFilesUpdatedEvent(BaseModel):
     files: list[ContextFileListItem]
 
 
-CoderEvent = (
+CoderEvent: TypeAlias = Union[  # noqa
     AIMessageChunkEvent
     | AIMessageBlockStartEvent
     | WorkflowErrorEvent
@@ -82,4 +82,4 @@ CoderEvent = (
     | AgentStateEvent
     | SingleShotDiffAppliedEvent
     | ContextFilesUpdatedEvent
-)
+]
