@@ -69,7 +69,12 @@ class CustomFunctionAgent(BaseWorkflowAgent):
             )
         else:
             tool = tools_by_name[ev.tool_name]
-            result = await self._call_tool(ctx, tool, ev.tool_kwargs)
+            result = await self._call_tool(
+                ctx,
+                tool,
+                ev.tool_kwargs,
+                internal_tool_call_id=ev.internal_tool_call_id,
+            )
 
         result_ev = ToolCallResult(
             tool_name=ev.tool_name,
@@ -392,19 +397,30 @@ class CustomFunctionAgent(BaseWorkflowAgent):
         await ctx.store.set(self.scratchpad_key, scratchpad)
 
     async def _call_tool(
-            self,
-            ctx: Context,
-            tool: AsyncBaseTool,
-            tool_input: dict,
+        self,
+        ctx: Context,
+        tool: AsyncBaseTool,
+        tool_input: dict,
+        *,
+        internal_tool_call_id: str | None = None,
     ) -> ToolOutput:
         """Call the given tool with the given input."""
         try:
-            if (
-                    isinstance(tool, FunctionTool)
-                    and tool.requires_context
-                    and tool.ctx_param_name is not None
-            ):
-                new_tool_input = {**tool_input, tool.ctx_param_name: ctx}
+            if isinstance(tool, FunctionTool):
+                new_tool_input = dict(tool_input)
+
+                if tool.requires_context and tool.ctx_param_name is not None:
+                    new_tool_input = {**new_tool_input, tool.ctx_param_name: ctx}
+
+                if (
+                    tool.requires_internal_tool_call_id
+                    and tool.internal_tool_call_id_param_name is not None
+                ):
+                    new_tool_input = {
+                        **new_tool_input,
+                        tool.internal_tool_call_id_param_name: internal_tool_call_id,
+                    }
+
                 tool_output = await tool.acall(**new_tool_input)
             else:
                 tool_output = await tool.acall(**tool_input)

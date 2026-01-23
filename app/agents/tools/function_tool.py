@@ -333,6 +333,13 @@ class FunctionTool(AsyncBaseTool):
             if self.ctx_param_name not in all_kwargs:
                 raise ValueError("Context is required for this tool")
 
+        if (
+            self.requires_internal_tool_call_id
+            and self.internal_tool_call_id_param_name is not None
+        ):
+            if self.internal_tool_call_id_param_name not in all_kwargs:
+                raise ValueError("internal_tool_call_id is required for this tool")
+
         raw_output = self._fn(*args, **all_kwargs)
 
         # Exclude the Context param from the tool output so that the Context can be serialized
@@ -371,6 +378,13 @@ class FunctionTool(AsyncBaseTool):
         if self.requires_context and self.ctx_param_name is not None:
             if self.ctx_param_name not in all_kwargs:
                 raise ValueError("Context is required for this tool")
+
+        if (
+            self.requires_internal_tool_call_id
+            and self.internal_tool_call_id_param_name is not None
+        ):
+            if self.internal_tool_call_id_param_name not in all_kwargs:
+                raise ValueError("internal_tool_call_id is required for this tool")
 
         raw_output = await self._async_fn(*args, **all_kwargs)
 
