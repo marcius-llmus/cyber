@@ -1,9 +1,9 @@
-from app.agents.tools.tool_spec import BaseToolSpec
+from app.agents.tools.tool_spec import CustomBaseToolSpec
 from app.core.db import DatabaseSessionManager
 from app.settings.models import Settings
 
 
-class BaseToolSet(BaseToolSpec):
+class BaseToolSet(CustomBaseToolSpec):
     """
     Base Class for a set of Agent Tools, inheriting from LlamaIndex BaseToolSpec.
     Enforces standardized initialization with DB and Settings.
