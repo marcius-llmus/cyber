@@ -55,3 +55,7 @@ class SettingsUpdate(BaseModel):
     )
     coding_llm_settings_id: int = Field(exclude=True)  # Exclude from Settings DB update
     coding_llm_settings: LLMSettingsUpdate | None = Field(default=None, exclude=True)
+
+
+class AgentSettingsSnapshot(SettingsBase):
+    pass
