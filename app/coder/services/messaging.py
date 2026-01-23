@@ -7,10 +7,9 @@ from llama_index.core.agent.workflow.workflow_events import (
     AgentInput,
     AgentOutput,
     AgentStream,
-    ToolCall,
-    ToolCallResult,
 )
 
+from app.agents.workflows.workflow_events import ToolCall, ToolCallResult
 from app.coder.schemas import (
     AgentStateEvent,
     AIMessageBlockStartEvent,
@@ -157,7 +156,7 @@ class MessagingTurnEventHandler:
         yield AgentStateEvent(status="")
 
     async def _build_tool_call_event(self, event: ToolCall) -> ToolCallEvent:
-        unique_id = self._get_run_id(event.tool_kwargs, event.tool_name)
+        unique_id = event.internal_tool_call_id
         return ToolCallEvent(
             tool_name=event.tool_name,
             tool_kwargs=event.tool_kwargs,
@@ -169,7 +168,7 @@ class MessagingTurnEventHandler:
         self, event: ToolCallResult
     ) -> ToolCallResultEvent:
         content = str(event.tool_output.content)
-        unique_id = self._get_run_id(event.tool_kwargs, event.tool_name)
+        unique_id = event.internal_tool_call_id
 
         return ToolCallResultEvent(
             tool_name=event.tool_name,
@@ -177,9 +176,3 @@ class MessagingTurnEventHandler:
             tool_id=event.tool_id,
             tool_run_id=unique_id,
         )
-
-    @staticmethod
-    def _get_run_id(tool_kwargs: dict[str, Any], tool_name: str) -> str:
-        if not (unique_id := tool_kwargs.get("_run_id")):
-            raise ValueError(f"Run ID not found for tool {tool_name}")
-        return unique_id

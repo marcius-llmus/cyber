@@ -62,6 +62,7 @@ class PatcherTools(BaseToolSet):
         self,
         file_path: Annotated[str, Field(description=FILE_PATH_DESCRIPTION)],
         diff: Annotated[str, Field(description=APPLY_DIFF_DESCRIPTION)],
+        internal_tool_call_id: str,
     ) -> str:
         """
         Submits a unified diff patch for a specific file.
