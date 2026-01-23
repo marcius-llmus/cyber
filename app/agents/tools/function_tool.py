@@ -1,9 +1,7 @@
 import inspect
+from collections.abc import Callable
 from typing import (
     Any,
-    Callable,
-    Dict,
-    Optional,
 )
 
 from llama_index.core.tools import FunctionTool
@@ -28,12 +26,12 @@ class CustomFunctionTool(FunctionTool):
 
     def __init__(
         self,
-        fn: Optional[Callable[..., Any]] = None,
-        metadata: Optional[ToolMetadata] = None,
-        async_fn: Optional[AsyncCallable] = None,
-        callback: Optional[Callable[..., Any]] = None,
-        async_callback: Optional[Callable[..., Any]] = None,
-        partial_params: Optional[Dict[str, Any]] = None,
+        fn: Callable[..., Any] | None = None,
+        metadata: ToolMetadata | None = None,
+        async_fn: AsyncCallable | None = None,
+        callback: Callable[..., Any] | None = None,
+        async_callback: Callable[..., Any] | None = None,
+        partial_params: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(
             fn=fn,

@@ -1,23 +1,18 @@
-import functools
 import inspect
 import uuid
 import warnings
-from collections.abc import Sequence
-from typing import Any, cast, Optional, Type
+from typing import Any, cast
 
 from llama_index.core.agent.utils import generate_structured_response
 from llama_index.core.agent.workflow.base_agent import (
-    DEFAULT_MAX_ITERATIONS,
-    BaseWorkflowAgent,
+    DEFAULT_MAX_ITERATIONS,  # noqa
+    _get_waiting_for_event_exception,
 )
 from llama_index.core.agent.workflow.workflow_events import (
     AgentInput,
     AgentOutput,
-    AgentStream,
     AgentStreamStructuredOutput,
 )
-from llama_index.core.base.llms.types import ChatResponse
-from llama_index.core.bridge.pydantic import BaseModel, Field
 from llama_index.core.llms import ChatMessage
 from llama_index.core.llms.llm import ToolSelection
 from llama_index.core.memory import BaseMemory
@@ -29,21 +24,11 @@ from workflows.events import StopEvent
 
 from app.agents.tools.function_tool import CustomFunctionTool
 from app.agents.workflows.workflow_events import ToolCall, ToolCallResult
+from llamaindex_internals.function_agent import FunctionAgent
 
 
-class CustomFunctionAgent(BaseWorkflowAgent):
+class CustomFunctionAgent(FunctionAgent):
     """Function calling agent implementation."""
-
-    scratchpad_key: str = "scratchpad"
-    initial_tool_choice: str | None = Field(
-        default=None,
-        description="The tool to try and force to call on the first iteration of the agent.",
-    )
-    allow_parallel_tool_calls: bool = Field(
-        default=True,
-        description="If True, the agent will call multiple tools in parallel. If False, the agent will call tools sequentially.",
-    )
-
     @step
     async def call_tool(self, ctx: Context, ev: ToolCall) -> ToolCallResult:
         """Calls the tool and handles the result."""
@@ -154,24 +139,6 @@ class CustomFunctionAgent(BaseWorkflowAgent):
 
         return AgentInput(input=input_messages, current_agent_name=self.name)
 
-    async def _get_response(
-        self, current_llm_input: list[ChatMessage], tools: Sequence[AsyncBaseTool]
-    ) -> ChatResponse:
-        chat_kwargs = {
-            "chat_history": current_llm_input,
-            "allow_parallel_tool_calls": self.allow_parallel_tool_calls,
-            "tools": tools,
-        }
-
-        # Only add tool choice if set and if its the first response
-        if (
-            self.initial_tool_choice is not None
-            and current_llm_input[-1].role == "user"
-        ):
-            chat_kwargs["tool_choice"] = self.initial_tool_choice  # noqa
-
-        return await self.llm.achat_with_tools(**chat_kwargs)  # type: ignore
-
     @step
     async def parse_agent_output(
         self, ctx: Context, ev: AgentOutput
@@ -270,132 +237,6 @@ class CustomFunctionAgent(BaseWorkflowAgent):
 
         return None
 
-    async def _get_streaming_response(
-        self,
-        ctx: Context,
-        current_llm_input: list[ChatMessage],
-        tools: Sequence[AsyncBaseTool],
-    ) -> ChatResponse:
-        chat_kwargs = {
-            "chat_history": current_llm_input,
-            "tools": tools,
-            "allow_parallel_tool_calls": self.allow_parallel_tool_calls,
-        }
-
-        # Only add tool choice if set and if its the first response
-        if (
-            self.initial_tool_choice is not None
-            and current_llm_input[-1].role == "user"
-        ):
-            chat_kwargs["tool_choice"] = self.initial_tool_choice  # noqa
-
-        response = await self.llm.astream_chat_with_tools(**chat_kwargs)  # type: ignore
-        # last_chat_response will be used later, after the loop.
-        # We initialize it so it's valid even when 'response' is empty
-        last_chat_response = ChatResponse(message=ChatMessage())
-        async for last_chat_response in response:
-            tool_calls = self.llm.get_tool_calls_from_response(  # type: ignore
-                last_chat_response, error_on_no_tool_call=False
-            )
-            raw = (
-                last_chat_response.raw.model_dump()
-                if isinstance(last_chat_response.raw, BaseModel)
-                else last_chat_response.raw
-            )
-            ctx.write_event_to_stream(
-                AgentStream(
-                    delta=last_chat_response.delta or "",
-                    response=last_chat_response.message.content or "",
-                    tool_calls=tool_calls or [],
-                    raw=raw,
-                    current_agent_name=self.name,
-                    thinking_delta=last_chat_response.additional_kwargs.get(
-                        "thinking_delta", None
-                    ),
-                )
-            )
-
-        return last_chat_response
-
-    async def take_step(
-        self,
-        ctx: Context,
-        llm_input: list[ChatMessage],
-        tools: Sequence[AsyncBaseTool],
-        memory: BaseMemory,
-    ) -> AgentOutput:
-        """Take a single step with the function calling agent."""
-        if not self.llm.metadata.is_function_calling_model:
-            raise ValueError("LLM must be a FunctionCallingLLM")
-
-        scratchpad: list[ChatMessage] = await ctx.store.get(
-            self.scratchpad_key, default=[]
-        )
-        current_llm_input = [*llm_input, *scratchpad]
-
-        ctx.write_event_to_stream(
-            AgentInput(input=current_llm_input, current_agent_name=self.name)
-        )
-
-        if self.streaming:
-            last_chat_response = await self._get_streaming_response(
-                ctx, current_llm_input, tools
-            )
-        else:
-            last_chat_response = await self._get_response(current_llm_input, tools)
-
-        tool_calls = self.llm.get_tool_calls_from_response(  # type: ignore
-            last_chat_response, error_on_no_tool_call=False
-        )
-
-        # only add to scratchpad if we didn't select the handoff tool
-        scratchpad.append(last_chat_response.message)
-        await ctx.store.set(self.scratchpad_key, scratchpad)
-
-        raw = (
-            last_chat_response.raw.model_dump()
-            if isinstance(last_chat_response.raw, BaseModel)
-            else last_chat_response.raw
-        )
-        return AgentOutput(
-            response=last_chat_response.message,
-            tool_calls=tool_calls or [],
-            raw=raw,
-            current_agent_name=self.name,
-        )
-
-    async def handle_tool_call_results(
-        self, ctx: Context, results: list[ToolCallResult], memory: BaseMemory
-    ) -> None:
-        """Handle tool call results for function calling agent."""
-        scratchpad: list[ChatMessage] = await ctx.store.get(
-            self.scratchpad_key, default=[]
-        )
-
-        for tool_call_result in results:
-            scratchpad.append(
-                ChatMessage(
-                    role="tool",
-                    blocks=tool_call_result.tool_output.blocks,
-                    additional_kwargs={"tool_call_id": tool_call_result.tool_id},
-                )
-            )
-
-            if (
-                tool_call_result.return_direct
-                and tool_call_result.tool_name != "handoff"
-            ):
-                scratchpad.append(
-                    ChatMessage(
-                        role="assistant",
-                        content=str(tool_call_result.tool_output.content),
-                        additional_kwargs={"tool_call_id": tool_call_result.tool_id},
-                    )
-                )
-                break
-
-        await ctx.store.set(self.scratchpad_key, scratchpad)
-
     async def _call_tool( # noqa: overrides typing
         self,
         ctx: Context,
@@ -441,33 +282,3 @@ class CustomFunctionAgent(BaseWorkflowAgent):
             )
 
         return tool_output
-
-    async def finalize(
-        self, ctx: Context, output: AgentOutput, memory: BaseMemory
-    ) -> AgentOutput:
-        """
-        Finalize the function calling agent.
-
-        Adds all in-progress messages to memory.
-        """
-        scratchpad: list[ChatMessage] = await ctx.store.get(
-            self.scratchpad_key, default=[]
-        )
-        await memory.aput_messages(scratchpad)
-
-        # reset scratchpad
-        await ctx.store.set(self.scratchpad_key, [])
-
-        return output
-
-
-@functools.lru_cache(maxsize=1)
-def _get_waiting_for_event_exception() -> Optional[Type[Exception]]:
-    try:
-        # Special exception introduced in workflows 2.9.0 as a way to fully pause waiting steps.
-        # If it exists, check for it and re-raise
-        from workflows.runtime.types.results import WaitingForEvent
-
-        return WaitingForEvent
-    except ImportError:
-        return None

@@ -1,7 +1,9 @@
 """Base tool spec class."""
 
 import asyncio
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple, Type, Union
+from collections.abc import Awaitable, Callable
+from typing import Any, Union
+
 from llama_index.core.tools.types import ToolMetadata
 
 from app.agents.tools.function_tool import CustomFunctionTool
@@ -11,16 +13,16 @@ AsyncCallable = Callable[..., Awaitable[Any]]
 
 
 # TODO: deprecate the Tuple (there's no use for it)
-SPEC_FUNCTION_TYPE = Union[str, Tuple[str, str]]
+SPEC_FUNCTION_TYPE = Union[str, tuple[str, str]]
 
 
 class CustomBaseToolSpec(BaseToolSpec):
     """Base tool spec class."""
     def to_tool_list(
         self,
-        spec_functions: Optional[List[SPEC_FUNCTION_TYPE]] = None,
-        func_to_metadata_mapping: Optional[Dict[str, ToolMetadata]] = None,
-    ) -> List[CustomFunctionTool]:
+        spec_functions: list[SPEC_FUNCTION_TYPE] | None = None,
+        func_to_metadata_mapping: dict[str, ToolMetadata] | None = None,
+    ) -> list[CustomFunctionTool]:
         """Convert tool spec to list of tools."""
         spec_functions = spec_functions or self.spec_functions
         func_to_metadata_mapping = func_to_metadata_mapping or {}
