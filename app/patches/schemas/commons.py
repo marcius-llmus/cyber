@@ -5,6 +5,8 @@ from enum import StrEnum
 from pydantic import BaseModel
 
 from app.patches.enums import DiffPatchStatus, PatchProcessorType
+from app.patches.schemas.codex import CodexPatchRepresentationExtractor
+from app.patches.schemas.udiff import UDiffRepresentationExtractor
 
 SOURCE_PATTERN = r"^--- ([^\t\n]+)(?:\t[^\n]+)?"
 TARGET_PATTERN = r"^\+\+\+ ([^\t\n]+)(?:\t[^\n]+)?"
@@ -39,14 +41,6 @@ class ParsedPatchOperation(StrEnum):
     MODIFY = "MODIFY"
     DELETE = "DELETE"
     RENAME = "RENAME"
-
-
-class DiffPatchApplyPatchResult(BaseModel):
-    patch_id: int
-    status: DiffPatchStatus
-    error_message: str | None = None
-
-    representation: "PatchRepresentation | None" = None
 
 
 class ParsedPatch(BaseModel):
@@ -87,7 +81,10 @@ class PatchRepresentation(BaseModel):
     processor_type: PatchProcessorType
     patches: list[ParsedPatch]
 
-    _EXTRACTOR_MAP: dict[PatchProcessorType, PatchRepresentationExtractor] = {}
+    _EXTRACTOR_MAP: dict[PatchProcessorType, PatchRepresentationExtractor] = {
+        PatchProcessorType.UDIFF_LLM: UDiffRepresentationExtractor(),
+        PatchProcessorType.CODEX_APPLY: CodexPatchRepresentationExtractor(),
+    }
 
     @classmethod
     def from_text(
@@ -105,3 +102,11 @@ class PatchRepresentation(BaseModel):
     @property
     def has_changes(self) -> bool:
         return bool(self.patches)
+
+
+class DiffPatchApplyPatchResult(BaseModel):
+    patch_id: int
+    status: DiffPatchStatus
+    error_message: str | None = None
+
+    representation: PatchRepresentation | None = None
