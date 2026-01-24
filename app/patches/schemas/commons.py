@@ -1,3 +1,4 @@
+import abc
 import re
 from datetime import datetime
 from enum import StrEnum
@@ -77,27 +78,29 @@ class ParsedPatchItem(BaseModel):
         return self.operation == ParsedPatchOperation.RENAME
 
 
+class PatchRepresentationExtractor(abc.ABC):
+    def extract(self, raw_text: str) -> list[ParsedPatchItem]:
+        raise NotImplementedError
+
+
 class PatchRepresentation(BaseModel):
     processor_type: PatchProcessorType
     patches: list[ParsedPatchItem]
+
+    _EXTRACTOR_MAP: dict[PatchProcessorType, PatchRepresentationExtractor] = {}
 
     @classmethod
     def from_text(
         cls, *, raw_text: str, processor_type: PatchProcessorType
     ) -> "PatchRepresentation":
-        if processor_type == PatchProcessorType.UDIFF_LLM:
-            from app.patches.schemas.udiff import UDiffRepresentationExtractor
+        extractor = cls._EXTRACTOR_MAP.get(processor_type)
+        if extractor is None:
+            raise NotImplementedError(
+                f"Unknown PatchProcessorType: {processor_type}"
+            )
 
-            return UDiffRepresentationExtractor().extract(raw_text)
-
-        if processor_type == PatchProcessorType.CODEX_APPLY:
-            from app.patches.schemas.codex import CodexPatchRepresentationExtractor
-
-            return CodexPatchRepresentationExtractor().extract(raw_text)
-
-        raise NotImplementedError(
-            f"Unknown PatchProcessorType: {processor_type}"
-        )
+        parsed_items = extractor.extract(raw_text)
+        return cls(processor_type=processor_type, patches=parsed_items)
 
     @property
     def has_changes(self) -> bool:
@@ -167,8 +170,3 @@ class ParsedDiffPatch(BaseModel):
             raise ValueError("Invalid diff: could not determine file path")
 
         return self._normalize_path(filepath)
-
-
-class BasePatchRepresentationExtractor:
-    def extract(self, raw_text: str) -> PatchRepresentation:
-        raise NotImplementedError

@@ -1,12 +1,10 @@
 import re
 
-from app.patches.enums import PatchProcessorType
 from app.patches.schemas.commons import (
-    BasePatchRepresentationExtractor,
     DEV_NULL,
+    PatchRepresentationExtractor,
     ParsedPatchItem,
     ParsedPatchOperation,
-    PatchRepresentation,
     SOURCE_PATTERN,
     TARGET_PATTERN,
 )
@@ -16,8 +14,8 @@ class UnidiffParseError(ValueError):
     pass
 
 
-class UDiffRepresentationExtractor(BasePatchRepresentationExtractor):
-    def extract(self, raw_text: str) -> PatchRepresentation:
+class UDiffRepresentationExtractor(PatchRepresentationExtractor):
+    def extract(self, raw_text: str) -> list[ParsedPatchItem]:
         source_files = re.findall(
             SOURCE_PATTERN, raw_text, flags=re.MULTILINE | re.DOTALL
         )
@@ -31,9 +29,7 @@ class UDiffRepresentationExtractor(BasePatchRepresentationExtractor):
                 self._from_headers(source_file=source_file, target_file=target_file)
             )
 
-        return PatchRepresentation(
-            processor_type=PatchProcessorType.UDIFF_LLM, patches=patches
-        )
+        return patches
 
     @staticmethod
     def _normalize_path(path: str) -> str:

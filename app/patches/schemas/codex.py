@@ -1,17 +1,15 @@
 from apply_patch_py.models import AddFile, DeleteFile, UpdateFile
 from apply_patch_py.parser import PatchParser
 
-from app.patches.enums import PatchProcessorType
 from app.patches.schemas.commons import (
-    BasePatchRepresentationExtractor,
+    PatchRepresentationExtractor,
     ParsedPatchItem,
     ParsedPatchOperation,
-    PatchRepresentation,
 )
 
 
-class CodexPatchRepresentationExtractor(BasePatchRepresentationExtractor):
-    def extract(self, raw_text: str) -> PatchRepresentation:
+class CodexPatchRepresentationExtractor(PatchRepresentationExtractor):
+    def extract(self, raw_text: str) -> list[ParsedPatchItem]:
         patch = PatchParser.parse(raw_text)
 
         parsed_items: list[ParsedPatchItem] = []
@@ -55,7 +53,4 @@ class CodexPatchRepresentationExtractor(BasePatchRepresentationExtractor):
 
             raise ValueError(f"Unsupported codex patch hunk type: {type(hunk)}")
 
-        return PatchRepresentation(
-            processor_type=PatchProcessorType.CODEX_APPLY,
-            patches=parsed_items,
-        )
+        return parsed_items

@@ -1,6 +1,5 @@
 from app.patches.schemas.codex import CodexPatchRepresentationExtractor
 from app.patches.schemas.commons import (
-    BasePatchRepresentationExtractor,
     DiffPatchApplyPatchResult,
     DiffPatchCreate,
     DiffPatchInternalCreate,
@@ -8,12 +7,12 @@ from app.patches.schemas.commons import (
     ParsedDiffPatch,
     ParsedPatchItem,
     ParsedPatchOperation,
+    PatchRepresentationExtractor,
     PatchRepresentation,
 )
 from app.patches.schemas.udiff import UDiffRepresentationExtractor, UnidiffParseError
 
 __all__ = [
-    "BasePatchRepresentationExtractor",
     "CodexPatchRepresentationExtractor",
     "DiffPatchApplyPatchResult",
     "DiffPatchCreate",
@@ -22,6 +21,7 @@ __all__ = [
     "ParsedDiffPatch",
     "ParsedPatchItem",
     "ParsedPatchOperation",
+    "PatchRepresentationExtractor",
     "PatchRepresentation",
     "UDiffRepresentationExtractor",
     "UnidiffParseError",
