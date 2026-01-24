@@ -1,12 +1,12 @@
 import re
 
-from .commons import (
+from .base import (
     DEV_NULL,
-    PatchRepresentationExtractor,
-    ParsedPatch,
-    ParsedPatchOperation,
     SOURCE_PATTERN,
     TARGET_PATTERN,
+    ParsedPatch,
+    ParsedPatchOperation,
+    PatchRepresentationExtractor,
 )
 
 

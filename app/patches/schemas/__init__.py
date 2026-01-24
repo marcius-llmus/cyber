@@ -1,3 +1,4 @@
+from .codex import CodexPatchRepresentationExtractor
 from .commons import (
     DiffPatchApplyPatchResult,
     DiffPatchCreate,
@@ -5,10 +6,9 @@ from .commons import (
     DiffPatchUpdate,
     ParsedPatch,
     ParsedPatchOperation,
-    PatchRepresentationExtractor,
     PatchRepresentation,
+    PatchRepresentationExtractor,
 )
-from .codex import CodexPatchRepresentationExtractor
 from .udiff import UDiffRepresentationExtractor, UnidiffParseError
 
 __all__ = [

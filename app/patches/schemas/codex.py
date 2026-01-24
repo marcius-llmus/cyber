@@ -1,10 +1,10 @@
 from apply_patch_py.models import AddFile, DeleteFile, UpdateFile
 from apply_patch_py.parser import PatchParser
 
-from .commons import (
-    PatchRepresentationExtractor,
+from .base import (
     ParsedPatch,
     ParsedPatchOperation,
+    PatchRepresentationExtractor,
 )
 
 
