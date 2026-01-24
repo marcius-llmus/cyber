@@ -1,4 +1,4 @@
-import abc
+from abc import ABC, abstractmethod
 from datetime import datetime
 from enum import StrEnum
 
@@ -72,7 +72,8 @@ class ParsedPatch(BaseModel):
         return self.operation == ParsedPatchOperation.RENAME
 
 
-class PatchRepresentationExtractor(abc.ABC):
+class PatchRepresentationExtractor(ABC):
+    @abstractmethod
     def extract(self, raw_text: str) -> list[ParsedPatch]:
         raise NotImplementedError
 
@@ -92,9 +93,7 @@ class PatchRepresentation(BaseModel):
     ) -> "PatchRepresentation":
         extractor = cls._EXTRACTOR_MAP.get(processor_type)
         if extractor is None:
-            raise NotImplementedError(
-                f"Unknown PatchProcessorType: {processor_type}"
-            )
+            raise NotImplementedError(f"Unknown PatchProcessorType: {processor_type}")
 
         parsed_items = extractor.extract(raw_text)
         return cls(processor_type=processor_type, patches=parsed_items)
