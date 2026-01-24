@@ -1,5 +1,5 @@
-from .chat import ChatService as ChatService
-from .turn import ChatTurnService as ChatTurnService
+from .chat import ChatService
+from .turn import ChatTurnService
 
 __all__ = [
     "ChatService",

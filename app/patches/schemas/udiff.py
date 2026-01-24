@@ -1,6 +1,6 @@
 import re
 
-from app.patches.schemas.commons import (
+from .commons import (
     DEV_NULL,
     PatchRepresentationExtractor,
     ParsedPatch,

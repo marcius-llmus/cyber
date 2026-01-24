@@ -1,7 +1,7 @@
 from apply_patch_py.models import AddFile, DeleteFile, UpdateFile
 from apply_patch_py.parser import PatchParser
 
-from app.patches.schemas.commons import (
+from .commons import (
     PatchRepresentationExtractor,
     ParsedPatch,
     ParsedPatchOperation,
