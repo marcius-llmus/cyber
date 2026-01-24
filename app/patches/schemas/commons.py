@@ -81,6 +81,24 @@ class PatchRepresentation(BaseModel):
     processor_type: PatchProcessorType
     patches: list[ParsedPatchItem]
 
+    @classmethod
+    def from_text(
+        cls, *, raw_text: str, processor_type: PatchProcessorType
+    ) -> "PatchRepresentation":
+        if processor_type == PatchProcessorType.UDIFF_LLM:
+            from app.patches.schemas.udiff import UDiffRepresentationExtractor
+
+            return UDiffRepresentationExtractor().extract(raw_text)
+
+        if processor_type == PatchProcessorType.CODEX_APPLY:
+            from app.patches.schemas.codex import CodexPatchRepresentationExtractor
+
+            return CodexPatchRepresentationExtractor().extract(raw_text)
+
+        raise NotImplementedError(
+            f"Unknown PatchProcessorType: {processor_type}"
+        )
+
     @property
     def has_changes(self) -> bool:
         return bool(self.patches)
