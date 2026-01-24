@@ -1,7 +1,9 @@
 import logging
 import os
 
+from app.context.models import ContextFile
 from app.context.repositories import ContextRepository
+from app.context.schemas import ContextFileUpdate, ContextFileCreate
 from app.context.services.codebase import CodebaseService
 from app.patches.schemas import ParsedPatch
 from app.projects.exceptions import ActiveProjectRequiredException

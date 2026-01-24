@@ -23,6 +23,11 @@ class UDiffRepresentationExtractor(PatchRepresentationExtractor):
             TARGET_PATTERN, raw_text, flags=re.MULTILINE | re.DOTALL
         )
 
+        if len(source_files) != 1 or len(target_files) != 1:
+            raise UnidiffParseError(
+                "Expected a single-file unified diff (one ---/+++ header pair)."
+            )
+
         patches: list[ParsedPatch] = []
         for source_file, target_file in zip(source_files, target_files, strict=False):
             patches.append(

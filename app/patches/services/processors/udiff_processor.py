@@ -14,7 +14,7 @@ from app.llms.enums import LLMModel
 from app.llms.services import LLMService
 from app.patches.constants import DIFF_PATCHER_PROMPT
 from app.patches.repositories import DiffPatchRepository
-from app.patches.schemas import path_from_udiff_text
+from app.patches.schemas import UDiffRepresentationExtractor
 from app.patches.services.processors import BasePatchProcessor
 from app.projects.exceptions import ActiveProjectRequiredException
 from app.projects.services import ProjectService
@@ -39,7 +39,8 @@ class UDiffProcessor(BasePatchProcessor):
         self.codebase_service_factory = codebase_service_factory
 
     async def apply_patch(self, diff: str) -> None:
-        file_path = self._path_from_diff(diff)
+        patches = UDiffRepresentationExtractor().extract(diff)
+        file_path = patches[0].path
         await self._apply_file_diff(file_path=file_path, diff_content=diff)
 
     async def _apply_file_diff(
@@ -105,7 +106,3 @@ class UDiffProcessor(BasePatchProcessor):
         if match:
             return match.group(1)
         return text
-
-    @classmethod
-    def _path_from_diff(cls, diff_text: str) -> str:
-        return path_from_udiff_text(diff_text)

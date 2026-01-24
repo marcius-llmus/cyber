@@ -10,13 +10,11 @@ from app.llms.services import LLMService
 from app.patches.enums import DiffPatchStatus, PatchProcessorType
 from app.patches.repositories import DiffPatchRepository
 from app.patches.schemas import (
-    CodexPatchRepresentationExtractor,
     DiffPatchApplyPatchResult,
     DiffPatchCreate,
     DiffPatchInternalCreate,
     DiffPatchUpdate,
     PatchRepresentation,
-    UDiffRepresentationExtractor,
 )
 from app.patches.services.processors.udiff_processor import UDiffProcessor
 from app.projects.services import ProjectService
@@ -40,17 +38,14 @@ class DiffPatchService:
         self.project_service_factory = project_service_factory
         self.codebase_service_factory = codebase_service_factory
 
-        self._udiff_representation_extractor = UDiffRepresentationExtractor()
-        self._codex_representation_extractor = CodexPatchRepresentationExtractor()
-
     async def process_diff(self, payload: DiffPatchCreate) -> DiffPatchApplyPatchResult:
         patch_id = await self._create_pending_patch(payload)
         try:
             processor = self._build_processor(payload.processor_type)
             await processor.apply_patch(payload.diff)
 
-            representation = self._extract_representation(
-                diff=payload.diff, processor_type=payload.processor_type
+            representation = PatchRepresentation.from_text(
+                raw_text=payload.diff, processor_type=payload.processor_type
             )
 
             applied_at = datetime.now()
@@ -70,8 +65,8 @@ class DiffPatchService:
             )
         except Exception as e:
             error_message = str(e)
-            representation = self._extract_representation(
-                diff=payload.diff, processor_type=payload.processor_type
+            representation = PatchRepresentation.from_text(
+                raw_text=payload.diff, processor_type=payload.processor_type
             )
             await self._update_patch(
                 patch_id=patch_id,
@@ -175,16 +170,3 @@ class DiffPatchService:
             )
 
         return patches
-
-    def _extract_representation(
-        self, *, diff: str, processor_type: PatchProcessorType
-    ) -> PatchRepresentation | None:
-        if not diff:
-            return None
-
-        if processor_type == PatchProcessorType.UDIFF_LLM:
-            return self._udiff_representation_extractor.extract(diff)
-        if processor_type == PatchProcessorType.CODEX_APPLY:
-            return self._codex_representation_extractor.extract(diff)
-
-        return None

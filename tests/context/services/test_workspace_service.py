@@ -4,7 +4,7 @@ import pytest
 
 from app.context.models import ContextFile
 from app.context.services import WorkspaceService
-from app.patches.schemas import ParsedDiffPatch
+from app.patches.schemas import ParsedPatch
 from app.projects.exceptions import ActiveProjectRequiredException
 from app.projects.models import Project
 
@@ -183,7 +183,7 @@ async def test_sync_context_for_diff_add(
     # Easier to just let it run since we mocked repo/codebase
     context_repository_mock.get_by_session_and_path.return_value = None
 
-    patch = MagicMock(spec=ParsedDiffPatch)
+    patch = MagicMock(spec=ParsedPatch)
     patch.is_added_file = True
     patch.is_removed_file = False
     patch.is_rename = False
@@ -212,7 +212,7 @@ async def test_sync_context_for_diff_remove(
     project = Project(id=1, name="p", path="/tmp/proj")
     project_service_mock.get_active_project = AsyncMock(return_value=project)
 
-    patch = MagicMock(spec=ParsedDiffPatch)
+    patch = MagicMock(spec=ParsedPatch)
     patch.is_added_file = False
     patch.is_removed_file = True
     patch.is_rename = False
@@ -237,7 +237,7 @@ async def test_sync_context_for_diff_modified_ignored(
     chat_session_mock,
 ):
     """Test sync_context_for_diff ignores modified files."""
-    patch = MagicMock(spec=ParsedDiffPatch)
+    patch = MagicMock(spec=ParsedPatch)
     patch.is_added_file = False
     patch.is_removed_file = False
     patch.is_rename = False
@@ -413,7 +413,7 @@ async def test_sync_context_for_diff_no_project(
 ):
     """Test sync_context_for_diff requires active project."""
     project_service_mock.get_active_project = AsyncMock(return_value=None)
-    patch = MagicMock(spec=ParsedDiffPatch)
+    patch = MagicMock(spec=ParsedPatch)
     patch.is_added_file = True
 
     service = WorkspaceService(
