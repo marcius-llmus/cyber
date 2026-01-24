@@ -1,0 +1,77 @@
+import re
+
+from app.patches.enums import PatchProcessorType
+from app.patches.schemas.commons import (
+    BasePatchRepresentationExtractor,
+    DEV_NULL,
+    ParsedPatchItem,
+    ParsedPatchOperation,
+    PatchRepresentation,
+    SOURCE_PATTERN,
+    TARGET_PATTERN,
+)
+
+
+class UnidiffParseError(ValueError):
+    pass
+
+
+class UDiffRepresentationExtractor(BasePatchRepresentationExtractor):
+    def extract(self, raw_text: str) -> PatchRepresentation:
+        source_files = re.findall(
+            SOURCE_PATTERN, raw_text, flags=re.MULTILINE | re.DOTALL
+        )
+        target_files = re.findall(
+            TARGET_PATTERN, raw_text, flags=re.MULTILINE | re.DOTALL
+        )
+
+        patches: list[ParsedPatchItem] = []
+        for source_file, target_file in zip(source_files, target_files, strict=False):
+            patches.append(
+                self._from_headers(source_file=source_file, target_file=target_file)
+            )
+
+        return PatchRepresentation(
+            processor_type=PatchProcessorType.UDIFF_LLM, patches=patches
+        )
+
+    @staticmethod
+    def _normalize_path(path: str) -> str:
+        if path.startswith("a/") or path.startswith("b/"):
+            return path[2:]
+        return path
+
+    def _from_headers(self, *, source_file: str, target_file: str) -> ParsedPatchItem:
+        source_norm = self._normalize_path(source_file)
+        target_norm = self._normalize_path(target_file)
+
+        is_added = source_file == DEV_NULL
+        is_removed = target_file == DEV_NULL
+        is_rename = not is_added and not is_removed and source_norm != target_norm
+
+        if is_added:
+            return ParsedPatchItem(
+                old_path=None,
+                new_path=target_norm,
+                operation=ParsedPatchOperation.ADD,
+            )
+
+        if is_removed:
+            return ParsedPatchItem(
+                old_path=source_norm,
+                new_path=None,
+                operation=ParsedPatchOperation.DELETE,
+            )
+
+        if is_rename:
+            return ParsedPatchItem(
+                old_path=source_norm,
+                new_path=target_norm,
+                operation=ParsedPatchOperation.RENAME,
+            )
+
+        return ParsedPatchItem(
+            old_path=source_norm,
+            new_path=target_norm,
+            operation=ParsedPatchOperation.MODIFY,
+        )
