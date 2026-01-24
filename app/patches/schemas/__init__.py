@@ -8,7 +8,6 @@ from app.patches.schemas.commons import (
     ParsedPatchOperation,
     PatchRepresentationExtractor,
     PatchRepresentation,
-    path_from_udiff_text,
 )
 from app.patches.schemas.udiff import UDiffRepresentationExtractor, UnidiffParseError
 
@@ -24,5 +23,4 @@ __all__ = [
     "PatchRepresentation",
     "UDiffRepresentationExtractor",
     "UnidiffParseError",
-    "path_from_udiff_text",
 ]

@@ -1,5 +1,4 @@
 import abc
-import re
 from datetime import datetime
 from enum import StrEnum
 
@@ -106,37 +105,3 @@ class PatchRepresentation(BaseModel):
     @property
     def has_changes(self) -> bool:
         return bool(self.patches)
-
-
-def _normalize_diff_path(path: str) -> str:
-    if path.startswith("a/") or path.startswith("b/"):
-        return path[2:]
-    return path
-
-
-def path_from_udiff_text(diff_text: str) -> str:
-    source_files = re.findall(SOURCE_PATTERN, diff_text, flags=re.MULTILINE | re.DOTALL)
-    target_files = re.findall(TARGET_PATTERN, diff_text, flags=re.MULTILINE | re.DOTALL)
-
-    if len(source_files) > 1 or len(target_files) > 1:
-        raise ValueError(f"Multiple source and target files found: {diff_text}")
-    if not source_files or not target_files:
-        raise ValueError("Invalid diff: missing source or target header")
-
-    source_file = source_files[0]
-    target_file = target_files[0]
-
-    source_norm = _normalize_diff_path(source_file)
-    target_norm = _normalize_diff_path(target_file)
-
-    is_added = source_file == DEV_NULL
-    is_removed = target_file == DEV_NULL
-    is_rename = not is_added and not is_removed and source_norm != target_norm
-
-    if is_added:
-        return target_norm
-    if is_removed:
-        return source_norm
-    if is_rename:
-        return target_norm
-    return target_norm
