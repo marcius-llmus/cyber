@@ -3,20 +3,20 @@ from apply_patch_py.parser import PatchParser
 
 from app.patches.schemas.commons import (
     PatchRepresentationExtractor,
-    ParsedPatchItem,
+    ParsedPatch,
     ParsedPatchOperation,
 )
 
 
 class CodexPatchRepresentationExtractor(PatchRepresentationExtractor):
-    def extract(self, raw_text: str) -> list[ParsedPatchItem]:
+    def extract(self, raw_text: str) -> list[ParsedPatch]:
         patch = PatchParser.parse(raw_text)
 
-        parsed_items: list[ParsedPatchItem] = []
+        parsed_items: list[ParsedPatch] = []
         for hunk in patch.hunks:
             if isinstance(hunk, AddFile):
                 parsed_items.append(
-                    ParsedPatchItem(
+                    ParsedPatch(
                         old_path=None,
                         new_path=str(hunk.path),
                         operation=ParsedPatchOperation.ADD,
@@ -26,7 +26,7 @@ class CodexPatchRepresentationExtractor(PatchRepresentationExtractor):
 
             if isinstance(hunk, DeleteFile):
                 parsed_items.append(
-                    ParsedPatchItem(
+                    ParsedPatch(
                         old_path=str(hunk.path),
                         new_path=None,
                         operation=ParsedPatchOperation.DELETE,
@@ -43,7 +43,7 @@ class CodexPatchRepresentationExtractor(PatchRepresentationExtractor):
                     else ParsedPatchOperation.MODIFY
                 )
                 parsed_items.append(
-                    ParsedPatchItem(
+                    ParsedPatch(
                         old_path=old_path,
                         new_path=new_path,
                         operation=operation,

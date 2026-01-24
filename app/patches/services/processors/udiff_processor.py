@@ -14,7 +14,7 @@ from app.llms.enums import LLMModel
 from app.llms.services import LLMService
 from app.patches.constants import DIFF_PATCHER_PROMPT
 from app.patches.repositories import DiffPatchRepository
-from app.patches.schemas import ParsedDiffPatch
+from app.patches.schemas import path_from_udiff_text
 from app.patches.services.processors import BasePatchProcessor
 from app.projects.exceptions import ActiveProjectRequiredException
 from app.projects.services import ProjectService
@@ -108,5 +108,4 @@ class UDiffProcessor(BasePatchProcessor):
 
     @classmethod
     def _path_from_diff(cls, diff_text: str) -> str:
-        parsed = ParsedDiffPatch.from_text(diff_text)
-        return parsed.path
+        return path_from_udiff_text(diff_text)

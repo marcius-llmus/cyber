@@ -3,7 +3,7 @@ import re
 from app.patches.schemas.commons import (
     DEV_NULL,
     PatchRepresentationExtractor,
-    ParsedPatchItem,
+    ParsedPatch,
     ParsedPatchOperation,
     SOURCE_PATTERN,
     TARGET_PATTERN,
@@ -15,7 +15,7 @@ class UnidiffParseError(ValueError):
 
 
 class UDiffRepresentationExtractor(PatchRepresentationExtractor):
-    def extract(self, raw_text: str) -> list[ParsedPatchItem]:
+    def extract(self, raw_text: str) -> list[ParsedPatch]:
         source_files = re.findall(
             SOURCE_PATTERN, raw_text, flags=re.MULTILINE | re.DOTALL
         )
@@ -23,7 +23,7 @@ class UDiffRepresentationExtractor(PatchRepresentationExtractor):
             TARGET_PATTERN, raw_text, flags=re.MULTILINE | re.DOTALL
         )
 
-        patches: list[ParsedPatchItem] = []
+        patches: list[ParsedPatch] = []
         for source_file, target_file in zip(source_files, target_files, strict=False):
             patches.append(
                 self._from_headers(source_file=source_file, target_file=target_file)
@@ -37,7 +37,7 @@ class UDiffRepresentationExtractor(PatchRepresentationExtractor):
             return path[2:]
         return path
 
-    def _from_headers(self, *, source_file: str, target_file: str) -> ParsedPatchItem:
+    def _from_headers(self, *, source_file: str, target_file: str) -> ParsedPatch:
         source_norm = self._normalize_path(source_file)
         target_norm = self._normalize_path(target_file)
 
@@ -46,27 +46,27 @@ class UDiffRepresentationExtractor(PatchRepresentationExtractor):
         is_rename = not is_added and not is_removed and source_norm != target_norm
 
         if is_added:
-            return ParsedPatchItem(
+            return ParsedPatch(
                 old_path=None,
                 new_path=target_norm,
                 operation=ParsedPatchOperation.ADD,
             )
 
         if is_removed:
-            return ParsedPatchItem(
+            return ParsedPatch(
                 old_path=source_norm,
                 new_path=None,
                 operation=ParsedPatchOperation.DELETE,
             )
 
         if is_rename:
-            return ParsedPatchItem(
+            return ParsedPatch(
                 old_path=source_norm,
                 new_path=target_norm,
                 operation=ParsedPatchOperation.RENAME,
             )
 
-        return ParsedPatchItem(
+        return ParsedPatch(
             old_path=source_norm,
             new_path=target_norm,
             operation=ParsedPatchOperation.MODIFY,

@@ -50,10 +50,11 @@ class DiffPatchApplyPatchResult(BaseModel):
     representation: "PatchRepresentation | None" = None
 
 
-class ParsedPatchItem(BaseModel):
+class ParsedPatch(BaseModel):
     old_path: str | None = None
     new_path: str | None = None
     operation: ParsedPatchOperation
+    # todo: old and new lines to be implemented
 
     @property
     def path(self) -> str:
@@ -79,13 +80,13 @@ class ParsedPatchItem(BaseModel):
 
 
 class PatchRepresentationExtractor(abc.ABC):
-    def extract(self, raw_text: str) -> list[ParsedPatchItem]:
+    def extract(self, raw_text: str) -> list[ParsedPatch]:
         raise NotImplementedError
 
 
 class PatchRepresentation(BaseModel):
     processor_type: PatchProcessorType
-    patches: list[ParsedPatchItem]
+    patches: list[ParsedPatch]
 
     _EXTRACTOR_MAP: dict[PatchProcessorType, PatchRepresentationExtractor] = {}
 
@@ -107,66 +108,35 @@ class PatchRepresentation(BaseModel):
         return bool(self.patches)
 
 
-class ParsedDiffPatch(BaseModel):
-    diff: str
-    source_file: str
-    target_file: str
+def _normalize_diff_path(path: str) -> str:
+    if path.startswith("a/") or path.startswith("b/"):
+        return path[2:]
+    return path
 
-    @classmethod
-    def from_text(cls, diff_text: str) -> "ParsedDiffPatch":
-        source_files = re.findall(
-            SOURCE_PATTERN, diff_text, flags=re.MULTILINE | re.DOTALL
-        )
-        target_files = re.findall(
-            TARGET_PATTERN, diff_text, flags=re.MULTILINE | re.DOTALL
-        )
 
-        if len(source_files) > 1 or len(target_files) > 1:
-            raise ValueError(
-                f"Multiple source and target files found: {diff_text}"
-            )
-        if not source_files or not target_files:
-            raise ValueError("Invalid diff: missing source or target header")
+def path_from_udiff_text(diff_text: str) -> str:
+    source_files = re.findall(SOURCE_PATTERN, diff_text, flags=re.MULTILINE | re.DOTALL)
+    target_files = re.findall(TARGET_PATTERN, diff_text, flags=re.MULTILINE | re.DOTALL)
 
-        return cls(
-            diff=diff_text, source_file=source_files[0], target_file=target_files[0]
-        )
+    if len(source_files) > 1 or len(target_files) > 1:
+        raise ValueError(f"Multiple source and target files found: {diff_text}")
+    if not source_files or not target_files:
+        raise ValueError("Invalid diff: missing source or target header")
 
-    @staticmethod
-    def _normalize_path(path: str) -> str:
-        if path.startswith("a/") or path.startswith("b/"):
-            return path[2:]
-        return path
+    source_file = source_files[0]
+    target_file = target_files[0]
 
-    @property
-    def is_rename(self) -> bool:
-        if self.source_file == DEV_NULL or self.target_file == DEV_NULL:
-            return False
-        source = self._normalize_path(self.source_file)
-        target = self._normalize_path(self.target_file)
-        return source != target
+    source_norm = _normalize_diff_path(source_file)
+    target_norm = _normalize_diff_path(target_file)
 
-    @property
-    def is_added_file(self) -> bool:
-        return self.source_file == DEV_NULL
+    is_added = source_file == DEV_NULL
+    is_removed = target_file == DEV_NULL
+    is_rename = not is_added and not is_removed and source_norm != target_norm
 
-    @property
-    def is_removed_file(self) -> bool:
-        return self.target_file == DEV_NULL
-
-    @property
-    def is_modified_file(self) -> bool:
-        return not (self.is_added_file or self.is_removed_file)
-
-    @property
-    def path(self) -> str:
-        filepath = self.source_file
-        if filepath in (None, DEV_NULL) or (
-            self.is_rename and self.target_file not in (None, DEV_NULL)
-        ):
-            filepath = self.target_file
-
-        if not filepath or filepath == DEV_NULL:
-            raise ValueError("Invalid diff: could not determine file path")
-
-        return self._normalize_path(filepath)
+    if is_added:
+        return target_norm
+    if is_removed:
+        return source_norm
+    if is_rename:
+        return target_norm
+    return target_norm

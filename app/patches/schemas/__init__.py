@@ -4,11 +4,11 @@ from app.patches.schemas.commons import (
     DiffPatchCreate,
     DiffPatchInternalCreate,
     DiffPatchUpdate,
-    ParsedDiffPatch,
-    ParsedPatchItem,
+    ParsedPatch,
     ParsedPatchOperation,
     PatchRepresentationExtractor,
     PatchRepresentation,
+    path_from_udiff_text,
 )
 from app.patches.schemas.udiff import UDiffRepresentationExtractor, UnidiffParseError
 
@@ -18,11 +18,11 @@ __all__ = [
     "DiffPatchCreate",
     "DiffPatchInternalCreate",
     "DiffPatchUpdate",
-    "ParsedDiffPatch",
-    "ParsedPatchItem",
+    "ParsedPatch",
     "ParsedPatchOperation",
     "PatchRepresentationExtractor",
     "PatchRepresentation",
     "UDiffRepresentationExtractor",
     "UnidiffParseError",
+    "path_from_udiff_text",
 ]

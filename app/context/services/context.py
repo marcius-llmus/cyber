@@ -1,11 +1,9 @@
 import logging
 import os
 
-from app.context.models import ContextFile
 from app.context.repositories import ContextRepository
-from app.context.schemas import ContextFileCreate, ContextFileUpdate
 from app.context.services.codebase import CodebaseService
-from app.patches.schemas import ParsedPatchItem
+from app.patches.schemas import ParsedPatch
 from app.projects.exceptions import ActiveProjectRequiredException
 from app.projects.services import ProjectService
 
@@ -24,7 +22,7 @@ class WorkspaceService:
         self.codebase_service = codebase_service
 
     async def sync_context_for_diff(
-        self, *, session_id: int, patch: ParsedPatchItem
+        self, *, session_id: int, patch: ParsedPatch
     ) -> None:
         """Sync active context to reflect a single-file diff.
 
