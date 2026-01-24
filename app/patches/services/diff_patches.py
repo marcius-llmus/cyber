@@ -40,6 +40,7 @@ class DiffPatchService:
 
     async def process_diff(self, payload: DiffPatchCreate) -> DiffPatchApplyPatchResult:
         patch_id = await self._create_pending_patch(payload)
+        representation = None
         try:
             processor = self._build_processor(payload.processor_type)
             await processor.apply_patch(payload.diff)
@@ -65,9 +66,6 @@ class DiffPatchService:
             )
         except Exception as e:
             error_message = str(e)
-            representation = PatchRepresentation.from_text(
-                raw_text=payload.diff, processor_type=payload.processor_type
-            )
             await self._update_patch(
                 patch_id=patch_id,
                 update=DiffPatchUpdate(
