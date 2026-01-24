@@ -4,7 +4,10 @@ from app.agents.factories import build_agent, build_workflow_service
 from app.chat.dependencies import get_chat_service
 from app.chat.factories import build_chat_service, build_chat_turn_service
 from app.chat.services import ChatService
-from app.coder.factories import build_messaging_turn_event_handler
+from app.coder.factories import (
+    build_messaging_turn_event_handler,
+    build_single_shot_patch_service,
+)
 from app.coder.services import CoderPageService, CoderService
 from app.context.dependencies import get_context_service
 from app.context.factories import build_workspace_service
@@ -45,4 +48,5 @@ async def get_coder_service() -> CoderService:
         turn_handler_factory=build_messaging_turn_event_handler,
         diff_patch_service_factory=build_diff_patch_service,
         context_service_factory=build_workspace_service,
+        single_shot_patch_service_factory=build_single_shot_patch_service,
     )
