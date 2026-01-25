@@ -15,6 +15,8 @@ class ParsedPatch(BaseModel):
     is_removed_file: bool
     is_modified_file: bool
     path: str
+    additions: int = 0
+    deletions: int = 0
 
 
 class PatchRepresentationExtractor(ABC):

@@ -96,28 +96,71 @@ class ParsedDiffPatch(BaseModel):
 
 
 class UDiffRepresentationExtractor(PatchRepresentationExtractor):
+    @staticmethod
+    def _count_diff_lines(diff_text: str) -> tuple[int, int]:
+        additions = 0
+        deletions = 0
+        for line in diff_text.splitlines():
+            if line.startswith("+++ ") or line.startswith("--- "):
+                continue
+            if line.startswith("+"):
+                additions += 1
+            elif line.startswith("-"):
+                deletions += 1
+        return additions, deletions
+
+    @staticmethod
+    def _split_multi_file_udiff(raw_text: str) -> list[str]:
+        raw_text = raw_text.strip("\n")
+        if not raw_text:
+            return []
+
+        lines = raw_text.splitlines(keepends=True)
+        starts: list[int] = [
+            idx for idx, line in enumerate(lines) if line.startswith("--- ")
+        ]
+        if not starts:
+            return [raw_text]
+
+        chunks: list[str] = []
+        for i, start in enumerate(starts):
+            end = starts[i + 1] if i + 1 < len(starts) else len(lines)
+            chunk = "".join(lines[start:end]).strip("\n")
+            if chunk:
+                chunks.append(chunk)
+        return chunks
+
     def extract(self, raw_text: str) -> list[ParsedPatch]:
-        parsed = ParsedDiffPatch.from_text(raw_text)
+        diffs = self._split_multi_file_udiff(raw_text)
+        parsed_items: list[ParsedPatch] = []
 
-        if parsed.is_added_file:
-            operation = ParsedPatchOperation.ADD
-        elif parsed.is_removed_file:
-            operation = ParsedPatchOperation.DELETE
-        elif parsed.is_rename:
-            operation = ParsedPatchOperation.RENAME
-        else:
-            operation = ParsedPatchOperation.MODIFY
+        for diff_text in diffs:
+            parsed = ParsedDiffPatch.from_text(diff_text)
 
-        patch = ParsedPatch(
-            diff=parsed.diff,
-            old_path=parsed.old_path,
-            new_path=parsed.new_path,
-            operation=operation,
-            is_rename=parsed.is_rename,
-            is_added_file=parsed.is_added_file,
-            is_removed_file=parsed.is_removed_file,
-            is_modified_file=parsed.is_modified_file,
-            path=parsed.path,
-        )
+            if parsed.is_added_file:
+                operation = ParsedPatchOperation.ADD
+            elif parsed.is_removed_file:
+                operation = ParsedPatchOperation.DELETE
+            elif parsed.is_rename:
+                operation = ParsedPatchOperation.RENAME
+            else:
+                operation = ParsedPatchOperation.MODIFY
 
-        return [patch]
+            additions, deletions = self._count_diff_lines(parsed.diff)
+            patch = ParsedPatch(
+                diff=parsed.diff,
+                old_path=parsed.old_path,
+                new_path=parsed.new_path,
+                operation=operation,
+                is_rename=parsed.is_rename,
+                is_added_file=parsed.is_added_file,
+                is_removed_file=parsed.is_removed_file,
+                is_modified_file=parsed.is_modified_file,
+                path=parsed.path,
+                additions=additions,
+                deletions=deletions,
+            )
+
+            parsed_items.append(patch)
+
+        return parsed_items

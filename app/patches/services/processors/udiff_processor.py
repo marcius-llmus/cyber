@@ -40,8 +40,11 @@ class UDiffProcessor(BasePatchProcessor):
 
     async def apply_patch(self, diff: str) -> None:
         patches = UDiffRepresentationExtractor().extract(diff)
-        file_path = patches[0].path
-        await self._apply_file_diff(file_path=file_path, diff_content=diff)
+        for patch in patches:
+            await self._apply_file_diff(
+                file_path=patch.path,
+                diff_content=patch.diff,
+            )
 
     async def _apply_file_diff(
         self,

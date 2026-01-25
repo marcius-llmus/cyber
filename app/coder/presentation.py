@@ -206,19 +206,6 @@ class WebSocketOrchestrator:
         if event.tool_name == "apply_patch":
             patch_text = event.tool_kwargs.get("patch", "")
 
-            # Calculate stats
-            lines = patch_text.splitlines()
-            additions = sum(
-                1
-                for line in lines
-                if line.startswith("+") and not line.startswith("+++")
-            )
-            deletions = sum(
-                1
-                for line in lines
-                if line.startswith("-") and not line.startswith("---")
-            )
-
             representation = PatchRepresentation.from_text(
                 raw_text=patch_text,
                 processor_type=PatchProcessorType.UDIFF_LLM,
@@ -230,8 +217,8 @@ class WebSocketOrchestrator:
                     "file_path": parsed.path,
                     "diff": parsed.diff,
                     "turn_id": turn_id,
-                    "additions": additions,
-                    "deletions": deletions,
+                    "additions": parsed.additions,
+                    "deletions": parsed.deletions,
                     "internal_tool_call_id": event.internal_tool_call_id,
                     "tool_output": None,
                 }

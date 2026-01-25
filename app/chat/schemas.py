@@ -65,7 +65,12 @@ class FormattedMessage(BaseModel):
 
             block["formatted"] = {
                 "patches": [
-                    {"file_path": p.path, "diff": p.diff}
+                    {
+                        "file_path": p.path,
+                        "diff": p.diff,
+                        "additions": p.additions,
+                        "deletions": p.deletions,
+                    }
                     for p in representation.patches
                 ]
             }

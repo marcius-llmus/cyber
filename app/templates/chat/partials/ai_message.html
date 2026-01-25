@@ -17,10 +17,15 @@
                         {% set formatted = block.formatted %}
                         {% if formatted and formatted.patches %}
                             {% for p in formatted.patches %}
-                                {% with file_path=p.file_path, diff=p.diff, tool_id=tool.id, internal_tool_call_id=block.internal_tool_call_id, tool_output=tool.output %}
+                                {% with file_path=p.file_path, diff=p.diff, tool_id=tool.id, internal_tool_call_id=block.internal_tool_call_id, tool_output=tool.output, additions=p.additions, deletions=p.deletions %}
                                     {% include "patches/partials/diff_patch_item.html" %}
                                 {% endwith %}
                             {% endfor %}
+                        {% else %}
+                            {# Keep historical behavior in case formatting fails #}
+                            {% with file_path='(patch)', diff=tool.kwargs.patch, tool_id=tool.id, internal_tool_call_id=block.internal_tool_call_id, tool_output=tool.output %}
+                                {% include "patches/partials/diff_patch_item.html" %}
+                            {% endwith %}
                         {% endif %}
                     {% endif %}
                 {% endif %}
