@@ -1,8 +1,8 @@
 import re
 
-from app.patches.enums import ParsedPatchOperation
-
 from pydantic import BaseModel
+
+from app.patches.enums import ParsedPatchOperation
 
 from .base import (
     ParsedPatch,
@@ -33,11 +33,15 @@ class ParsedDiffPatch(BaseModel):
         )
 
         if len(source_files) > 1 or len(target_files) > 1:
-            raise UnidiffParseError(f"Multiple source and target files found: {diff_text}")
+            raise UnidiffParseError(
+                f"Multiple source and target files found: {diff_text}"
+            )
         if not source_files or not target_files:
             raise UnidiffParseError("Invalid diff: missing source or target header")
 
-        return cls(diff=diff_text, source_file=source_files[0], target_file=target_files[0])
+        return cls(
+            diff=diff_text, source_file=source_files[0], target_file=target_files[0]
+        )
 
     @staticmethod
     def _normalize_path(path: str) -> str:
@@ -49,7 +53,9 @@ class ParsedDiffPatch(BaseModel):
     def is_rename(self) -> bool:
         if self.source_file == DEV_NULL or self.target_file == DEV_NULL:
             return False
-        return self._normalize_path(self.source_file) != self._normalize_path(self.target_file)
+        return self._normalize_path(self.source_file) != self._normalize_path(
+            self.target_file
+        )
 
     @property
     def is_added_file(self) -> bool:
@@ -78,7 +84,9 @@ class ParsedDiffPatch(BaseModel):
     @property
     def path(self) -> str:
         filepath = self.source_file
-        if filepath in (None, DEV_NULL) or (self.is_rename and self.target_file not in (None, DEV_NULL)):
+        if filepath in (None, DEV_NULL) or (
+            self.is_rename and self.target_file not in (None, DEV_NULL)
+        ):
             filepath = self.target_file
 
         if not filepath or filepath == DEV_NULL:
