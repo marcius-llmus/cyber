@@ -67,6 +67,11 @@ class _MessageStateAccumulator:
             }
         )
 
+    # Note for future devs: 'internal_tool_call_id' was intentionally added as this intruder argument lol
+    # If "tool_id" (tool_call_id) was reliable from all llms, we would be able to use it nicely for correlation, but it
+    # is not. Gemini for example  will not send it. That's why internal_tool_call_id is in block and not along with
+    # its friends at tool_call_data. It does the job of "tool_id" but only for us. llm wrappers in theory should not
+    # know it exists to not interfere with inner workings of "tool_id" required by many other llm providers.
     # todo not ideal, but for the small amount of items, it is ok
     def add_tool_result(self, internal_tool_call_id: str, output: str):
         for block in reversed(self.blocks):
