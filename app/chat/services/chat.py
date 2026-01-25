@@ -6,6 +6,8 @@ from llama_index.core.llms import ChatMessage, MessageRole
 from app.chat.models import Message
 from app.chat.repositories import MessageRepository
 from app.chat.schemas import MessageCreate
+from app.patches.enums import PatchProcessorType
+from app.patches.schemas.commons import PatchRepresentation
 from app.projects.exceptions import ActiveProjectRequiredException
 from app.projects.services import ProjectService
 from app.sessions.models import ChatSession
@@ -102,3 +104,39 @@ class ChatService:
     async def clear_session_messages(self, session_id: int) -> None:
         """Deletes all messages for a given session."""
         await self.message_repo.delete_by_session_id(session_id=session_id)
+
+    # in order to load messages to front, we first parse messages from blocks
+    async def get_formatted_messages_by_session(
+        self, *, session_id: int
+    ) -> list[Message]:
+        messages = await self.list_messages_by_session(session_id=session_id)
+        for message in messages:
+            if not message.blocks:
+                continue
+
+            for block in message.blocks:
+                if block.get("type") != "tool":
+                    continue
+                tool = block.get("tool_call_data") or {}
+                if tool.get("name") != "apply_patch":
+                    continue
+
+                kwargs = tool.get("kwargs") or {}
+                patch_text = str(kwargs.get("patch") or "")
+                if not patch_text:
+                    continue
+
+                representation = PatchRepresentation.from_text(
+                    raw_text=patch_text,
+                    processor_type=PatchProcessorType.UDIFF_LLM,
+                )
+                block["formatted"] = {
+                    "patches": [
+                        {
+                            "file_path": p.path,
+                            "diff": p.diff,
+                        }
+                        for p in representation.patches
+                    ]
+                }
+        return messages
