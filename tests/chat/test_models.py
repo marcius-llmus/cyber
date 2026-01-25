@@ -50,14 +50,16 @@ class TestMessageModel:
         assert message.content == "Hello World"
 
     async def test_message_tool_calls_property_extracts_tool_blocks(self):
-        """Message.tool_calls returns tool_call_data for blocks where type == 'tool'."""
+        """Message.tool_calls returns tool blocks (blocks where type == 'tool')."""
         message = Message(
             blocks=[
                 {"type": "text", "content": "text"},
                 {"type": "tool", "tool_call_data": {"name": "test"}},
             ]
         )
-        assert message.tool_calls == [{"name": "test"}]
+        assert message.tool_calls == [
+            {"type": "tool", "tool_call_data": {"name": "test"}},
+        ]
 
     async def test_message_timestamp_defaults_to_now(self, db_session, chat_session):
         """Message.timestamp defaults to server time on insert."""
