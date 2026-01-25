@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import ClassVar
 
 from pydantic import BaseModel
 
@@ -38,7 +39,7 @@ class PatchRepresentation(BaseModel):
     processor_type: PatchProcessorType
     patches: list[ParsedPatch]
 
-    _EXTRACTOR_MAP: dict[PatchProcessorType, PatchRepresentationExtractor] = {
+    _EXTRACTOR_MAP: ClassVar[dict[PatchProcessorType, PatchRepresentationExtractor]] = {
         PatchProcessorType.UDIFF_LLM: UDiffRepresentationExtractor(),
         PatchProcessorType.CODEX_APPLY: CodexPatchRepresentationExtractor(),
     }
