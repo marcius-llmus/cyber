@@ -93,8 +93,7 @@ class PatcherTools(BaseToolSet):
         )
 
     def _get_patch_processor_type_from_settings(self) -> PatchProcessorType:
-        processor_type = self.settings.diff_patch_processor_type
-        return processor_type or PatchProcessorType.UDIFF_LLM
+        return PatchProcessorType.UDIFF_LLM
 
     async def apply_patch(self, patch: str, internal_tool_call_id: str) -> str:
         try:
