@@ -32,9 +32,26 @@ def upgrade() -> None:
             )
         )
 
+    with op.batch_alter_table("diff_patches", schema=None) as batch_op:
+        batch_op.add_column(
+            sa.Column(
+                "processor_type",
+                sa.Enum("UDIFF_LLM", "CODEX_APPLY", name="patchprocessortype"),
+                nullable=False,
+                server_default="UDIFF_LLM",
+            )
+        )
+
+    op.create_index(op.f("ix_diff_patches_processor_type"), "diff_patches", ["processor_type"], unique=False)
+
 
 def downgrade() -> None:
     """Downgrade schema."""
+    op.drop_index(op.f("ix_diff_patches_processor_type"), table_name="diff_patches")
+
+    with op.batch_alter_table("diff_patches", schema=None) as batch_op:
+        batch_op.drop_column("processor_type")
+
     with op.batch_alter_table("settings", schema=None) as batch_op:
         batch_op.drop_column("diff_patches_auto_apply")
         batch_op.drop_column("diff_patch_processor_type")
