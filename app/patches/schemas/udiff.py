@@ -1,13 +1,14 @@
 import re
 
+from app.patches.enums import ParsedPatchOperation
+
 from .base import (
     DEV_NULL,
     SOURCE_PATTERN,
     TARGET_PATTERN,
     ParsedPatch,
-    ParsedPatchOperation,
     PatchRepresentationExtractor,
-)
+) 
 
 
 class UnidiffParseError(ValueError):

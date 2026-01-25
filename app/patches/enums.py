@@ -13,3 +13,10 @@ class PatchProcessorType(StrEnum):
 
     UDIFF_LLM = "UDIFF_LLM"
     CODEX_APPLY = "CODEX_APPLY"
+
+
+class ParsedPatchOperation(StrEnum):
+    ADD = "ADD"
+    MODIFY = "MODIFY"
+    DELETE = "DELETE"
+    RENAME = "RENAME"

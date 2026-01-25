@@ -5,11 +5,12 @@ from .commons import (
     DiffPatchInternalCreate,
     DiffPatchUpdate,
     ParsedPatch,
-    ParsedPatchOperation,
     PatchRepresentation,
     PatchRepresentationExtractor,
 )
 from .udiff import UDiffRepresentationExtractor, UnidiffParseError
+
+from app.patches.enums import ParsedPatchOperation
 
 __all__ = [
     "CodexPatchRepresentationExtractor",

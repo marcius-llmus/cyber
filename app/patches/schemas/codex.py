@@ -1,9 +1,10 @@
 from apply_patch_py.models import AddFile, DeleteFile, UpdateFile
 from apply_patch_py.parser import PatchParser
 
+from app.patches.enums import ParsedPatchOperation
+
 from .base import (
     ParsedPatch,
-    ParsedPatchOperation,
     PatchRepresentationExtractor,
 )
 
