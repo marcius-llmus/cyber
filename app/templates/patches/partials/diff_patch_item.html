@@ -1,4 +1,4 @@
-<div id="diff-patch-{{ tool_run_id }}" class="rounded-lg border border-dark-lighter overflow-hidden my-1 shadow-sm">
+<div id="diff-patch-{{ internal_tool_call_id }}" class="rounded-lg border border-dark-lighter overflow-hidden my-1 shadow-sm">
     <div class="flex items-center justify-between px-4 py-2.5 cursor-pointer hover:bg-dark-light transition-colors duration-50 select-none bg-dark-lighter" data-action="toggle-expandable">
         <div class="flex items-center gap-2 pointer-events-none">
             <i class="fas fa-file-code text-primary text-sm"></i>
@@ -10,11 +10,11 @@
             </div>
             {% endif %}
             {% if tool_output %}
-                <div id="diff-status-{{ tool_run_id }}" class="ml-2 text-green-500">
+                <div id="diff-status-{{ internal_tool_call_id }}" class="ml-2 text-green-500">
                     <i class="fas fa-check text-xs"></i>
                 </div>
             {% else %}
-                <div id="diff-status-{{ tool_run_id }}" class="ml-3 text-primary">
+                <div id="diff-status-{{ internal_tool_call_id }}" class="ml-3 text-primary">
                     <i class="fas fa-circle-notch fa-spin text-xs"></i>
                 </div>
             {% endif %}

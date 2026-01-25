@@ -192,7 +192,7 @@ class WebSocketOrchestrator:
             "tool_name": event.tool_name,
             "tool_kwargs": event.tool_kwargs,
             "turn_id": turn_id,
-            "tool_run_id": event.tool_run_id,
+            "internal_tool_call_id": event.internal_tool_call_id,
         }
         html_response = templates.get_template(
             "chat/partials/tool_call_item_oob.html"
@@ -224,7 +224,8 @@ class WebSocketOrchestrator:
                 "turn_id": turn_id,
                 "additions": additions,
                 "deletions": deletions,
-                "tool_run_id": event.tool_run_id,
+                "internal_tool_call_id": event.internal_tool_call_id,
+                "tool_output": None,
             }
             diff_template = templates.get_template(
                 "patches/partials/diff_patch_item_oob.html"
@@ -245,7 +246,7 @@ class WebSocketOrchestrator:
             "tool_id": event.tool_id,
             "tool_name": event.tool_name,
             "tool_output": event.tool_output,
-            "tool_run_id": event.tool_run_id,
+            "internal_tool_call_id": event.internal_tool_call_id,
         }
         html_response = templates.get_template(
             "chat/partials/tool_call_result.html"
@@ -254,7 +255,10 @@ class WebSocketOrchestrator:
 
         # 2. If it's a Diff Patch, ALSO update the Inline Visual Card
         if event.tool_name == "apply_patch":
-            diff_context = {"tool_id": event.tool_id, "tool_run_id": event.tool_run_id}
+            diff_context = {
+                "tool_id": event.tool_id,
+                "internal_tool_call_id": event.internal_tool_call_id,
+            }
             diff_template = templates.get_template(
                 "patches/partials/diff_patch_result.html"
             ).render(diff_context)

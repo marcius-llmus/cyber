@@ -8,7 +8,7 @@ from .base import (
     TARGET_PATTERN,
     ParsedPatch,
     PatchRepresentationExtractor,
-) 
+)
 
 
 class UnidiffParseError(ValueError):

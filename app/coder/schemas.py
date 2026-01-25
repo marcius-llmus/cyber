@@ -47,14 +47,14 @@ class ToolCallEvent(BaseModel):
     tool_name: str
     tool_kwargs: dict[str, Any]
     tool_id: str
-    tool_run_id: str
+    internal_tool_call_id: str
 
 
 class ToolCallResultEvent(BaseModel):
     tool_name: str
     tool_output: str
     tool_id: str
-    tool_run_id: str
+    internal_tool_call_id: str
 
 
 class SingleShotDiffAppliedEvent(BaseModel):

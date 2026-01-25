@@ -47,7 +47,14 @@ class Message(Base):
         """Extracts tool calls from blocks."""
         if not self.blocks:
             return []
-        return [b["tool_call_data"] for b in self.blocks if b.get("type") == "tool"]
+        calls: list[dict[str, Any]] = []
+        for b in self.blocks:
+            if b.get("type") != "tool":
+                continue
+            tool_call_data = dict(b.get("tool_call_data", {}))
+            tool_call_data["internal_tool_call_id"] = b.get("internal_tool_call_id")
+            calls.append(tool_call_data)
+        return calls
 
 
 class ChatTurn(Base):

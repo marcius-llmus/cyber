@@ -1,3 +1,5 @@
+from app.patches.enums import ParsedPatchOperation
+
 from .codex import CodexPatchRepresentationExtractor
 from .commons import (
     DiffPatchApplyPatchResult,
@@ -9,8 +11,6 @@ from .commons import (
     PatchRepresentationExtractor,
 )
 from .udiff import UDiffRepresentationExtractor, UnidiffParseError
-
-from app.patches.enums import ParsedPatchOperation
 
 __all__ = [
     "CodexPatchRepresentationExtractor",

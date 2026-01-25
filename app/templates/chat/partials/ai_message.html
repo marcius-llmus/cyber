@@ -14,7 +14,7 @@
                 {% elif block.type == "tool" %}
                     {% set tool = block.tool_call_data %}
                     {% if tool and tool.name == "apply_patch" %}
-                        {% with file_path=tool.kwargs.file_path, diff=tool.kwargs.diff, tool_id=tool.id, tool_run_id=block.tool_run_id, tool_output=tool.output %}
+                        {% with file_path='(patch)', diff=tool.kwargs.patch, tool_id=tool.id, internal_tool_call_id=block.internal_tool_call_id, tool_output=tool.output %}
                             {% include "patches/partials/diff_patch_item.html" %}
                         {% endwith %}
                     {% endif %}
@@ -35,7 +35,7 @@
                 </summary>
                 <div id="tool-calls-list-{{ message.id }}" class="mt-2">
                     {% for tool in message.tool_calls %}
-                        {% with tool_name=tool.name, tool_id=tool.id, tool_run_id=tool.run_id, tool_output=tool.output, tool_kwargs=tool.kwargs %}
+                        {% with tool_name=tool.name, tool_id=tool.id, internal_tool_call_id=tool.internal_tool_call_id, tool_output=tool.output, tool_kwargs=tool.kwargs %}
                             {% include "chat/partials/tool_call_item.html" with context %}
                         {% endwith %}
                     {% endfor %}
