@@ -2,40 +2,42 @@ import re
 
 from app.patches.enums import ParsedPatchOperation
 
+from pydantic import BaseModel
+
 from .base import (
-    DEV_NULL,
-    SOURCE_PATTERN,
-    TARGET_PATTERN,
     ParsedPatch,
     PatchRepresentationExtractor,
 )
+
+SOURCE_PATTERN = r"^--- ([^\t\n]+)(?:\t[^\n]+)?"
+TARGET_PATTERN = r"^\+\+\+ ([^\t\n]+)(?:\t[^\n]+)?"
+DEV_NULL = "/dev/null"
 
 
 class UnidiffParseError(ValueError):
     pass
 
 
-class UDiffRepresentationExtractor(PatchRepresentationExtractor):
-    def extract(self, raw_text: str) -> list[ParsedPatch]:
+class ParsedDiffPatch(BaseModel):
+    diff: str
+    source_file: str
+    target_file: str
+
+    @classmethod
+    def from_text(cls, diff_text: str) -> "ParsedDiffPatch":
         source_files = re.findall(
-            SOURCE_PATTERN, raw_text, flags=re.MULTILINE | re.DOTALL
+            SOURCE_PATTERN, diff_text, flags=re.MULTILINE | re.DOTALL
         )
         target_files = re.findall(
-            TARGET_PATTERN, raw_text, flags=re.MULTILINE | re.DOTALL
+            TARGET_PATTERN, diff_text, flags=re.MULTILINE | re.DOTALL
         )
 
-        if len(source_files) != 1 or len(target_files) != 1:
-            raise UnidiffParseError(
-                "Expected a single-file unified diff (one ---/+++ header pair)."
-            )
+        if len(source_files) > 1 or len(target_files) > 1:
+            raise UnidiffParseError(f"Multiple source and target files found: {diff_text}")
+        if not source_files or not target_files:
+            raise UnidiffParseError("Invalid diff: missing source or target header")
 
-        patches: list[ParsedPatch] = []
-        for source_file, target_file in zip(source_files, target_files, strict=False):
-            patches.append(
-                self._from_headers(source_file=source_file, target_file=target_file)
-            )
-
-        return patches
+        return cls(diff=diff_text, source_file=source_files[0], target_file=target_files[0])
 
     @staticmethod
     def _normalize_path(path: str) -> str:
@@ -43,37 +45,71 @@ class UDiffRepresentationExtractor(PatchRepresentationExtractor):
             return path[2:]
         return path
 
-    def _from_headers(self, *, source_file: str, target_file: str) -> ParsedPatch:
-        source_norm = self._normalize_path(source_file)
-        target_norm = self._normalize_path(target_file)
+    @property
+    def is_rename(self) -> bool:
+        if self.source_file == DEV_NULL or self.target_file == DEV_NULL:
+            return False
+        return self._normalize_path(self.source_file) != self._normalize_path(self.target_file)
 
-        is_added = source_file == DEV_NULL
-        is_removed = target_file == DEV_NULL
-        is_rename = not is_added and not is_removed and source_norm != target_norm
+    @property
+    def is_added_file(self) -> bool:
+        return self.source_file == DEV_NULL
 
-        if is_added:
-            return ParsedPatch(
-                old_path=None,
-                new_path=target_norm,
-                operation=ParsedPatchOperation.ADD,
-            )
+    @property
+    def is_removed_file(self) -> bool:
+        return self.target_file == DEV_NULL
 
-        if is_removed:
-            return ParsedPatch(
-                old_path=source_norm,
-                new_path=None,
-                operation=ParsedPatchOperation.DELETE,
-            )
+    @property
+    def is_modified_file(self) -> bool:
+        return not (self.is_added_file or self.is_removed_file)
 
-        if is_rename:
-            return ParsedPatch(
-                old_path=source_norm,
-                new_path=target_norm,
-                operation=ParsedPatchOperation.RENAME,
-            )
+    @property
+    def old_path(self) -> str | None:
+        if self.is_added_file:
+            return None
+        return self._normalize_path(self.source_file)
 
-        return ParsedPatch(
-            old_path=source_norm,
-            new_path=target_norm,
-            operation=ParsedPatchOperation.MODIFY,
+    @property
+    def new_path(self) -> str | None:
+        if self.is_removed_file:
+            return None
+        return self._normalize_path(self.target_file)
+
+    @property
+    def path(self) -> str:
+        filepath = self.source_file
+        if filepath in (None, DEV_NULL) or (self.is_rename and self.target_file not in (None, DEV_NULL)):
+            filepath = self.target_file
+
+        if not filepath or filepath == DEV_NULL:
+            raise UnidiffParseError("Invalid diff: could not determine file path")
+
+        return self._normalize_path(filepath)
+
+
+class UDiffRepresentationExtractor(PatchRepresentationExtractor):
+    def extract(self, raw_text: str) -> list[ParsedPatch]:
+        parsed = ParsedDiffPatch.from_text(raw_text)
+
+        if parsed.is_added_file:
+            operation = ParsedPatchOperation.ADD
+        elif parsed.is_removed_file:
+            operation = ParsedPatchOperation.DELETE
+        elif parsed.is_rename:
+            operation = ParsedPatchOperation.RENAME
+        else:
+            operation = ParsedPatchOperation.MODIFY
+
+        patch = ParsedPatch(
+            diff=parsed.diff,
+            old_path=parsed.old_path,
+            new_path=parsed.new_path,
+            operation=operation,
+            is_rename=parsed.is_rename,
+            is_added_file=parsed.is_added_file,
+            is_removed_file=parsed.is_removed_file,
+            is_modified_file=parsed.is_modified_file,
+            path=parsed.path,
         )
+
+        return [patch]

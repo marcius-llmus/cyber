@@ -24,6 +24,8 @@ from app.coder.schemas import (
 from app.coder.services import CoderService
 from app.commons.websockets import WebSocketConnectionManager
 from app.core.templating import templates
+from app.patches.enums import PatchProcessorType
+from app.patches.schemas.commons import PatchRepresentation
 
 logger = logging.getLogger(__name__)
 
@@ -217,21 +219,27 @@ class WebSocketOrchestrator:
                 if line.startswith("-") and not line.startswith("---")
             )
 
-            diff_context = {
-                "tool_id": event.tool_id,
-                "file_path": "(patch)",
-                "diff": patch_text,
-                "turn_id": turn_id,
-                "additions": additions,
-                "deletions": deletions,
-                "internal_tool_call_id": event.internal_tool_call_id,
-                "tool_output": None,
-            }
-            diff_template = templates.get_template(
-                "patches/partials/diff_patch_item_oob.html"
-            ).render(diff_context)
+            representation = PatchRepresentation.from_text(
+                raw_text=patch_text,
+                processor_type=PatchProcessorType.UDIFF_LLM,
+            )
 
-            await self.ws_manager.send_html(diff_template)
+            for parsed in representation.patches:
+                diff_context = {
+                    "tool_id": event.tool_id,
+                    "file_path": parsed.path,
+                    "diff": parsed.diff,
+                    "turn_id": turn_id,
+                    "additions": additions,
+                    "deletions": deletions,
+                    "internal_tool_call_id": event.internal_tool_call_id,
+                    "tool_output": None,
+                }
+                diff_template = templates.get_template(
+                    "patches/partials/diff_patch_item_oob.html"
+                ).render(diff_context)
+
+                await self.ws_manager.send_html(diff_template)
 
     async def _render_tool_result(
         self, event: ToolCallResultEvent, turn_id: str

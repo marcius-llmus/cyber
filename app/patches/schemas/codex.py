@@ -16,21 +16,35 @@ class CodexPatchRepresentationExtractor(PatchRepresentationExtractor):
         parsed_items: list[ParsedPatch] = []
         for hunk in patch.hunks:
             if isinstance(hunk, AddFile):
+                new_path = str(hunk.path)
                 parsed_items.append(
                     ParsedPatch(
+                        diff=raw_text,
                         old_path=None,
-                        new_path=str(hunk.path),
+                        new_path=new_path,
                         operation=ParsedPatchOperation.ADD,
+                        is_rename=False,
+                        is_added_file=True,
+                        is_removed_file=False,
+                        is_modified_file=False,
+                        path=new_path,
                     )
                 )
                 continue
 
             if isinstance(hunk, DeleteFile):
+                old_path = str(hunk.path)
                 parsed_items.append(
                     ParsedPatch(
-                        old_path=str(hunk.path),
+                        diff=raw_text,
+                        old_path=old_path,
                         new_path=None,
                         operation=ParsedPatchOperation.DELETE,
+                        is_rename=False,
+                        is_added_file=False,
+                        is_removed_file=True,
+                        is_modified_file=False,
+                        path=old_path,
                     )
                 )
                 continue
@@ -43,11 +57,18 @@ class CodexPatchRepresentationExtractor(PatchRepresentationExtractor):
                     if new_path != old_path
                     else ParsedPatchOperation.MODIFY
                 )
+                is_rename = operation == ParsedPatchOperation.RENAME
                 parsed_items.append(
                     ParsedPatch(
+                        diff=raw_text,
                         old_path=old_path,
                         new_path=new_path,
                         operation=operation,
+                        is_rename=is_rename,
+                        is_added_file=False,
+                        is_removed_file=False,
+                        is_modified_file=not is_rename,
+                        path=new_path,
                     )
                 )
                 continue
