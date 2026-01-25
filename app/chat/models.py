@@ -44,17 +44,10 @@ class Message(Base):
 
     @property
     def tool_calls(self) -> list[dict[str, Any]]:
-        """Extracts tool calls from blocks."""
+        """Returns tool call blocks (blocks where type == 'tool')."""
         if not self.blocks:
             return []
-        calls: list[dict[str, Any]] = []
-        for b in self.blocks:
-            if b.get("type") != "tool":
-                continue
-            tool_call_data = dict(b.get("tool_call_data", {}))
-            tool_call_data["internal_tool_call_id"] = b.get("internal_tool_call_id")
-            calls.append(tool_call_data)
-        return calls
+        return [b for b in self.blocks if b.get("type") == "tool"]
 
 
 class ChatTurn(Base):

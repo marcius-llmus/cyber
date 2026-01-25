@@ -34,8 +34,15 @@
                     </span>
                 </summary>
                 <div id="tool-calls-list-{{ message.id }}" class="mt-2">
-                    {% for tool in message.tool_calls %}
-                        {% with tool_name=tool.name, tool_id=tool.id, internal_tool_call_id=tool.internal_tool_call_id, tool_output=tool.output, tool_kwargs=tool.kwargs %}
+                    {% for block in message.tool_calls %}
+                        {% set tool_call_data = block.tool_call_data %}
+                        {% with
+                            tool_name=block.tool_name,
+                            tool_id=tool_call_data.id,
+                            internal_tool_call_id=block.internal_tool_call_id,
+                            tool_output=tool_call_data.output,
+                            tool_kwargs=tool_call_data.kwargs
+                        %}
                             {% include "chat/partials/tool_call_item.html" with context %}
                         {% endwith %}
                     {% endfor %}
