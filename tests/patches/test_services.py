@@ -7,7 +7,11 @@ from unittest.mock import AsyncMock
 import pytest
 
 from app.patches.enums import DiffPatchStatus, PatchProcessorType
-from app.patches.schemas import DiffPatchApplyPatchResult, DiffPatchCreate, PatchRepresentation
+from app.patches.schemas import (
+    DiffPatchApplyPatchResult,
+    DiffPatchCreate,
+    PatchRepresentation,
+)
 from app.patches.services import DiffPatchService
 from app.patches.services.processors.udiff_processor import UDiffProcessor
 
@@ -23,7 +27,10 @@ class TestDiffPatchService:
             codebase_service_factory=AsyncMock(),
         )
         blocks = [
-            {"type": "text", "content": "hello\n```diff\n--- a/a.txt\n+++ b/a.txt\n```\n"},
+            {
+                "type": "text",
+                "content": "hello\n```diff\n--- a/a.txt\n+++ b/a.txt\n```\n",
+            },
             {"type": "tool", "content": "ignored"},
         ]
         patches = service.extract_diffs_from_blocks(
@@ -54,7 +61,10 @@ class TestDiffPatchService:
         patches = service.extract_diffs_from_blocks(
             turn_id="t1", session_id=1, blocks=blocks
         )
-        assert [p.diff.splitlines()[0] for p in patches] == ["--- a/a.txt", "--- a/b.txt"]
+        assert [p.diff.splitlines()[0] for p in patches] == [
+            "--- a/a.txt",
+            "--- a/b.txt",
+        ]
 
     def test_extract_diffs_from_blocks_accepts_diffpy_fenced_blocks(self):
         r"""Should parse ```diffpy (and diff*) fenced blocks (regex supports diff(?:\w+)?)."""
@@ -116,9 +126,7 @@ class TestDiffPatchService:
             codebase_service_factory=AsyncMock(),
         )
         assert (
-            service.extract_diffs_from_blocks(
-                turn_id="t1", session_id=1, blocks=None
-            )
+            service.extract_diffs_from_blocks(turn_id="t1", session_id=1, blocks=None)
             == []
         )
 
@@ -189,7 +197,9 @@ class TestDiffPatchService:
         )
         assert patches[0].processor_type == PatchProcessorType.UDIFF_LLM
 
-    async def test_process_diff_marks_applied_on_success(self, mocker, diff_patch_service):
+    async def test_process_diff_marks_applied_on_success(
+        self, mocker, diff_patch_service
+    ):
         """Should create PENDING then update to APPLIED when processor succeeds."""
         processor = mocker.MagicMock()
         processor.apply_patch = AsyncMock(return_value=None)
@@ -297,7 +307,9 @@ class TestDiffPatchService:
     ):
         """Should mark FAILED and not call processor.apply_patch if _build_processor raises."""
         diff_patch_service._create_pending_patch = AsyncMock(return_value=5)
-        diff_patch_service._build_processor = mocker.MagicMock(side_effect=ValueError("Boom"))
+        diff_patch_service._build_processor = mocker.MagicMock(
+            side_effect=ValueError("Boom")
+        )
         diff_patch_service._update_patch = AsyncMock(return_value=None)
 
         payload = DiffPatchCreate(
@@ -361,7 +373,9 @@ class TestDiffPatchService:
         self, mocker, diff_patch_service
     ):
         """Should surface/propagate if _create_pending_patch fails before having patch_id."""
-        diff_patch_service._create_pending_patch = AsyncMock(side_effect=ValueError("Boom"))
+        diff_patch_service._create_pending_patch = AsyncMock(
+            side_effect=ValueError("Boom")
+        )
 
         payload = DiffPatchCreate(
             session_id=1,

@@ -197,8 +197,13 @@ class TestDiffPatchRepository:
             ]
         )
         await db_session.flush()
-        rows = await diff_patch_repository.list_by_turn(session_id=chat_session.id, turn_id="t1")
-        assert {p.status for p in rows} == {DiffPatchStatus.PENDING, DiffPatchStatus.APPLIED}
+        rows = await diff_patch_repository.list_by_turn(
+            session_id=chat_session.id, turn_id="t1"
+        )
+        assert {p.status for p in rows} == {
+            DiffPatchStatus.PENDING,
+            DiffPatchStatus.APPLIED,
+        }
 
     async def test_list_pending_by_turn_returns_empty_when_no_pending(
         self,
@@ -217,5 +222,7 @@ class TestDiffPatchRepository:
             )
         )
         await db_session.flush()
-        rows = await diff_patch_repository.list_pending_by_turn(session_id=chat_session.id, turn_id="t1")
+        rows = await diff_patch_repository.list_pending_by_turn(
+            session_id=chat_session.id, turn_id="t1"
+        )
         assert rows == []

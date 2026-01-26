@@ -192,9 +192,7 @@ class TestUDiffProcessor:
 
         llm_client = mocker.MagicMock()
         llm_client.achat = AsyncMock(
-            return_value=mocker.MagicMock(
-                message=mocker.MagicMock(content="patched")
-            )
+            return_value=mocker.MagicMock(message=mocker.MagicMock(content="patched"))
         )
         llm_service = mocker.MagicMock()
         llm_service.get_client = AsyncMock(return_value=llm_client)
@@ -242,9 +240,7 @@ class TestUDiffProcessor:
 
         llm_client = mocker.MagicMock()
         llm_client.achat = AsyncMock(
-            return_value=mocker.MagicMock(
-                message=mocker.MagicMock(content="patched")
-            )
+            return_value=mocker.MagicMock(message=mocker.MagicMock(content="patched"))
         )
         llm_service = mocker.MagicMock()
         llm_service.get_client = AsyncMock(return_value=llm_client)
@@ -291,9 +287,7 @@ class TestUDiffProcessor:
 
         llm_client = mocker.MagicMock()
         llm_client.achat = AsyncMock(
-            return_value=mocker.MagicMock(
-                message=mocker.MagicMock(content="patched")
-            )
+            return_value=mocker.MagicMock(message=mocker.MagicMock(content="patched"))
         )
         llm_service = mocker.MagicMock()
         llm_service.get_client = AsyncMock(return_value=llm_client)
@@ -340,9 +334,7 @@ class TestUDiffProcessor:
         )
         llm_client = mocker.MagicMock()
         llm_client.achat = AsyncMock(
-            return_value=mocker.MagicMock(
-                message=mocker.MagicMock(content="patched")
-            )
+            return_value=mocker.MagicMock(message=mocker.MagicMock(content="patched"))
         )
         await processor._apply_via_llm(llm_client, "orig", "diff")
 

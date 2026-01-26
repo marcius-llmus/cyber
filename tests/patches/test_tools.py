@@ -187,7 +187,11 @@ class TestPatcherToolsApplyPatch:
         self, mocker, patcher_tools
     ):
         """Should catch exception and return 'Error saving/applying patch: ...'."""
-        mocker.patch.object(patcher_tools, "_get_patch_processor_type_from_settings", side_effect=ValueError("Boom"))
+        mocker.patch.object(
+            patcher_tools,
+            "_get_patch_processor_type_from_settings",
+            side_effect=ValueError("Boom"),
+        )
         out = await patcher_tools.apply_patch("d", internal_tool_call_id="x")
         assert out == "Error saving/applying patch: Boom"
 

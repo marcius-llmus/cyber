@@ -112,6 +112,7 @@ class TestCodexPatchRepresentationExtractor:
 
     def test_extract_raises_for_unsupported_hunk_type(self, mocker):
         """Should raise ValueError for unexpected hunk classes."""
+
         class _Unsupported:  # noqa: N801
             pass
 
@@ -142,14 +143,21 @@ class TestPatchRepresentation:
 
     def test_has_changes_true_when_patches_present(self):
         """Should return True when representation.patches is non-empty."""
-        rep = PatchRepresentation(processor_type=PatchProcessorType.UDIFF_LLM, patches=[
-            UDiffRepresentationExtractor().extract("--- /dev/null\n+++ b/a.txt\n@@ -0,0 +1,1 @@\n+hi\n")[0]
-        ])
+        rep = PatchRepresentation(
+            processor_type=PatchProcessorType.UDIFF_LLM,
+            patches=[
+                UDiffRepresentationExtractor().extract(
+                    "--- /dev/null\n+++ b/a.txt\n@@ -0,0 +1,1 @@\n+hi\n"
+                )[0]
+            ],
+        )
         assert rep.has_changes is True
 
     def test_has_changes_false_when_no_patches(self):
         """Should return False when representation.patches is empty."""
-        rep = PatchRepresentation(processor_type=PatchProcessorType.UDIFF_LLM, patches=[])
+        rep = PatchRepresentation(
+            processor_type=PatchProcessorType.UDIFF_LLM, patches=[]
+        )
         assert rep.has_changes is False
 
     def test_from_text_raises_for_unknown_processor_type(self):
@@ -213,7 +221,9 @@ class TestUDiffRepresentationExtractor:
     def test_count_diff_lines_ignores_headers(self):
         """Should not count ---/+++ header lines as deletions/additions."""
         extractor = UDiffRepresentationExtractor()
-        adds, dels = extractor._count_diff_lines("--- a/a.txt\n+++ b/a.txt\n+hi\n-bye\n")  # noqa: SLF001
+        adds, dels = extractor._count_diff_lines(
+            "--- a/a.txt\n+++ b/a.txt\n+hi\n-bye\n"
+        )  # noqa: SLF001
         assert adds == 1
         assert dels == 1
 
@@ -226,10 +236,7 @@ class TestUDiffRepresentationExtractor:
 
     def test_extract_allows_leading_noise_before_first_header(self):
         """Should ignore any prelude text before first '--- ' and still parse diffs."""
-        raw = (
-            "noise line\n"
-            "--- a/a.txt\n+++ b/a.txt\n@@ -1,1 +1,1 @@\n-hi\n+hello\n"
-        )
+        raw = "noise line\n" "--- a/a.txt\n+++ b/a.txt\n@@ -1,1 +1,1 @@\n-hi\n+hello\n"
         patch = UDiffRepresentationExtractor().extract(raw)[0]
         assert patch.path == "a.txt"
 
