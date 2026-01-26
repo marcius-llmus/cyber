@@ -1,57 +1,354 @@
 """Processor tests for the patches app."""
 
+from __future__ import annotations
+
+from contextlib import asynccontextmanager
+from decimal import Decimal
+from unittest.mock import AsyncMock
+
+import pytest
+
+from app.context.schemas import FileReadResult, FileStatus
+from app.llms.enums import LLMModel
+from app.patches.services.processors.udiff_processor import UDiffProcessor
+from app.projects.exceptions import ActiveProjectRequiredException
+
 
 class TestUDiffProcessor:
     def test_strip_markdown_strips_fenced_code_block(self):
         """Should return inner content when response is wrapped in ```...``` fences."""
-        pass
+        assert UDiffProcessor._strip_markdown("```\nhello\n```") == "hello"
 
     def test_strip_markdown_strips_fenced_code_block_with_language(self):
         """Should strip ```python (or similar) fences and return inner content."""
-        pass
+        assert UDiffProcessor._strip_markdown("```python\nhello\n```") == "hello"
 
     def test_strip_markdown_returns_original_when_not_fenced(self):
         """Should return input text unchanged if no wrapping fences exist."""
-        pass
+        assert UDiffProcessor._strip_markdown("hello") == "hello"
 
     async def test_apply_patch_delegates_per_parsed_patch_in_order(self, mocker):
         """Should call _apply_file_diff once per extracted ParsedPatch (order preserved)."""
-        pass
+        processor = UDiffProcessor(
+            db=mocker.MagicMock(),
+            diff_patch_repo_factory=mocker.MagicMock(),
+            llm_service_factory=AsyncMock(),
+            project_service_factory=AsyncMock(),
+            codebase_service_factory=AsyncMock(),
+        )
+        patches = [
+            mocker.MagicMock(path="a.txt", diff="d1"),
+            mocker.MagicMock(path="b.txt", diff="d2"),
+        ]
+        mocker.patch(
+            "app.patches.services.processors.udiff_processor.UDiffRepresentationExtractor.extract",
+            return_value=patches,
+        )
+        apply_mock = mocker.patch.object(
+            processor, "_apply_file_diff", new=AsyncMock(return_value="")
+        )
+
+        await processor.apply_patch("RAW")
+
+        assert apply_mock.await_count == 2
+        assert apply_mock.await_args_list[0].kwargs["file_path"] == "a.txt"
+        assert apply_mock.await_args_list[1].kwargs["file_path"] == "b.txt"
 
     async def test_apply_patch_noop_when_extractor_returns_empty(self, mocker):
         """Should not call _apply_file_diff when no ParsedPatch entries exist."""
-        pass
+        processor = UDiffProcessor(
+            db=mocker.MagicMock(),
+            diff_patch_repo_factory=mocker.MagicMock(),
+            llm_service_factory=AsyncMock(),
+            project_service_factory=AsyncMock(),
+            codebase_service_factory=AsyncMock(),
+        )
+        mocker.patch(
+            "app.patches.services.processors.udiff_processor.UDiffRepresentationExtractor.extract",
+            return_value=[],
+        )
+        apply_mock = mocker.patch.object(processor, "_apply_file_diff", new=AsyncMock())
+        await processor.apply_patch("RAW")
+        apply_mock.assert_not_awaited()
 
     async def test_apply_file_diff_raises_when_no_active_project(self, mocker):
         """Should raise ActiveProjectRequiredException if project_service.get_active_project returns None."""
-        pass
+        db = mocker.MagicMock()
+
+        @asynccontextmanager
+        async def session_cm():
+            yield mocker.MagicMock()
+
+        db.session = session_cm
+
+        project_service = mocker.MagicMock()
+        project_service.get_active_project = AsyncMock(return_value=None)
+
+        processor = UDiffProcessor(
+            db=db,
+            diff_patch_repo_factory=mocker.MagicMock(),
+            llm_service_factory=AsyncMock(),
+            project_service_factory=AsyncMock(return_value=project_service),
+            codebase_service_factory=AsyncMock(return_value=mocker.MagicMock()),
+        )
+
+        with pytest.raises(ActiveProjectRequiredException):
+            await processor._apply_file_diff(file_path="a.txt", diff_content="d")
 
     async def test_apply_file_diff_raises_for_binary_file(self, mocker):
         """Should raise ValueError when codebase_service.read_file returns FileStatus.BINARY."""
-        pass
+        db = mocker.MagicMock()
+
+        @asynccontextmanager
+        async def session_cm():
+            yield mocker.MagicMock()
+
+        db.session = session_cm
+
+        project = mocker.MagicMock(path="/p")
+        project_service = mocker.MagicMock()
+        project_service.get_active_project = AsyncMock(return_value=project)
+
+        codebase_service = mocker.MagicMock()
+        codebase_service.read_file = AsyncMock(
+            return_value=FileReadResult(
+                file_path="a.txt", status=FileStatus.BINARY, content=""
+            )
+        )
+
+        processor = UDiffProcessor(
+            db=db,
+            diff_patch_repo_factory=mocker.MagicMock(),
+            llm_service_factory=AsyncMock(return_value=mocker.MagicMock()),
+            project_service_factory=AsyncMock(return_value=project_service),
+            codebase_service_factory=AsyncMock(return_value=codebase_service),
+        )
+
+        with pytest.raises(ValueError, match="Cannot patch binary file"):
+            await processor._apply_file_diff(file_path="a.txt", diff_content="d")
 
     async def test_apply_file_diff_raises_for_read_error(self, mocker):
         """Should raise ValueError when codebase_service.read_file returns FileStatus.ERROR."""
-        pass
+        db = mocker.MagicMock()
+
+        @asynccontextmanager
+        async def session_cm():
+            yield mocker.MagicMock()
+
+        db.session = session_cm
+
+        project = mocker.MagicMock(path="/p")
+        project_service = mocker.MagicMock()
+        project_service.get_active_project = AsyncMock(return_value=project)
+
+        codebase_service = mocker.MagicMock()
+        codebase_service.read_file = AsyncMock(
+            return_value=FileReadResult(
+                file_path="a.txt",
+                status=FileStatus.ERROR,
+                content="",
+                error_message="nope",
+            )
+        )
+
+        processor = UDiffProcessor(
+            db=db,
+            diff_patch_repo_factory=mocker.MagicMock(),
+            llm_service_factory=AsyncMock(return_value=mocker.MagicMock()),
+            project_service_factory=AsyncMock(return_value=project_service),
+            codebase_service_factory=AsyncMock(return_value=codebase_service),
+        )
+
+        with pytest.raises(ValueError, match="Could not read file a.txt"):
+            await processor._apply_file_diff(file_path="a.txt", diff_content="d")
 
     async def test_apply_file_diff_calls_llm_client_with_expected_model_and_temperature(
         self, mocker
     ):
         """Should await llm_service.get_client(model_name=GPT_4_1_MINI, temperature=0)."""
-        pass
+        project = mocker.MagicMock(path="/p")
+
+        session1 = mocker.MagicMock()
+        session2 = mocker.MagicMock()
+        sessions = [session1, session2]
+
+        @asynccontextmanager
+        async def session_cm():
+            yield sessions.pop(0)
+
+        db = mocker.MagicMock()
+        db.session = session_cm
+
+        project_service = mocker.MagicMock()
+        project_service.get_active_project = AsyncMock(return_value=project)
+
+        codebase_service = mocker.MagicMock()
+        codebase_service.read_file = AsyncMock(
+            return_value=FileReadResult(
+                file_path="a.txt", status=FileStatus.SUCCESS, content="orig"
+            )
+        )
+        codebase_service.write_file = AsyncMock(return_value=None)
+
+        llm_client = mocker.MagicMock()
+        llm_client.achat = AsyncMock(
+            return_value=mocker.MagicMock(
+                message=mocker.MagicMock(content="patched")
+            )
+        )
+        llm_service = mocker.MagicMock()
+        llm_service.get_client = AsyncMock(return_value=llm_client)
+
+        processor = UDiffProcessor(
+            db=db,
+            diff_patch_repo_factory=mocker.MagicMock(),
+            llm_service_factory=AsyncMock(return_value=llm_service),
+            project_service_factory=AsyncMock(return_value=project_service),
+            codebase_service_factory=AsyncMock(return_value=codebase_service),
+        )
+
+        await processor._apply_file_diff(file_path="a.txt", diff_content="d")
+
+        llm_service.get_client.assert_awaited_once_with(
+            model_name=LLMModel.GPT_4_1_MINI,
+            temperature=Decimal("0"),
+        )
 
     async def test_apply_file_diff_writes_patched_content(self, mocker):
         """Should call codebase_service.write_file(project.path, file_path, patched_content)."""
-        pass
+        project = mocker.MagicMock(path="/p")
+
+        session1 = mocker.MagicMock()
+        session2 = mocker.MagicMock()
+        sessions = [session1, session2]
+
+        @asynccontextmanager
+        async def session_cm():
+            yield sessions.pop(0)
+
+        db = mocker.MagicMock()
+        db.session = session_cm
+
+        project_service = mocker.MagicMock()
+        project_service.get_active_project = AsyncMock(return_value=project)
+
+        codebase_service = mocker.MagicMock()
+        codebase_service.read_file = AsyncMock(
+            return_value=FileReadResult(
+                file_path="a.txt", status=FileStatus.SUCCESS, content="orig"
+            )
+        )
+        codebase_service.write_file = AsyncMock(return_value=None)
+
+        llm_client = mocker.MagicMock()
+        llm_client.achat = AsyncMock(
+            return_value=mocker.MagicMock(
+                message=mocker.MagicMock(content="patched")
+            )
+        )
+        llm_service = mocker.MagicMock()
+        llm_service.get_client = AsyncMock(return_value=llm_client)
+
+        processor = UDiffProcessor(
+            db=db,
+            diff_patch_repo_factory=mocker.MagicMock(),
+            llm_service_factory=AsyncMock(return_value=llm_service),
+            project_service_factory=AsyncMock(return_value=project_service),
+            codebase_service_factory=AsyncMock(return_value=codebase_service),
+        )
+
+        await processor._apply_file_diff(file_path="a.txt", diff_content="d")
+
+        codebase_service.write_file.assert_awaited_once_with(
+            project.path, "a.txt", "patched"
+        )
 
     async def test_apply_file_diff_reads_file_with_must_exist_false(self, mocker):
         """Should call codebase_service.read_file(..., must_exist=False) to support new files."""
-        pass
+        project = mocker.MagicMock(path="/p")
+
+        session1 = mocker.MagicMock()
+        session2 = mocker.MagicMock()
+        sessions = [session1, session2]
+
+        @asynccontextmanager
+        async def session_cm():
+            yield sessions.pop(0)
+
+        db = mocker.MagicMock()
+        db.session = session_cm
+
+        project_service = mocker.MagicMock()
+        project_service.get_active_project = AsyncMock(return_value=project)
+
+        codebase_service = mocker.MagicMock()
+        codebase_service.read_file = AsyncMock(
+            return_value=FileReadResult(
+                file_path="a.txt", status=FileStatus.SUCCESS, content="orig"
+            )
+        )
+        codebase_service.write_file = AsyncMock(return_value=None)
+
+        llm_client = mocker.MagicMock()
+        llm_client.achat = AsyncMock(
+            return_value=mocker.MagicMock(
+                message=mocker.MagicMock(content="patched")
+            )
+        )
+        llm_service = mocker.MagicMock()
+        llm_service.get_client = AsyncMock(return_value=llm_client)
+
+        processor = UDiffProcessor(
+            db=db,
+            diff_patch_repo_factory=mocker.MagicMock(),
+            llm_service_factory=AsyncMock(return_value=llm_service),
+            project_service_factory=AsyncMock(return_value=project_service),
+            codebase_service_factory=AsyncMock(return_value=codebase_service),
+        )
+
+        await processor._apply_file_diff(file_path="a.txt", diff_content="d")
+        codebase_service.read_file.assert_awaited_once_with(
+            project.path, "a.txt", must_exist=False
+        )
 
     async def test_apply_via_llm_strips_markdown_from_response(self, mocker):
         """Should strip markdown fences from llm output before returning."""
-        pass
+        processor = UDiffProcessor(
+            db=mocker.MagicMock(),
+            diff_patch_repo_factory=mocker.MagicMock(),
+            llm_service_factory=AsyncMock(),
+            project_service_factory=AsyncMock(),
+            codebase_service_factory=AsyncMock(),
+        )
+        llm_client = mocker.MagicMock()
+        llm_client.achat = AsyncMock(
+            return_value=mocker.MagicMock(
+                message=mocker.MagicMock(content="```\npatched\n```")
+            )
+        )
+        out = await processor._apply_via_llm(llm_client, "orig", "diff")
+        assert out == "patched"
 
     async def test_apply_via_llm_sends_expected_prompt_messages(self, mocker):
         """Should call llm_client.achat() with system prompt + ORIGINAL CONTENT + DIFF PATCH."""
-        pass
+        processor = UDiffProcessor(
+            db=mocker.MagicMock(),
+            diff_patch_repo_factory=mocker.MagicMock(),
+            llm_service_factory=AsyncMock(),
+            project_service_factory=AsyncMock(),
+            codebase_service_factory=AsyncMock(),
+        )
+        llm_client = mocker.MagicMock()
+        llm_client.achat = AsyncMock(
+            return_value=mocker.MagicMock(
+                message=mocker.MagicMock(content="patched")
+            )
+        )
+        await processor._apply_via_llm(llm_client, "orig", "diff")
+
+        llm_client.achat.assert_awaited_once()
+        messages = llm_client.achat.await_args.args[0]
+        assert len(messages) == 3
+        assert messages[0].role == "system"
+        assert "ORIGINAL CONTENT:" in messages[1].content
+        assert "DIFF PATCH:" in messages[2].content
