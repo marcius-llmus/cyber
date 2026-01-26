@@ -28,12 +28,22 @@ def diff_patch_repository_mock(mocker: MockerFixture) -> MagicMock:
 
 
 @pytest.fixture
+def diff_patch_repo_factory_mock(
+    mocker: MockerFixture, diff_patch_repository_mock: MagicMock
+) -> MagicMock:
+    factory = mocker.MagicMock()
+    factory.return_value = diff_patch_repository_mock
+    return factory
+
+
+@pytest.fixture
 def diff_patch_service(
-    diff_patch_repository_mock: MagicMock,
+    sessionmanager_mock: DatabaseSessionManager,
+    diff_patch_repo_factory_mock: MagicMock,
 ) -> DiffPatchService:
     return DiffPatchService(
-        db=MagicMock(),
-        diff_patch_repo_factory=lambda _db: diff_patch_repository_mock,
+        db=sessionmanager_mock,
+        diff_patch_repo_factory=diff_patch_repo_factory_mock,
         llm_service_factory=AsyncMock(),
         project_service_factory=AsyncMock(),
         codebase_service_factory=AsyncMock(),
