@@ -33,6 +33,7 @@ pytest_plugins = [
     "tests.llms.fixtures",
     "tests.chat.fixtures",
     "tests.context.fixtures",
+    "tests.patches.fixtures",
 ]
 
 
