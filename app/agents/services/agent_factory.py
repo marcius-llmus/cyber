@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from llama_index.core.tools import BaseTool
 
 from app.agents.services.agents_context import (

@@ -1,11 +1,3 @@
-"""Test fixtures.
-
-These fixtures are intentionally scoped to tests under `tests/agents/` so the
-agents app can evolve independently without leaking fixtures across domains.
-"""
-
-from __future__ import annotations
-
 from collections.abc import AsyncGenerator, Generator
 from contextlib import asynccontextmanager
 from unittest.mock import create_autospec

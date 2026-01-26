@@ -1,7 +1,3 @@
-"""Processor tests for the patches app."""
-
-from __future__ import annotations
-
 from contextlib import asynccontextmanager
 from decimal import Decimal
 from unittest.mock import AsyncMock

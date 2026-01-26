@@ -1,7 +1,3 @@
-"""Schema tests for the patches app."""
-
-from __future__ import annotations
-
 import pytest
 
 from app.patches.enums import ParsedPatchOperation, PatchProcessorType
