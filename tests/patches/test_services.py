@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from app.patches.enums import DiffPatchStatus, PatchProcessorType
-from app.patches.schemas import DiffPatchApplyPatchResult, DiffPatchCreate
+from app.patches.schemas import DiffPatchApplyPatchResult, DiffPatchCreate, PatchRepresentation
 from app.patches.services import DiffPatchService
 from app.patches.services.processors.udiff_processor import UDiffProcessor
 
@@ -191,24 +191,14 @@ class TestDiffPatchService:
 
     async def test_process_diff_marks_applied_on_success(self, mocker):
         """Should create PENDING then update to APPLIED when processor succeeds."""
-        service: DiffPatchService = mocker.MagicMock(spec=DiffPatchService)
-        service._create_pending_patch = AsyncMock(return_value=123)
         processor = mocker.MagicMock()
         processor.apply_patch = AsyncMock(return_value=None)
-        service._build_processor = mocker.MagicMock(return_value=processor)
-        service._update_patch = AsyncMock(return_value=None)
 
-        import app.patches.services.diff_patches as mod
-
-        rep_obj = mod.PatchRepresentation(
+        rep_obj = PatchRepresentation(
             processor_type=PatchProcessorType.UDIFF_LLM,
             patches=[],
         )
-        patch_rep_mock = mocker.patch.object(
-            mod.PatchRepresentation,
-            "from_text",
-            return_value=rep_obj,
-        )
+        patch_rep_mock = mocker.patch.object(PatchRepresentation, "from_text", return_value=rep_obj)
 
         payload = DiffPatchCreate(
             session_id=1,
@@ -216,42 +206,54 @@ class TestDiffPatchService:
             diff="--- a/a.txt\n+++ b/a.txt\n",
             processor_type=PatchProcessorType.UDIFF_LLM,
         )
-        real_service = DiffPatchService(
+        service = DiffPatchService(
             db=mocker.MagicMock(),
             diff_patch_repo_factory=mocker.MagicMock(),
             llm_service_factory=AsyncMock(),
             project_service_factory=AsyncMock(),
             codebase_service_factory=AsyncMock(),
         )
-        # attach mocked internals
-        real_service._create_pending_patch = service._create_pending_patch
-        real_service._build_processor = service._build_processor
-        real_service._update_patch = service._update_patch
 
-        result = await real_service.process_diff(payload)
+        create_pending_mock = mocker.patch.object(
+            service,
+            "_create_pending_patch",
+            new=AsyncMock(return_value=123),
+        )
+        build_processor_mock = mocker.patch.object(
+            service,
+            "_build_processor",
+            return_value=processor,
+        )
+        update_patch_mock = mocker.patch.object(
+            service,
+            "_update_patch",
+            new=AsyncMock(return_value=None),
+        )
+
+        result = await service.process_diff(payload)
 
         assert isinstance(result, DiffPatchApplyPatchResult)
         assert result.patch_id == 123
         assert result.status == DiffPatchStatus.APPLIED
         assert result.representation == rep_obj
         processor.apply_patch.assert_awaited_once_with(payload.diff)
+        build_processor_mock.assert_called_once_with(payload.processor_type)
         patch_rep_mock.assert_called_once_with(
             raw_text=payload.diff, processor_type=payload.processor_type
         )
-        assert service._update_patch.await_count == 1
+        create_pending_mock.assert_awaited_once_with(payload)
+        assert update_patch_mock.await_count == 1
 
     async def test_process_diff_returns_representation_on_success(self, mocker):
         """Should include PatchRepresentation in result on success."""
         processor = mocker.MagicMock()
         processor.apply_patch = AsyncMock(return_value=None)
 
-        import app.patches.services.diff_patches as mod
-
-        rep_obj = mod.PatchRepresentation(
+        rep_obj = PatchRepresentation(
             processor_type=PatchProcessorType.UDIFF_LLM,
             patches=[],
         )
-        mocker.patch.object(mod.PatchRepresentation, "from_text", return_value=rep_obj)
+        mocker.patch.object(PatchRepresentation, "from_text", return_value=rep_obj)
 
         service = DiffPatchService(
             db=mocker.MagicMock(),

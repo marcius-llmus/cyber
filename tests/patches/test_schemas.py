@@ -15,7 +15,7 @@ from app.patches.schemas.udiff import DEV_NULL, ParsedDiffPatch
 
 
 class TestCodexPatchRepresentationExtractor:
-    def test_extract_parses_add_file_hunk(self):
+    def test_extract_parses_add_file_hunk(self, mocker):
         """Should return ParsedPatch(operation=ADD) when PatchParser yields AddFile."""
         from apply_patch_py.models import AddFile
 
@@ -27,22 +27,18 @@ class TestCodexPatchRepresentationExtractor:
         raw_text = "RAW"
         hunk = AddFile(path="a.txt", content="hello")
 
-        # Patch where looked up
-        import app.patches.schemas.codex as codex_mod
-
-        original = codex_mod.PatchParser.parse
-        codex_mod.PatchParser.parse = staticmethod(lambda _t: _FakePatch([hunk]))
-        try:
-            patches = extractor.extract(raw_text)
-        finally:
-            codex_mod.PatchParser.parse = original
+        mocker.patch(
+            "app.patches.schemas.codex.PatchParser.parse",
+            return_value=_FakePatch([hunk]),
+        )
+        patches = extractor.extract(raw_text)
 
         assert len(patches) == 1
         assert patches[0].operation == ParsedPatchOperation.ADD
         assert patches[0].is_added_file is True
         assert patches[0].path == "a.txt"
 
-    def test_extract_parses_delete_file_hunk(self):
+    def test_extract_parses_delete_file_hunk(self, mocker):
         """Should return ParsedPatch(operation=DELETE) when PatchParser yields DeleteFile."""
         from apply_patch_py.models import DeleteFile
 
@@ -54,21 +50,18 @@ class TestCodexPatchRepresentationExtractor:
         raw_text = "RAW"
         hunk = DeleteFile(path="a.txt")
 
-        import app.patches.schemas.codex as codex_mod
-
-        original = codex_mod.PatchParser.parse
-        codex_mod.PatchParser.parse = staticmethod(lambda _t: _FakePatch([hunk]))
-        try:
-            patches = extractor.extract(raw_text)
-        finally:
-            codex_mod.PatchParser.parse = original
+        mocker.patch(
+            "app.patches.schemas.codex.PatchParser.parse",
+            return_value=_FakePatch([hunk]),
+        )
+        patches = extractor.extract(raw_text)
 
         assert len(patches) == 1
         assert patches[0].operation == ParsedPatchOperation.DELETE
         assert patches[0].is_removed_file is True
         assert patches[0].path == "a.txt"
 
-    def test_extract_parses_update_file_modify_hunk(self):
+    def test_extract_parses_update_file_modify_hunk(self, mocker):
         """Should return ParsedPatch(operation=MODIFY, is_modified_file=True) for UpdateFile without move."""
         from apply_patch_py.models import UpdateFile
 
@@ -80,14 +73,11 @@ class TestCodexPatchRepresentationExtractor:
         raw_text = "RAW"
         hunk = UpdateFile(path="a.txt", chunks=[])
 
-        import app.patches.schemas.codex as codex_mod
-
-        original = codex_mod.PatchParser.parse
-        codex_mod.PatchParser.parse = staticmethod(lambda _t: _FakePatch([hunk]))
-        try:
-            patches = extractor.extract(raw_text)
-        finally:
-            codex_mod.PatchParser.parse = original
+        mocker.patch(
+            "app.patches.schemas.codex.PatchParser.parse",
+            return_value=_FakePatch([hunk]),
+        )
+        patches = extractor.extract(raw_text)
 
         assert len(patches) == 1
         assert patches[0].operation == ParsedPatchOperation.MODIFY
@@ -95,7 +85,7 @@ class TestCodexPatchRepresentationExtractor:
         assert patches[0].is_rename is False
         assert patches[0].path == "a.txt"
 
-    def test_extract_parses_update_file_rename_hunk(self):
+    def test_extract_parses_update_file_rename_hunk(self, mocker):
         """Should return ParsedPatch(operation=RENAME, is_rename=True) for UpdateFile with move_to."""
         from apply_patch_py.models import UpdateFile
 
@@ -107,14 +97,11 @@ class TestCodexPatchRepresentationExtractor:
         raw_text = "RAW"
         hunk = UpdateFile(path="a.txt", chunks=[], move_to="b.txt")
 
-        import app.patches.schemas.codex as codex_mod
-
-        original = codex_mod.PatchParser.parse
-        codex_mod.PatchParser.parse = staticmethod(lambda _t: _FakePatch([hunk]))
-        try:
-            patches = extractor.extract(raw_text)
-        finally:
-            codex_mod.PatchParser.parse = original
+        mocker.patch(
+            "app.patches.schemas.codex.PatchParser.parse",
+            return_value=_FakePatch([hunk]),
+        )
+        patches = extractor.extract(raw_text)
 
         assert len(patches) == 1
         assert patches[0].operation == ParsedPatchOperation.RENAME
@@ -123,7 +110,7 @@ class TestCodexPatchRepresentationExtractor:
         assert patches[0].old_path == "a.txt"
         assert patches[0].new_path == "b.txt"
 
-    def test_extract_raises_for_unsupported_hunk_type(self):
+    def test_extract_raises_for_unsupported_hunk_type(self, mocker):
         """Should raise ValueError for unexpected hunk classes."""
         class _Unsupported:  # noqa: N801
             pass
@@ -134,17 +121,13 @@ class TestCodexPatchRepresentationExtractor:
 
         extractor = CodexPatchRepresentationExtractor()
 
-        import app.patches.schemas.codex as codex_mod
-
-        original = codex_mod.PatchParser.parse
-        codex_mod.PatchParser.parse = staticmethod(
-            lambda _t: _FakePatch([_Unsupported()])
+        mocker.patch(
+            "app.patches.schemas.codex.PatchParser.parse",
+            return_value=_FakePatch([_Unsupported()]),
         )
-        try:
-            with pytest.raises(ValueError, match="Unsupported codex patch hunk type"):
-                extractor.extract("RAW")
-        finally:
-            codex_mod.PatchParser.parse = original
+
+        with pytest.raises(ValueError, match="Unsupported codex patch hunk type"):
+            extractor.extract("RAW")
 
 
 class TestPatchRepresentation:
