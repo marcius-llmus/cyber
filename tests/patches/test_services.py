@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from unittest.mock import AsyncMock
 
 import pytest
@@ -201,10 +200,14 @@ class TestDiffPatchService:
 
         import app.patches.services.diff_patches as mod
 
+        rep_obj = mod.PatchRepresentation(
+            processor_type=PatchProcessorType.UDIFF_LLM,
+            patches=[],
+        )
         patch_rep_mock = mocker.patch.object(
             mod.PatchRepresentation,
             "from_text",
-            return_value=mocker.MagicMock(),
+            return_value=rep_obj,
         )
 
         payload = DiffPatchCreate(
@@ -230,8 +233,11 @@ class TestDiffPatchService:
         assert isinstance(result, DiffPatchApplyPatchResult)
         assert result.patch_id == 123
         assert result.status == DiffPatchStatus.APPLIED
+        assert result.representation == rep_obj
         processor.apply_patch.assert_awaited_once_with(payload.diff)
-        patch_rep_mock.assert_called_once()
+        patch_rep_mock.assert_called_once_with(
+            raw_text=payload.diff, processor_type=payload.processor_type
+        )
         assert service._update_patch.await_count == 1
 
     async def test_process_diff_returns_representation_on_success(self, mocker):
@@ -241,7 +247,10 @@ class TestDiffPatchService:
 
         import app.patches.services.diff_patches as mod
 
-        rep_obj = mocker.MagicMock()
+        rep_obj = mod.PatchRepresentation(
+            processor_type=PatchProcessorType.UDIFF_LLM,
+            patches=[],
+        )
         mocker.patch.object(mod.PatchRepresentation, "from_text", return_value=rep_obj)
 
         service = DiffPatchService(
@@ -262,7 +271,7 @@ class TestDiffPatchService:
             processor_type=PatchProcessorType.UDIFF_LLM,
         )
         result = await service.process_diff(payload)
-        assert result.representation is rep_obj
+        assert result.representation == rep_obj
 
     async def test_process_diff_marks_failed_on_processor_error(self, mocker):
         """Should create PENDING then update to FAILED when processor raises."""

@@ -1,19 +1,14 @@
 """Repository tests for the patches app."""
 
-from datetime import datetime, timedelta
-
-import pytest
-
 from app.patches.enums import DiffPatchStatus, PatchProcessorType
-from app.patches.models import DiffPatch
 from app.patches.schemas import DiffPatchInternalCreate
+from app.sessions.models import ChatSession
 
 
 class TestDiffPatchRepository:
     async def test_list_pending_by_turn_filters_and_orders(
         self,
         diff_patch_repository,
-        db_session,
         chat_session,
     ):
         """Should return only PENDING patches for given (session_id, turn_id) ordered by created_at asc."""
@@ -37,11 +32,6 @@ class TestDiffPatchRepository:
             )
         )
 
-        # Ensure ordering by created_at by nudging timestamps if SQLite resolution is coarse.
-        created1.created_at = datetime.utcnow() - timedelta(seconds=10)
-        created2.created_at = datetime.utcnow()
-        await db_session.flush()
-
         pending = await diff_patch_repository.list_pending_by_turn(
             session_id=chat_session.id, turn_id=turn_id
         )
@@ -52,7 +42,6 @@ class TestDiffPatchRepository:
     async def test_list_pending_by_turn_excludes_non_pending_statuses(
         self,
         diff_patch_repository,
-        db_session,
         chat_session,
     ):
         """Should exclude APPLIED/FAILED/REJECTED patches even if turn_id matches."""
@@ -104,6 +93,7 @@ class TestDiffPatchRepository:
         diff_patch_repository,
         db_session,
         chat_session,
+        project,
     ):
         """Should only return rows for the exact (session_id, turn_id)."""
         await diff_patch_repository.create(
@@ -124,9 +114,15 @@ class TestDiffPatchRepository:
                 status=DiffPatchStatus.PENDING,
             )
         )
+
+        other_session = ChatSession(name="Other Session", project_id=project.id)
+        db_session.add(other_session)
+        await db_session.flush()
+        await db_session.refresh(other_session)
+
         await diff_patch_repository.create(
             obj_in=DiffPatchInternalCreate(
-                session_id=chat_session.id + 999,
+                session_id=other_session.id,
                 turn_id="t1",
                 diff="other_session",
                 processor_type=PatchProcessorType.UDIFF_LLM,
@@ -142,7 +138,6 @@ class TestDiffPatchRepository:
     async def test_list_by_turn_filters_and_orders(
         self,
         diff_patch_repository,
-        db_session,
         chat_session,
     ):
         """Should return all patches for given (session_id, turn_id) ordered by created_at asc."""
@@ -165,10 +160,6 @@ class TestDiffPatchRepository:
                 status=DiffPatchStatus.APPLIED,
             )
         )
-
-        created1.created_at = datetime.utcnow() - timedelta(seconds=10)
-        created2.created_at = datetime.utcnow()
-        await db_session.flush()
 
         rows = await diff_patch_repository.list_by_turn(
             session_id=chat_session.id, turn_id=turn_id

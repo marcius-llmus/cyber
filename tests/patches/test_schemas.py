@@ -78,7 +78,7 @@ class TestCodexPatchRepresentationExtractor:
 
         extractor = CodexPatchRepresentationExtractor()
         raw_text = "RAW"
-        hunk = UpdateFile(path="a.txt", hunks=[])
+        hunk = UpdateFile(path="a.txt", chunks=[])
 
         import app.patches.schemas.codex as codex_mod
 
@@ -105,7 +105,7 @@ class TestCodexPatchRepresentationExtractor:
 
         extractor = CodexPatchRepresentationExtractor()
         raw_text = "RAW"
-        hunk = UpdateFile(path="a.txt", hunks=[], move_to="b.txt")
+        hunk = UpdateFile(path="a.txt", chunks=[], move_to="b.txt")
 
         import app.patches.schemas.codex as codex_mod
 
