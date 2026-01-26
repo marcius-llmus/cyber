@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, create_autospec
 
 import pytest
 from pytest_mock import MockerFixture
@@ -43,8 +43,23 @@ def diff_patch_service_mock(mocker: MockerFixture) -> MagicMock:
 
 
 @pytest.fixture
+def patcher_tools(mocker: MockerFixture):
+    from app.patches.tools import PatcherTools
+
+    toolset = PatcherTools()
+    toolset.session_id = 123
+    toolset.turn_id = "turn_123"
+    return toolset
+
+
+@pytest.fixture
 def llm_service_mock(mocker: MockerFixture) -> MagicMock:
     return mocker.create_autospec(LLMService, instance=True)
+
+
+@pytest.fixture
+def llm_client_mock(mocker: MockerFixture):
+    return mocker.MagicMock()
 
 
 @pytest.fixture
@@ -53,8 +68,24 @@ def project_service_mock(mocker: MockerFixture) -> MagicMock:
 
 
 @pytest.fixture
+def project_mock(mocker: MockerFixture):
+    p = mocker.MagicMock()
+    p.path = "/tmp/project"
+    return p
+
+
+@pytest.fixture
 def codebase_service_mock(mocker: MockerFixture) -> MagicMock:
     return mocker.create_autospec(CodebaseService, instance=True)
+
+
+@pytest.fixture
+def file_read_result_success(mocker: MockerFixture):
+    r = mocker.MagicMock()
+    r.status = "SUCCESS"
+    r.content = "original"
+    r.error_message = None
+    return r
 
 
 @pytest.fixture
