@@ -1,4 +1,4 @@
-from collections.abc import AsyncGenerator, Generator
+from collections.abc import AsyncGenerator, AsyncIterator, Generator
 from contextlib import asynccontextmanager
 from unittest.mock import create_autospec
 
@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import (
 from sqlalchemy.pool import StaticPool
 
 from app.commons.dependencies import get_db
+from app.core.db import DatabaseSessionManager
 from app.core.db import Base
 from app.main import app
 
@@ -90,6 +91,23 @@ async def db_session(
 def db_session_mock() -> AsyncSession:
     """Lightweight AsyncSession mock for wiring/unit tests (deps/factories)."""
     return create_autospec(AsyncSession, instance=True)
+
+
+@pytest.fixture(scope="function")
+def db_sessionmanager_mock(
+    mocker,
+    db_session_mock: AsyncSession,
+) -> DatabaseSessionManager:
+    """DatabaseSessionManager mock whose .session() yields db_session_mock."""
+
+    db = mocker.create_autospec(DatabaseSessionManager, instance=True)
+
+    @asynccontextmanager
+    async def _session() -> AsyncIterator[AsyncSession]:
+        yield db_session_mock
+
+    db.session = _session  # type: ignore[method-assign]
+    return db
 
 
 @pytest.fixture(scope="function")

@@ -1,4 +1,3 @@
-from contextlib import asynccontextmanager
 from decimal import Decimal
 from unittest.mock import AsyncMock
 
@@ -23,10 +22,12 @@ class TestUDiffProcessor:
         """Should return input text unchanged if no wrapping fences exist."""
         assert UDiffProcessor._strip_markdown("hello") == "hello"
 
-    async def test_apply_patch_delegates_per_parsed_patch_in_order(self, mocker):
+    async def test_apply_patch_delegates_per_parsed_patch_in_order(
+        self, mocker, db_sessionmanager_mock
+    ):
         """Should call _apply_file_diff once per extracted ParsedPatch (order preserved)."""
         processor = UDiffProcessor(
-            db=mocker.MagicMock(),
+            db=db_sessionmanager_mock,
             diff_patch_repo_factory=mocker.MagicMock(),
             llm_service_factory=AsyncMock(),
             project_service_factory=AsyncMock(),
@@ -50,10 +51,12 @@ class TestUDiffProcessor:
         assert apply_mock.await_args_list[0].kwargs["file_path"] == "a.txt"
         assert apply_mock.await_args_list[1].kwargs["file_path"] == "b.txt"
 
-    async def test_apply_patch_noop_when_extractor_returns_empty(self, mocker):
+    async def test_apply_patch_noop_when_extractor_returns_empty(
+        self, mocker, db_sessionmanager_mock
+    ):
         """Should not call _apply_file_diff when no ParsedPatch entries exist."""
         processor = UDiffProcessor(
-            db=mocker.MagicMock(),
+            db=db_sessionmanager_mock,
             diff_patch_repo_factory=mocker.MagicMock(),
             llm_service_factory=AsyncMock(),
             project_service_factory=AsyncMock(),
@@ -67,21 +70,15 @@ class TestUDiffProcessor:
         await processor.apply_patch("RAW")
         apply_mock.assert_not_awaited()
 
-    async def test_apply_file_diff_raises_when_no_active_project(self, mocker):
+    async def test_apply_file_diff_raises_when_no_active_project(
+        self, mocker, db_sessionmanager_mock
+    ):
         """Should raise ActiveProjectRequiredException if project_service.get_active_project returns None."""
-        db = mocker.MagicMock()
-
-        @asynccontextmanager
-        async def session_cm():
-            yield mocker.MagicMock()
-
-        db.session = session_cm
-
         project_service = mocker.MagicMock()
         project_service.get_active_project = AsyncMock(return_value=None)
 
         processor = UDiffProcessor(
-            db=db,
+            db=db_sessionmanager_mock,
             diff_patch_repo_factory=mocker.MagicMock(),
             llm_service_factory=AsyncMock(),
             project_service_factory=AsyncMock(return_value=project_service),
@@ -91,16 +88,10 @@ class TestUDiffProcessor:
         with pytest.raises(ActiveProjectRequiredException):
             await processor._apply_file_diff(file_path="a.txt", diff_content="d")
 
-    async def test_apply_file_diff_raises_for_binary_file(self, mocker):
+    async def test_apply_file_diff_raises_for_binary_file(
+        self, mocker, db_sessionmanager_mock
+    ):
         """Should raise ValueError when codebase_service.read_file returns FileStatus.BINARY."""
-        db = mocker.MagicMock()
-
-        @asynccontextmanager
-        async def session_cm():
-            yield mocker.MagicMock()
-
-        db.session = session_cm
-
         project = mocker.MagicMock(path="/p")
         project_service = mocker.MagicMock()
         project_service.get_active_project = AsyncMock(return_value=project)
@@ -113,7 +104,7 @@ class TestUDiffProcessor:
         )
 
         processor = UDiffProcessor(
-            db=db,
+            db=db_sessionmanager_mock,
             diff_patch_repo_factory=mocker.MagicMock(),
             llm_service_factory=AsyncMock(return_value=mocker.MagicMock()),
             project_service_factory=AsyncMock(return_value=project_service),
@@ -123,16 +114,10 @@ class TestUDiffProcessor:
         with pytest.raises(ValueError, match="Cannot patch binary file"):
             await processor._apply_file_diff(file_path="a.txt", diff_content="d")
 
-    async def test_apply_file_diff_raises_for_read_error(self, mocker):
+    async def test_apply_file_diff_raises_for_read_error(
+        self, mocker, db_sessionmanager_mock
+    ):
         """Should raise ValueError when codebase_service.read_file returns FileStatus.ERROR."""
-        db = mocker.MagicMock()
-
-        @asynccontextmanager
-        async def session_cm():
-            yield mocker.MagicMock()
-
-        db.session = session_cm
-
         project = mocker.MagicMock(path="/p")
         project_service = mocker.MagicMock()
         project_service.get_active_project = AsyncMock(return_value=project)
@@ -148,7 +133,7 @@ class TestUDiffProcessor:
         )
 
         processor = UDiffProcessor(
-            db=db,
+            db=db_sessionmanager_mock,
             diff_patch_repo_factory=mocker.MagicMock(),
             llm_service_factory=AsyncMock(return_value=mocker.MagicMock()),
             project_service_factory=AsyncMock(return_value=project_service),
@@ -159,21 +144,10 @@ class TestUDiffProcessor:
             await processor._apply_file_diff(file_path="a.txt", diff_content="d")
 
     async def test_apply_file_diff_calls_llm_client_with_expected_model_and_temperature(
-        self, mocker
+        self, mocker, db_sessionmanager_mock
     ):
         """Should await llm_service.get_client(model_name=GPT_4_1_MINI, temperature=0)."""
         project = mocker.MagicMock(path="/p")
-
-        session1 = mocker.MagicMock()
-        session2 = mocker.MagicMock()
-        sessions = [session1, session2]
-
-        @asynccontextmanager
-        async def session_cm():
-            yield sessions.pop(0)
-
-        db = mocker.MagicMock()
-        db.session = session_cm
 
         project_service = mocker.MagicMock()
         project_service.get_active_project = AsyncMock(return_value=project)
@@ -194,7 +168,7 @@ class TestUDiffProcessor:
         llm_service.get_client = AsyncMock(return_value=llm_client)
 
         processor = UDiffProcessor(
-            db=db,
+            db=db_sessionmanager_mock,
             diff_patch_repo_factory=mocker.MagicMock(),
             llm_service_factory=AsyncMock(return_value=llm_service),
             project_service_factory=AsyncMock(return_value=project_service),
@@ -208,20 +182,11 @@ class TestUDiffProcessor:
             temperature=Decimal("0"),
         )
 
-    async def test_apply_file_diff_writes_patched_content(self, mocker):
+    async def test_apply_file_diff_writes_patched_content(
+        self, mocker, db_sessionmanager_mock
+    ):
         """Should call codebase_service.write_file(project.path, file_path, patched_content)."""
         project = mocker.MagicMock(path="/p")
-
-        session1 = mocker.MagicMock()
-        session2 = mocker.MagicMock()
-        sessions = [session1, session2]
-
-        @asynccontextmanager
-        async def session_cm():
-            yield sessions.pop(0)
-
-        db = mocker.MagicMock()
-        db.session = session_cm
 
         project_service = mocker.MagicMock()
         project_service.get_active_project = AsyncMock(return_value=project)
@@ -242,7 +207,7 @@ class TestUDiffProcessor:
         llm_service.get_client = AsyncMock(return_value=llm_client)
 
         processor = UDiffProcessor(
-            db=db,
+            db=db_sessionmanager_mock,
             diff_patch_repo_factory=mocker.MagicMock(),
             llm_service_factory=AsyncMock(return_value=llm_service),
             project_service_factory=AsyncMock(return_value=project_service),
@@ -255,20 +220,11 @@ class TestUDiffProcessor:
             project.path, "a.txt", "patched"
         )
 
-    async def test_apply_file_diff_reads_file_with_must_exist_false(self, mocker):
+    async def test_apply_file_diff_reads_file_with_must_exist_false(
+        self, mocker, db_sessionmanager_mock
+    ):
         """Should call codebase_service.read_file(..., must_exist=False) to support new files."""
         project = mocker.MagicMock(path="/p")
-
-        session1 = mocker.MagicMock()
-        session2 = mocker.MagicMock()
-        sessions = [session1, session2]
-
-        @asynccontextmanager
-        async def session_cm():
-            yield sessions.pop(0)
-
-        db = mocker.MagicMock()
-        db.session = session_cm
 
         project_service = mocker.MagicMock()
         project_service.get_active_project = AsyncMock(return_value=project)
@@ -289,7 +245,7 @@ class TestUDiffProcessor:
         llm_service.get_client = AsyncMock(return_value=llm_client)
 
         processor = UDiffProcessor(
-            db=db,
+            db=db_sessionmanager_mock,
             diff_patch_repo_factory=mocker.MagicMock(),
             llm_service_factory=AsyncMock(return_value=llm_service),
             project_service_factory=AsyncMock(return_value=project_service),
@@ -301,10 +257,12 @@ class TestUDiffProcessor:
             project.path, "a.txt", must_exist=False
         )
 
-    async def test_apply_via_llm_strips_markdown_from_response(self, mocker):
+    async def test_apply_via_llm_strips_markdown_from_response(
+        self, mocker, db_sessionmanager_mock
+    ):
         """Should strip markdown fences from llm output before returning."""
         processor = UDiffProcessor(
-            db=mocker.MagicMock(),
+            db=db_sessionmanager_mock,
             diff_patch_repo_factory=mocker.MagicMock(),
             llm_service_factory=AsyncMock(),
             project_service_factory=AsyncMock(),
@@ -319,10 +277,12 @@ class TestUDiffProcessor:
         out = await processor._apply_via_llm(llm_client, "orig", "diff")
         assert out == "patched"
 
-    async def test_apply_via_llm_sends_expected_prompt_messages(self, mocker):
+    async def test_apply_via_llm_sends_expected_prompt_messages(
+        self, mocker, db_sessionmanager_mock
+    ):
         """Should call llm_client.achat() with system prompt + ORIGINAL CONTENT + DIFF PATCH."""
         processor = UDiffProcessor(
-            db=mocker.MagicMock(),
+            db=db_sessionmanager_mock,
             diff_patch_repo_factory=mocker.MagicMock(),
             llm_service_factory=AsyncMock(),
             project_service_factory=AsyncMock(),
