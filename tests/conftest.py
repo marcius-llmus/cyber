@@ -14,8 +14,7 @@ from sqlalchemy.ext.asyncio import (
 from sqlalchemy.pool import StaticPool
 
 from app.commons.dependencies import get_db
-from app.core.db import DatabaseSessionManager
-from app.core.db import Base
+from app.core.db import Base, DatabaseSessionManager
 from app.main import app
 
 pytest_plugins = [
