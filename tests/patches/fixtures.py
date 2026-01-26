@@ -6,6 +6,8 @@ import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.db import DatabaseSessionManager
+from app.settings.models import Settings
 from app.context.services import CodebaseService
 from app.llms.services import LLMService
 from app.patches.dependencies import get_diff_patch_service
@@ -43,10 +45,20 @@ def diff_patch_service_mock(mocker: MockerFixture) -> MagicMock:
 
 
 @pytest.fixture
-def patcher_tools(mocker: MockerFixture):
+def settings_mock() -> Settings:
+    return Settings()
+
+
+@pytest.fixture
+def sessionmanager_mock(mocker: MockerFixture) -> DatabaseSessionManager:
+    return mocker.create_autospec(DatabaseSessionManager, instance=True)
+
+
+@pytest.fixture
+def patcher_tools(mocker: MockerFixture, sessionmanager_mock, settings_mock):
     from app.patches.tools import PatcherTools
 
-    toolset = PatcherTools()
+    toolset = PatcherTools(db=sessionmanager_mock, settings=settings_mock)
     toolset.session_id = 123
     toolset.turn_id = "turn_123"
     return toolset
@@ -65,13 +77,6 @@ def llm_client_mock(mocker: MockerFixture):
 @pytest.fixture
 def project_service_mock(mocker: MockerFixture) -> MagicMock:
     return mocker.create_autospec(ProjectService, instance=True)
-
-
-@pytest.fixture
-def project_mock(mocker: MockerFixture):
-    p = mocker.MagicMock()
-    p.path = "/tmp/project"
-    return p
 
 
 @pytest.fixture
