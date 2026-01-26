@@ -1,9 +1,11 @@
-from .coder import CoderService as CoderService
-from .messaging import MessagingTurnEventHandler as MessagingTurnEventHandler
-from .page import CoderPageService as CoderPageService
+from .coder import CoderService
+from .messaging import MessagingTurnEventHandler
+from .page import CoderPageService
+from .single_shot_patching import SingleShotPatchService
 
 __all__ = [
     "CoderService",
     "MessagingTurnEventHandler",
     "CoderPageService",
+    "SingleShotPatchService",
 ]

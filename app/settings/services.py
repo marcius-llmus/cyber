@@ -2,7 +2,7 @@ from app.llms.services import LLMService
 from app.settings.exceptions import SettingsNotFoundException
 from app.settings.models import Settings
 from app.settings.repositories import SettingsRepository
-from app.settings.schemas import SettingsUpdate
+from app.settings.schemas import AgentSettingsSnapshot, SettingsUpdate
 
 
 class SettingsService:
@@ -22,6 +22,10 @@ class SettingsService:
                 "Application settings have not been initialized."
             )
         return settings
+
+    async def get_settings_snapshot(self) -> AgentSettingsSnapshot:
+        settings = await self.get_settings()
+        return AgentSettingsSnapshot.model_validate(settings)
 
     async def update_settings(self, *, settings_in: SettingsUpdate) -> Settings:
         db_obj = await self.get_settings()

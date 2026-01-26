@@ -48,6 +48,19 @@
                     <label class="block text-sm font-medium text-gray-300 mb-2">Grep Token Limit</label>
                     <input type="number" name="grep_token_limit" value="{{ settings.grep_token_limit }}" class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm">
                 </div>
+                <div class="col-span-2">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Patch processor</label>
+                    <select
+                        name="diff_patch_processor_type"
+                        class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm">
+                        <option value="UDIFF_LLM" {% if settings.diff_patch_processor_type.value == "UDIFF_LLM" %}selected{% endif %}>
+                            Unified Diff (LLM GPT-4.1 Mini)
+                        </option>
+                        <option value="CODEX_APPLY" {% if settings.diff_patch_processor_type.value == "CODEX_APPLY" %}selected{% endif %}>
+                            Codex Apply
+                        </option>
+                    </select>
+                </div>
                 <div class="col-span-2 pt-2">
                      <label class="flex items-center space-x-2 cursor-pointer">
                         <input type="checkbox" name="diff_patches_auto_open" value="true" {% if settings.diff_patches_auto_open %}checked{% endif %} class="form-checkbox bg-dark-lighter border-dark-light rounded text-primary focus:ring-0">

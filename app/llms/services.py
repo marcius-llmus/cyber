@@ -1,5 +1,6 @@
 import functools
 import logging
+from decimal import Decimal
 
 from async_lru import alru_cache
 from llama_index.llms.anthropic import Anthropic
@@ -162,11 +163,12 @@ class LLMService:
         return await self.update_settings(llm_id=llm_id, settings_in=settings_in)
 
     async def get_client(
-        self, model_name: LLMModel, temperature: float
+        self, model_name: LLMModel, temperature: Decimal
     ) -> OpenAI | Anthropic | GoogleGenAI:
         """
         Hydrates a client using internal configuration.
         """
+        temperature = float(temperature)
         llm_metadata = await self.llm_factory.get_llm(model_name)
         api_key = await self.llm_settings_repo.get_api_key_for_provider(
             llm_metadata.provider

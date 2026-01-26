@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import Any
+from typing import Any, TypeAlias, Union
 
 from pydantic import BaseModel
 
@@ -47,14 +47,14 @@ class ToolCallEvent(BaseModel):
     tool_name: str
     tool_kwargs: dict[str, Any]
     tool_id: str
-    tool_run_id: str
+    internal_tool_call_id: str
 
 
 class ToolCallResultEvent(BaseModel):
     tool_name: str
     tool_output: str
     tool_id: str
-    tool_run_id: str
+    internal_tool_call_id: str
 
 
 class SingleShotDiffAppliedEvent(BaseModel):
@@ -71,7 +71,7 @@ class ContextFilesUpdatedEvent(BaseModel):
     files: list[ContextFileListItem]
 
 
-CoderEvent = (
+CoderEvent: TypeAlias = Union[  # noqa
     AIMessageChunkEvent
     | AIMessageBlockStartEvent
     | WorkflowErrorEvent
@@ -82,4 +82,4 @@ CoderEvent = (
     | AgentStateEvent
     | SingleShotDiffAppliedEvent
     | ContextFilesUpdatedEvent
-)
+]

@@ -3,6 +3,7 @@ from decimal import Decimal
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.llms.enums import LLMModel, LLMProvider
+from app.patches.enums import PatchProcessorType
 
 
 class LLMSettingsBase(BaseModel):
@@ -32,6 +33,7 @@ class SettingsBase(BaseModel):
     grep_token_limit: int
     diff_patches_auto_open: bool
     diff_patches_auto_apply: bool
+    diff_patch_processor_type: PatchProcessorType = PatchProcessorType.UDIFF_LLM
     coding_llm_temperature: Decimal = Field(
         ..., ge=0, le=1, max_digits=3, decimal_places=2
     )
@@ -47,8 +49,13 @@ class SettingsUpdate(BaseModel):
     grep_token_limit: int | None = None
     diff_patches_auto_open: bool | None = None
     diff_patches_auto_apply: bool | None = None
+    diff_patch_processor_type: PatchProcessorType | None = None
     coding_llm_temperature: Decimal | None = Field(
         default=None, ge=0, le=1, max_digits=3, decimal_places=2
     )
     coding_llm_settings_id: int = Field(exclude=True)  # Exclude from Settings DB update
     coding_llm_settings: LLMSettingsUpdate | None = Field(default=None, exclude=True)
+
+
+class AgentSettingsSnapshot(SettingsBase):
+    pass

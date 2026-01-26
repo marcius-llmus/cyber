@@ -32,10 +32,15 @@ class CoderPageService:
         ):
             usage_data = await self.usage_page_service.get_session_metrics_page_data()
             context_files = await self.context_service.get_active_context(session.id)
+            formatted_messages = (
+                await self.chat_service.get_formatted_messages_by_session(
+                    session_id=session.id
+                )
+            )
             page_data = {
                 **usage_data,
                 "session": session,
-                "messages": session.messages,
+                "messages": formatted_messages,
                 "files": context_files,
                 "active_project": session.project,
             }

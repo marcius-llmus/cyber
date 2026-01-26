@@ -5,7 +5,7 @@ from app.context.models import ContextFile
 from app.context.repositories import ContextRepository
 from app.context.schemas import ContextFileCreate, ContextFileUpdate
 from app.context.services.codebase import CodebaseService
-from app.patches.schemas import ParsedDiffPatch
+from app.patches.schemas import ParsedPatch
 from app.projects.exceptions import ActiveProjectRequiredException
 from app.projects.services import ProjectService
 
@@ -24,7 +24,7 @@ class WorkspaceService:
         self.codebase_service = codebase_service
 
     async def sync_context_for_diff(
-        self, *, session_id: int, patch: ParsedDiffPatch
+        self, *, session_id: int, patch: ParsedPatch
     ) -> None:
         """Sync active context to reflect a single-file diff.
 
@@ -99,26 +99,20 @@ class WorkspaceService:
                 "Active project required to sync context."
             )
 
-        # 1. Delegate batch validation to CodebaseService
-        # Returns a set of valid, absolute path strings
         valid_abs_paths = await self.codebase_service.filter_and_resolve_paths(
             project.path, filepaths
         )
 
-        # 2. Convert to canonical relative paths for DB storage
         valid_incoming_paths = {
             os.path.relpath(p, project.path) for p in valid_abs_paths
         }
 
-        # 3. Get current DB state
         current_context = await self.context_repo.list_by_session(session_id)
         current_paths = {c.file_path for c in current_context}
 
-        # 4. Calculate Diff
         to_add = valid_incoming_paths - current_paths
         to_remove = current_paths - valid_incoming_paths
 
-        # 5. Execute
         if to_remove:
             await self.remove_context_files_by_path(session_id, list(to_remove))
         if to_add:

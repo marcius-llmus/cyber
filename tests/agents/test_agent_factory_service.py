@@ -1,11 +1,3 @@
-"""Unit tests for AgentFactoryService.
-
-These tests validate business/orchestration decisions inside AgentFactoryService.build_agent
-without touching the database.
-"""
-
-from __future__ import annotations
-
 from decimal import Decimal
 from unittest.mock import AsyncMock
 

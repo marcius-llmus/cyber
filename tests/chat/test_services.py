@@ -1,5 +1,5 @@
 import pytest
-from llama_index.core.llms import MessageRole
+from llama_index.core.llms import MessageRole, TextBlock
 
 from app.chat.enums import ChatTurnStatus
 from app.chat.models import ChatTurn, Message
@@ -103,8 +103,10 @@ class TestChatService:
         history = await chat_service.get_chat_history(session_id=1)
         assert len(history) == 2
         assert history[0].role == MessageRole.USER
+        assert history[0].blocks == [TextBlock(text="hi")]
         assert history[0].content == "hi"
         assert history[1].role == MessageRole.ASSISTANT
+        assert history[1].blocks == [TextBlock(text="hello")]
         assert history[1].content == "hello"
 
     async def test_get_session_by_id_delegates_to_session_service(

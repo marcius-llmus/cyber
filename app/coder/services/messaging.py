@@ -49,27 +49,36 @@ class _MessageStateAccumulator:
 
         return self.current_text_block_id
 
-    def add_tool_call(self, run_id: str, tool_id: str, name: str, kwargs: dict):
+    def add_tool_call(
+        self, internal_tool_call_id: str, tool_id: str, name: str, kwargs: dict
+    ):
         self.current_text_block_id = None  # Reset text block on tool call
         self.blocks.append(
             {
                 "type": "tool",
-                "tool_run_id": run_id,
+                "internal_tool_call_id": internal_tool_call_id,
                 "tool_name": name,
                 "tool_call_data": {
                     "id": tool_id,
                     "name": name,
                     "kwargs": kwargs,
-                    "run_id": run_id,
                     "output": None,
                 },
             }
         )
 
+    # Note for future devs: 'internal_tool_call_id' was intentionally added as this intruder argument lol
+    # If "tool_id" (tool_call_id) was reliable from all llms, we would be able to use it nicely for correlation, but it
+    # is not. Gemini for example  will not send it. That's why internal_tool_call_id is in block and not along with
+    # its friends at tool_call_data. It does the job of "tool_id" but only for us. llm wrappers in theory should not
+    # know it exists to not interfere with inner workings of "tool_id" required by many other llm providers.
     # todo not ideal, but for the small amount of items, it is ok
-    def add_tool_result(self, run_id: str, output: str):
+    def add_tool_result(self, internal_tool_call_id: str, output: str):
         for block in reversed(self.blocks):
-            if block.get("type") == "tool" and block.get("tool_run_id") == run_id:
+            if (
+                block.get("type") == "tool"
+                and block.get("internal_tool_call_id") == internal_tool_call_id
+            ):
                 block["tool_call_data"]["output"] = output
                 break
 
@@ -123,7 +132,7 @@ class MessagingTurnEventHandler:
 
         tool_event = await self._build_tool_call_event(event)
         self._accumulator.add_tool_call(
-            run_id=tool_event.tool_run_id,
+            internal_tool_call_id=tool_event.internal_tool_call_id,
             tool_id=tool_event.tool_id,
             name=tool_event.tool_name,
             kwargs=tool_event.tool_kwargs,
@@ -135,7 +144,8 @@ class MessagingTurnEventHandler:
     ) -> AsyncGenerator[CoderEvent]:
         result_event = await self._build_tool_call_result_event(event)
         self._accumulator.add_tool_result(
-            run_id=result_event.tool_run_id, output=result_event.tool_output
+            internal_tool_call_id=result_event.internal_tool_call_id,
+            output=result_event.tool_output,
         )
         yield result_event
 
@@ -156,23 +166,23 @@ class MessagingTurnEventHandler:
         yield AgentStateEvent(status="")
 
     async def _build_tool_call_event(self, event: ToolCall) -> ToolCallEvent:
-        unique_id = event.internal_tool_call_id
+        internal_tool_call_id = event.internal_tool_call_id
         return ToolCallEvent(
             tool_name=event.tool_name,
             tool_kwargs=event.tool_kwargs,
             tool_id=event.tool_id,
-            tool_run_id=unique_id,
+            internal_tool_call_id=internal_tool_call_id,
         )
 
     async def _build_tool_call_result_event(
         self, event: ToolCallResult
     ) -> ToolCallResultEvent:
         content = str(event.tool_output.content)
-        unique_id = event.internal_tool_call_id
+        internal_tool_call_id = event.internal_tool_call_id
 
         return ToolCallResultEvent(
             tool_name=event.tool_name,
             tool_output=content,
             tool_id=event.tool_id,
-            tool_run_id=unique_id,
+            internal_tool_call_id=internal_tool_call_id,
         )

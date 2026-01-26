@@ -1,6 +1,7 @@
-from sqlalchemy import Boolean, Column, Float, Integer
+from sqlalchemy import Boolean, Column, Enum, Float, Integer
 
 from app.core.db import Base
+from app.patches.enums import PatchProcessorType
 
 
 class Settings(Base):
@@ -18,4 +19,10 @@ class Settings(Base):
     )
     diff_patches_auto_apply = Column(
         Boolean, nullable=False, default=True, server_default="t"
+    )
+
+    diff_patch_processor_type = Column(
+        Enum(PatchProcessorType),
+        nullable=False,
+        default=PatchProcessorType.UDIFF_LLM,
     )

@@ -13,10 +13,20 @@
                 
                 {% elif block.type == "tool" %}
                     {% set tool = block.tool_call_data %}
-                    {% if tool and tool.name == "apply_diff" %}
-                        {% with file_path=tool.kwargs.file_path, diff=tool.kwargs.diff, tool_id=tool.id, tool_run_id=block.tool_run_id, tool_output=tool.output %}
-                            {% include "patches/partials/diff_patch_item.html" %}
-                        {% endwith %}
+                    {% if tool and tool.name == "apply_patch" %}
+                        {% set formatted = block.formatted %}
+                        {% if formatted and formatted.patches %}
+                            {% for p in formatted.patches %}
+                                {% with file_path=p.file_path, diff=p.diff, tool_id=tool.id, internal_tool_call_id=block.internal_tool_call_id, tool_output=tool.output, additions=p.additions, deletions=p.deletions %}
+                                    {% include "patches/partials/diff_patch_item.html" %}
+                                {% endwith %}
+                            {% endfor %}
+                        {% else %}
+                            {# Keep historical behavior in case formatting fails #}
+                            {% with file_path='(patch)', diff=tool.kwargs.patch, tool_id=tool.id, internal_tool_call_id=block.internal_tool_call_id, tool_output=tool.output %}
+                                {% include "patches/partials/diff_patch_item.html" %}
+                            {% endwith %}
+                        {% endif %}
                     {% endif %}
                 {% endif %}
             {% endfor %}
@@ -34,8 +44,15 @@
                     </span>
                 </summary>
                 <div id="tool-calls-list-{{ message.id }}" class="mt-2">
-                    {% for tool in message.tool_calls %}
-                        {% with tool_name=tool.name, tool_id=tool.id, tool_run_id=tool.run_id, tool_output=tool.output, tool_kwargs=tool.kwargs %}
+                    {% for block in message.tool_calls %}
+                        {% set tool_call_data = block.tool_call_data %}
+                        {% with
+                            tool_name=block.tool_name,
+                            tool_id=tool_call_data.id,
+                            internal_tool_call_id=block.internal_tool_call_id,
+                            tool_output=tool_call_data.output,
+                            tool_kwargs=tool_call_data.kwargs
+                        %}
                             {% include "chat/partials/tool_call_item.html" with context %}
                         {% endwith %}
                     {% endfor %}

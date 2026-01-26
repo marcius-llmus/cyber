@@ -24,6 +24,8 @@ from app.coder.schemas import (
 from app.coder.services import CoderService
 from app.commons.websockets import WebSocketConnectionManager
 from app.core.templating import templates
+from app.patches.enums import PatchProcessorType
+from app.patches.schemas.commons import PatchRepresentation
 
 logger = logging.getLogger(__name__)
 
@@ -192,46 +194,39 @@ class WebSocketOrchestrator:
             "tool_name": event.tool_name,
             "tool_kwargs": event.tool_kwargs,
             "turn_id": turn_id,
-            "tool_run_id": event.tool_run_id,
+            "internal_tool_call_id": event.internal_tool_call_id,
         }
         html_response = templates.get_template(
             "chat/partials/tool_call_item_oob.html"
         ).render(tool_context)
         await self.ws_manager.send_html(html_response)
 
-        # 2. If it is apply_diff, ADDITIONALLY render the Visual Diff Card (Inline Stream)
+        # 2. If it is apply_patch, ADDITIONALLY render the Visual Diff Card (Inline Stream)
         # todo: in coder service, check for tool call event type and create diff row from there
-        if event.tool_name == "apply_diff":
-            file_path = event.tool_kwargs.get("file_path", "unknown")
-            diff = event.tool_kwargs.get("diff", "")
+        if event.tool_name == "apply_patch":
+            patch_text = event.tool_kwargs.get("patch", "")
 
-            # Calculate stats
-            lines = diff.splitlines()
-            additions = sum(
-                1
-                for line in lines
-                if line.startswith("+") and not line.startswith("+++")
-            )
-            deletions = sum(
-                1
-                for line in lines
-                if line.startswith("-") and not line.startswith("---")
+            representation = PatchRepresentation.from_text(
+                raw_text=patch_text,
+                processor_type=PatchProcessorType.UDIFF_LLM,
             )
 
-            diff_context = {
-                "tool_id": event.tool_id,
-                "file_path": file_path,
-                "diff": diff,
-                "turn_id": turn_id,
-                "additions": additions,
-                "deletions": deletions,
-                "tool_run_id": event.tool_run_id,
-            }
-            diff_template = templates.get_template(
-                "patches/partials/diff_patch_item_oob.html"
-            ).render(diff_context)
+            for parsed in representation.patches:
+                diff_context = {
+                    "tool_id": event.tool_id,
+                    "file_path": parsed.path,
+                    "diff": parsed.diff,
+                    "turn_id": turn_id,
+                    "additions": parsed.additions,
+                    "deletions": parsed.deletions,
+                    "internal_tool_call_id": event.internal_tool_call_id,
+                    "tool_output": None,
+                }
+                diff_template = templates.get_template(
+                    "patches/partials/diff_patch_item_oob.html"
+                ).render(diff_context)
 
-            await self.ws_manager.send_html(diff_template)
+                await self.ws_manager.send_html(diff_template)
 
     async def _render_tool_result(
         self, event: ToolCallResultEvent, turn_id: str
@@ -246,7 +241,7 @@ class WebSocketOrchestrator:
             "tool_id": event.tool_id,
             "tool_name": event.tool_name,
             "tool_output": event.tool_output,
-            "tool_run_id": event.tool_run_id,
+            "internal_tool_call_id": event.internal_tool_call_id,
         }
         html_response = templates.get_template(
             "chat/partials/tool_call_result.html"
@@ -254,8 +249,11 @@ class WebSocketOrchestrator:
         await self.ws_manager.send_html(html_response)
 
         # 2. If it's a Diff Patch, ALSO update the Inline Visual Card
-        if event.tool_name == "apply_diff":
-            diff_context = {"tool_id": event.tool_id, "tool_run_id": event.tool_run_id}
+        if event.tool_name == "apply_patch":
+            diff_context = {
+                "tool_id": event.tool_id,
+                "internal_tool_call_id": event.internal_tool_call_id,
+            }
             diff_template = templates.get_template(
                 "patches/partials/diff_patch_result.html"
             ).render(diff_context)

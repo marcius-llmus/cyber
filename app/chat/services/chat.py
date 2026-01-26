@@ -1,11 +1,11 @@
 import uuid
 from typing import Any
 
-from llama_index.core.llms import ChatMessage, MessageRole
+from llama_index.core.llms import ChatMessage, MessageRole, TextBlock
 
 from app.chat.models import Message
 from app.chat.repositories import MessageRepository
-from app.chat.schemas import MessageCreate
+from app.chat.schemas import FormattedMessage, MessageCreate
 from app.projects.exceptions import ActiveProjectRequiredException
 from app.projects.services import ProjectService
 from app.sessions.models import ChatSession
@@ -77,7 +77,12 @@ class ChatService:
 
     async def get_chat_history(self, session_id: int) -> list[ChatMessage]:
         db_messages = await self.list_messages_by_session(session_id=session_id)
-        return [ChatMessage(role=msg.role, content=msg.content) for msg in db_messages]
+        history: list[ChatMessage] = []
+        for msg in db_messages:
+            history.append(
+                ChatMessage(role=msg.role, blocks=[TextBlock(text=msg.content)])
+            )
+        return history
 
     async def save_messages_for_turn(
         self,
@@ -102,3 +107,10 @@ class ChatService:
     async def clear_session_messages(self, session_id: int) -> None:
         """Deletes all messages for a given session."""
         await self.message_repo.delete_by_session_id(session_id=session_id)
+
+    # in order to load messages to front, we first parse messages from blocks
+    async def get_formatted_messages_by_session(
+        self, *, session_id: int
+    ) -> list[FormattedMessage]:
+        messages = await self.list_messages_by_session(session_id=session_id)
+        return [FormattedMessage.from_orm_message(m) for m in messages]

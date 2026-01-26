@@ -1,30 +1,23 @@
-import logging
 import re
 from collections.abc import Awaitable, Callable
 from datetime import datetime
-from typing import Any
 
-from llama_index.core.llms import ChatMessage
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.context.schemas import FileStatus
 from app.context.services.codebase import CodebaseService
 from app.core.db import DatabaseSessionManager
-from app.llms.enums import LLMModel
 from app.llms.services import LLMService
-from app.patches.constants import DIFF_PATCHER_PROMPT
-from app.patches.enums import DiffPatchStatus, PatchStrategy
+from app.patches.enums import DiffPatchStatus, PatchProcessorType
 from app.patches.repositories import DiffPatchRepository
 from app.patches.schemas import (
-    DiffPatchApplyResult,
+    DiffPatchApplyPatchResult,
     DiffPatchCreate,
     DiffPatchInternalCreate,
+    DiffPatchUpdate,
+    PatchRepresentation,
 )
-from app.projects.exceptions import ActiveProjectRequiredException
+from app.patches.services.processors.udiff_processor import UDiffProcessor
 from app.projects.services import ProjectService
-
-logger = logging.getLogger(__name__)
-
 
 DIFF_BLOCK_PATTERN = r"^```diff(?:\w+)?\s*\n(.*?)(?=^```)"
 
@@ -38,95 +31,110 @@ class DiffPatchService:
         llm_service_factory: Callable[[AsyncSession], Awaitable[LLMService]],
         project_service_factory: Callable[[AsyncSession], Awaitable[ProjectService]],
         codebase_service_factory: Callable[[], Awaitable[CodebaseService]],
-    ):
+    ) -> None:
         self.db = db
         self.diff_patch_repo_factory = diff_patch_repo_factory
         self.llm_service_factory = llm_service_factory
         self.project_service_factory = project_service_factory
         self.codebase_service_factory = codebase_service_factory
 
-    async def apply_diff(
-        self,
-        *,
-        file_path: str,
-        diff_content: str,
-        strategy: PatchStrategy = PatchStrategy.LLM_GATHER,
-    ) -> str:
-        async with self.db.session() as session:
-            project_service = await self.project_service_factory(session)
-            codebase_service = await self.codebase_service_factory()
-            llm_service = await self.llm_service_factory(session)
+    async def process_diff(self, payload: DiffPatchCreate) -> DiffPatchApplyPatchResult:
+        patch_id = await self._create_pending_patch(payload)
+        representation = None
+        try:
+            processor = self._build_processor(payload.processor_type)
+            await processor.apply_patch(payload.diff)
 
-            project = await project_service.get_active_project()
-            if not project:
-                raise ActiveProjectRequiredException(
-                    "Active project required to apply patches."
-                )
-
-            read_result = await codebase_service.read_file(
-                project.path, file_path, must_exist=False
-            )
-            if read_result.status == FileStatus.SUCCESS:
-                original_content = read_result.content
-            elif read_result.status == FileStatus.BINARY:
-                raise ValueError(f"Cannot patch binary file: {file_path}")
-            else:
-                raise ValueError(
-                    f"Could not read file {file_path}: {read_result.error_message}"
-                )
-
-            llm_client = await llm_service.get_client(
-                model_name=LLMModel.GPT_4_1_MINI, temperature=0
+            representation = PatchRepresentation.from_text(
+                raw_text=payload.diff, processor_type=payload.processor_type
             )
 
-        if strategy != PatchStrategy.LLM_GATHER:
-            raise NotImplementedError(f"Strategy {strategy} not implemented")
+            applied_at = datetime.now()
+            await self._update_patch(
+                patch_id=patch_id,
+                update=DiffPatchUpdate(
+                    status=DiffPatchStatus.APPLIED,
+                    error_message=None,
+                    applied_at=applied_at,
+                ),
+            )
+            return DiffPatchApplyPatchResult(
+                patch_id=patch_id,
+                status=DiffPatchStatus.APPLIED,
+                error_message=None,
+                representation=representation,
+            )
+        except Exception as e:
+            error_message = str(e)
+            await self._update_patch(
+                patch_id=patch_id,
+                update=DiffPatchUpdate(
+                    status=DiffPatchStatus.FAILED,
+                    error_message=error_message,
+                    applied_at=None,
+                ),
+            )
+            return DiffPatchApplyPatchResult(
+                patch_id=patch_id,
+                status=DiffPatchStatus.FAILED,
+                error_message=error_message,
+                representation=representation,
+            )
 
-        patched_content = await self._apply_via_llm(
-            llm_client, original_content, diff_content
-        )
-
+    async def _create_pending_patch(self, payload: DiffPatchCreate) -> int:
         async with self.db.session() as session:
-            project_service = await self.project_service_factory(session)
-            codebase_service = await self.codebase_service_factory()
+            repo = self.diff_patch_repo_factory(session)
+            created = await repo.create(
+                obj_in=DiffPatchInternalCreate(
+                    session_id=payload.session_id,
+                    turn_id=payload.turn_id,
+                    diff=payload.diff,
+                    processor_type=payload.processor_type,
+                    status=DiffPatchStatus.PENDING,
+                    error_message=None,
+                    applied_at=None,
+                )
+            )
+            return created.id
 
-            project = await project_service.get_active_project()
-            await codebase_service.write_file(project.path, file_path, patched_content)
-        return f"Successfully patched {file_path}"
+    async def _update_patch(self, *, patch_id: int, update: DiffPatchUpdate) -> None:
+        async with self.db.session() as session:
+            repo = self.diff_patch_repo_factory(session)
+            db_obj = await repo.get(patch_id)
+            if not db_obj:
+                raise ValueError(f"DiffPatch {patch_id} not found")
 
-    async def _apply_via_llm(
-        self, llm_client: Any, original_content: str, diff_content: str
-    ) -> str:
-        messages = [
-            ChatMessage(role="system", content=DIFF_PATCHER_PROMPT),
-            ChatMessage(role="user", content=f"ORIGINAL CONTENT:\n{original_content}"),
-            ChatMessage(role="user", content=f"DIFF PATCH:\n{diff_content}"),
-        ]
-        response = await llm_client.achat(messages)
-        return self._strip_markdown(response.message.content or "")
+            await repo.update(db_obj=db_obj, obj_in=update)
 
-    @staticmethod
-    def _strip_markdown(text: str) -> str:
-        pattern = r"^```(?:\w+)?\s*\n(.*?)\n```$"
-        match = re.search(pattern, text, re.DOTALL | re.MULTILINE)
-        if match:
-            return match.group(1)
-        return text
+    def _build_processor(self, processor_type: PatchProcessorType):
+        if processor_type == PatchProcessorType.UDIFF_LLM:
+            return UDiffProcessor(
+                db=self.db,
+                diff_patch_repo_factory=self.diff_patch_repo_factory,
+                llm_service_factory=self.llm_service_factory,
+                project_service_factory=self.project_service_factory,
+                codebase_service_factory=self.codebase_service_factory,
+            )
+        if processor_type == PatchProcessorType.CODEX_APPLY:
+            raise NotImplementedError("CODEX_APPLY processor not implemented yet")
+        raise NotImplementedError(f"Unknown PatchProcessorType: {processor_type}")
 
     def extract_diffs_from_blocks(
         self,
         *,
         turn_id: str,
         session_id: int,
-        blocks: list[dict[str, Any]],
+        blocks: list[dict[str, object]],
+        processor_type: PatchProcessorType = PatchProcessorType.UDIFF_LLM,
     ) -> list[DiffPatchCreate]:
         text_content = "\n".join(
-            b.get("content", "") for b in (blocks or []) if b.get("type") == "text"
+            str(b.get("content", "")) for b in (blocks or []) if b.get("type") == "text"
         )
         return self._extract_diff_patches_from_text(
             turn_id=turn_id,
             session_id=session_id,
             text=text_content,
+            processor_type=processor_type,
         )
 
     @staticmethod
@@ -135,6 +143,7 @@ class DiffPatchService:
         turn_id: str,
         session_id: int,
         text: str,
+        processor_type: PatchProcessorType,
     ) -> list[DiffPatchCreate]:
         if not text:
             return []
@@ -154,55 +163,8 @@ class DiffPatchService:
                     session_id=session_id,
                     turn_id=turn_id,
                     diff=diff_content,
+                    processor_type=processor_type,
                 )
             )
 
         return patches
-
-    async def create_patch(self, payload: DiffPatchCreate) -> int:
-        async with self.db.session() as session:
-            diff_patch_repo = self.diff_patch_repo_factory(session)
-            created = await diff_patch_repo.create(obj_in=payload)
-            return created.id
-
-    async def process_diff(
-        self,
-        payload: DiffPatchCreate,
-        *,
-        strategy: PatchStrategy = PatchStrategy.LLM_GATHER,
-    ) -> DiffPatchApplyResult:
-        file_path = payload.parsed.path
-
-        applied_at: datetime | None = None
-        error_message: str | None = None
-
-        try:
-            await self.apply_diff(
-                file_path=file_path, diff_content=payload.diff, strategy=strategy
-            )
-            status = DiffPatchStatus.APPLIED
-            applied_at = datetime.now()
-        except Exception as e:
-            status = DiffPatchStatus.FAILED
-            error_message = str(e)
-
-        internal_create = DiffPatchInternalCreate(
-            session_id=payload.session_id,
-            turn_id=payload.turn_id,
-            diff=payload.diff,
-            status=status,
-            error_message=error_message,
-            applied_at=applied_at,
-        )
-
-        async with self.db.session() as session:
-            diff_patch_repo = self.diff_patch_repo_factory(session)
-            created = await diff_patch_repo.create(obj_in=internal_create)
-            patch_id = created.id
-
-        return DiffPatchApplyResult(
-            patch_id=patch_id,
-            file_path=file_path,
-            status=status,
-            error_message=error_message,
-        )

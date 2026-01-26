@@ -3,7 +3,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.core.db import Base
-from app.patches.enums import DiffPatchStatus
+from app.patches.enums import DiffPatchStatus, PatchProcessorType
 
 
 class DiffPatch(Base):
@@ -19,6 +19,12 @@ class DiffPatch(Base):
     )
 
     diff = Column(Text, nullable=False)
+
+    processor_type = Column(
+        Enum(PatchProcessorType),
+        nullable=False,
+        index=True,
+    )
 
     status = Column(
         Enum(DiffPatchStatus),
