@@ -32,6 +32,8 @@ class TestPatchesFactories:
         """Should return DiffPatchRepository with db threaded."""
         pass
 
-    async def test_build_diff_patch_service_factory_returns_new_repo_per_session(self, db_session_mock):
+    async def test_build_diff_patch_service_factory_returns_new_repo_per_session(
+        self, db_session_mock
+    ):
         """Repo factory should create a new repository bound to provided session (no caching)."""
         pass

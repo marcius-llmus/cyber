@@ -34,7 +34,9 @@ class TestUDiffProcessor:
         """Should raise ValueError when codebase_service.read_file returns FileStatus.ERROR."""
         pass
 
-    async def test_apply_file_diff_calls_llm_client_with_expected_model_and_temperature(self, mocker):
+    async def test_apply_file_diff_calls_llm_client_with_expected_model_and_temperature(
+        self, mocker
+    ):
         """Should await llm_service.get_client(model_name=GPT_4_1_MINI, temperature=0)."""
         pass
 

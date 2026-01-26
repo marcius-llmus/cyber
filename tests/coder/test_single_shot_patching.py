@@ -9,7 +9,9 @@ class TestSingleShotPatchService:
         """Should call DiffPatchService.extract_diffs_from_blocks(turn_id, session_id, blocks, processor_type)."""
         pass
 
-    async def test_apply_from_blocks_yields_applied_event_per_patch_in_representation(self):
+    async def test_apply_from_blocks_yields_applied_event_per_patch_in_representation(
+        self,
+    ):
         """When process_diff returns APPLIED with representation.patches, yield SingleShotDiffAppliedEvent per patch."""
         pass
 
@@ -25,7 +27,9 @@ class TestSingleShotPatchService:
         """Should call context_service.sync_context_for_diff only for add/remove/rename patches."""
         pass
 
-    async def test_apply_from_blocks_yields_workflow_log_error_when_context_sync_fails(self):
+    async def test_apply_from_blocks_yields_workflow_log_error_when_context_sync_fails(
+        self,
+    ):
         """If sync_context_for_diff raises, yield WorkflowLogEvent(level=ERROR) and continue."""
         pass
 
@@ -33,6 +37,8 @@ class TestSingleShotPatchService:
         """Should yield ContextFilesUpdatedEvent with ContextFileListItem for active context."""
         pass
 
-    async def test_apply_from_blocks_returns_early_when_no_representations_applied(self):
+    async def test_apply_from_blocks_returns_early_when_no_representations_applied(
+        self,
+    ):
         """Should yield nothing (no ContextFilesUpdatedEvent) when no diffs were applied."""
         pass

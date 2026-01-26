@@ -1,19 +1,19 @@
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, create_autospec
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.db import DatabaseSessionManager
-from app.settings.models import Settings
 from app.context.services import CodebaseService
+from app.core.db import DatabaseSessionManager
 from app.llms.services import LLMService
 from app.patches.dependencies import get_diff_patch_service
 from app.patches.repositories import DiffPatchRepository
 from app.patches.services import DiffPatchService
 from app.projects.services import ProjectService
+from app.settings.models import Settings
 
 
 @pytest.fixture

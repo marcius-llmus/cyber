@@ -19,7 +19,9 @@ class TestMessagingTurnEventHandlerToolCall:
         """ToolCall should yield AgentStateEvent then ToolCallEvent."""
         pass
 
-    async def test_tool_call_resets_text_block_so_next_stream_delta_starts_new_block(self):
+    async def test_tool_call_resets_text_block_so_next_stream_delta_starts_new_block(
+        self,
+    ):
         """After ToolCall, next AgentStream delta should create new block and yield AIMessageBlockStartEvent."""
         pass
 

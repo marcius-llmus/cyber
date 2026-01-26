@@ -12,7 +12,9 @@ class TestPatcherToolsToToolList:
         """Should call BaseToolSet.to_tool_list(..., func_to_metadata_mapping={...})."""
         pass
 
-    def test_to_tool_list_raises_for_invalid_processor_type(self, mocker, patcher_tools):
+    def test_to_tool_list_raises_for_invalid_processor_type(
+        self, mocker, patcher_tools
+    ):
         """Should raise RuntimeError if _get_patch_processor_type_from_settings returns unknown type."""
         pass
 
@@ -40,7 +42,9 @@ class TestPatcherToolsFormatSaveResult:
 
 
 class TestPatcherToolsApplyPatch:
-    async def test_apply_patch_returns_error_when_session_id_missing(self, patcher_tools):
+    async def test_apply_patch_returns_error_when_session_id_missing(
+        self, patcher_tools
+    ):
         """Should return user-safe error string when tool has no session_id."""
         pass
 
@@ -54,11 +58,15 @@ class TestPatcherToolsApplyPatch:
         """Should await build_diff_patch_service, then process_diff with DiffPatchCreate, then format."""
         pass
 
-    async def test_apply_patch_uses_processor_type_from_settings(self, mocker, patcher_tools):
+    async def test_apply_patch_uses_processor_type_from_settings(
+        self, mocker, patcher_tools
+    ):
         """Should use _get_patch_processor_type_from_settings() and include it in DiffPatchCreate."""
         pass
 
-    async def test_apply_patch_passes_through_internal_tool_call_id_requirement(self, mocker):
+    async def test_apply_patch_passes_through_internal_tool_call_id_requirement(
+        self, mocker
+    ):
         """CustomFunctionTool enforces internal_tool_call_id; apply_patch signature includes it."""
         pass
 
@@ -68,6 +76,8 @@ class TestPatcherToolsApplyPatch:
         """Should catch exception and return 'Error saving/applying patch: ...'."""
         pass
 
-    async def test_apply_patch_returns_error_string_when_service_process_diff_raises(self, mocker):
+    async def test_apply_patch_returns_error_string_when_service_process_diff_raises(
+        self, mocker
+    ):
         """Should catch service exceptions and return safe error string."""
         pass

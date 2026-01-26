@@ -11,7 +11,7 @@ class TestDiffPatchService:
         pass
 
     def test_extract_diffs_from_blocks_accepts_diffpy_fenced_blocks(self):
-        """Should parse ```diffpy (and diff*) fenced blocks (regex supports diff(?:\w+)?)."""
+        r"""Should parse ```diffpy (and diff*) fenced blocks (regex supports diff(?:\w+)?)."""
         pass
 
     def test_extract_diffs_from_blocks_ignores_non_text_blocks(self):
@@ -70,15 +70,21 @@ class TestDiffPatchService:
         """Should return representation=None when processor raises before parsing diff."""
         pass
 
-    async def test_process_diff_updates_failed_when_representation_parsing_raises(self, mocker):
+    async def test_process_diff_updates_failed_when_representation_parsing_raises(
+        self, mocker
+    ):
         """Should set FAILED if PatchRepresentation.from_text raises after apply_patch."""
         pass
 
-    async def test_process_diff_marks_failed_when_create_pending_patch_raises(self, mocker):
+    async def test_process_diff_marks_failed_when_create_pending_patch_raises(
+        self, mocker
+    ):
         """Should surface/propagate if _create_pending_patch fails before having patch_id."""
         pass
 
-    async def test_process_diff_propagates_update_error_when_patch_not_found(self, mocker):
+    async def test_process_diff_propagates_update_error_when_patch_not_found(
+        self, mocker
+    ):
         """Should surface ValueError('DiffPatch X not found') when update cannot find patch row."""
         pass
 

@@ -30,6 +30,8 @@ class TestDiffPatchModel:
         """DiffPatch.created_at should be set by the database."""
         pass
 
-    async def test_diff_patch_updated_at_updates_on_update(self, db_session, chat_session):
+    async def test_diff_patch_updated_at_updates_on_update(
+        self, db_session, chat_session
+    ):
         """DiffPatch.updated_at should change when row is updated."""
         pass
