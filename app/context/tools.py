@@ -7,7 +7,7 @@ from app.commons.tools import BaseToolSet
 from app.context.factories import build_filesystem_service, build_search_service
 from app.context.schemas import FileStatus
 from app.core.db import DatabaseSessionManager
-from app.settings.models import Settings
+from app.settings.schemas import AgentSettingsSnapshot
 
 logger = logging.getLogger(__name__)
 
@@ -213,7 +213,7 @@ class SearchTools(BaseToolSet):
     def __init__(
         self,
         db: DatabaseSessionManager,
-        settings: Settings,
+        settings: AgentSettingsSnapshot,
         session_id: int | None = None,
     ):
         super().__init__(db, settings, session_id)
@@ -274,7 +274,10 @@ class SearchTools(BaseToolSet):
             async with self.db.session() as session:
                 search_service = await build_search_service(session)
                 return await search_service.grep(
-                    search_pattern, file_patterns, ignore_case
+                    search_pattern,
+                    file_patterns,
+                    ignore_case,
+                    settings_snapshot=self.settings,
                 )
         except Exception as e:
             logger.error(f"SearchTools.grep failed: {e}", exc_info=True)

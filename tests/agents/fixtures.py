@@ -125,13 +125,11 @@ def agent_context_service(
 
 @pytest.fixture
 def agent_factory_service(
-    settings_service_mock: MagicMock,
     llm_service_mock: MagicMock,
     session_service_mock: MagicMock,
     agent_context_service_mock: MagicMock,
 ) -> AgentFactoryService:
     return AgentFactoryService(
-        settings_service=settings_service_mock,
         llm_service=llm_service_mock,
         session_service=session_service_mock,
         agent_context_service=agent_context_service_mock,

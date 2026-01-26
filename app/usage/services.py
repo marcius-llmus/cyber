@@ -9,7 +9,6 @@ from pydantic import BaseModel
 from pydantic.alias_generators import to_camel
 
 from app.llms.services import LLMService
-from app.settings.services import SettingsService
 from app.usage.exceptions import UsageTrackingException
 from app.usage.repositories import GlobalUsageRepository, UsageRepository
 from app.usage.schemas import SessionMetrics
@@ -23,12 +22,10 @@ class UsageService:
         usage_repo: UsageRepository,
         global_usage_repo: GlobalUsageRepository,
         llm_service: LLMService,
-        settings_service: SettingsService,
     ):
         self.usage_repo = usage_repo
         self.global_usage_repo = global_usage_repo
         self.llm_service = llm_service
-        self.settings_service = settings_service
 
     async def track_event(self, session_id: int, event: BaseEvent) -> None:
         """Process a single usage event and update repositories."""

@@ -5,7 +5,7 @@ from app.context.services.codebase import CodebaseService
 from app.context.services.context import WorkspaceService
 from app.projects.exceptions import ActiveProjectRequiredException
 from app.projects.services import ProjectService
-from app.settings.services import SettingsService
+from app.settings.schemas import AgentSettingsSnapshot
 
 
 class RepoMapService:
@@ -17,12 +17,10 @@ class RepoMapService:
         self,
         context_service: WorkspaceService,
         codebase_service: CodebaseService,
-        settings_service: SettingsService,
         project_service: ProjectService,
     ):
         self.context_service = context_service
         self.codebase_service = codebase_service
-        self.settings_service = settings_service
         self.project_service = project_service
 
     async def generate_repo_map(
@@ -31,6 +29,8 @@ class RepoMapService:
         mentioned_filenames: set[str] | None = None,
         mentioned_idents: set[str] | None = None,
         include_active_content: bool = True,
+        *,
+        settings_snapshot: AgentSettingsSnapshot,
     ) -> str:
         project = await self.project_service.get_active_project()
         if not project:
@@ -53,15 +53,13 @@ class RepoMapService:
         else:
             mentioned_filenames = set()
 
-        settings = await self.settings_service.get_settings()
-
         # todo: create a factory service for it (just like in agents)
         repo_mapper = RepoMap(
             all_files=all_files_abs,
             active_context_files=active_files_abs,
             mentioned_filenames=mentioned_filenames,
             mentioned_idents=mentioned_idents,
-            token_limit=settings.ast_token_limit,
+            token_limit=settings_snapshot.ast_token_limit,
             root=project.path,
         )
         return await repo_mapper.generate(include_active_content=include_active_content)

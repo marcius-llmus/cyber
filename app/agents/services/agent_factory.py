@@ -11,18 +11,16 @@ from app.llms.enums import LLMModel
 from app.llms.services import LLMService
 from app.patches.tools import PatcherTools
 from app.sessions.services import SessionService
-from app.settings.services import SettingsService
+from app.settings.schemas import AgentSettingsSnapshot
 
 
 class AgentFactoryService:
     def __init__(
         self,
-        settings_service: SettingsService,
         llm_service: LLMService,
         session_service: SessionService,
         agent_context_service: AgentContextService,
     ):
-        self.settings_service = settings_service
         self.llm_service = llm_service
         self.session_service = session_service
         self.agent_context_service = agent_context_service
@@ -32,15 +30,21 @@ class AgentFactoryService:
         session_id: int,
         *,
         turn_id: str | None = None,
+        settings_snapshot: AgentSettingsSnapshot,
     ) -> CoderAgent:
-        settings = await self.settings_service.get_settings()
+
+        # todo: same here.. this should be a snapshot.. I (((we))) have great plans for settings scopes \o/
         coder_settings = await self.llm_service.get_coding_llm()
 
         llm = await self.llm_service.get_client(
             model_name=LLMModel(coder_settings.model_name),
-            temperature=settings.coding_llm_temperature,
+            temperature=settings_snapshot.coding_llm_temperature,
         )
 
+        # todo: we shall refact to have per session project or what ever configs, which means that we must centralize
+        #       configs. so later we can easily attach a setting snapshot for a flux to a project, or session or global.
+        #       so we will keep it here, but AFTER WE START WORKING on scoped settings, this shall be moved
+        #       -- also, it is safe to keep it as non snapshot for now as it is only set once and wont change in between
         operational_mode = await self.session_service.get_operational_mode(session_id)
         tools: list[BaseTool] = []
 
@@ -51,13 +55,13 @@ class AgentFactoryService:
             OperationalMode.PLANNER,
         ]:
             search_tools = SearchTools(
-                db=sessionmanager, settings=settings, session_id=session_id
+                db=sessionmanager, settings=settings_snapshot, session_id=session_id
             )
             tools.extend(search_tools.to_tool_list())
 
             file_tools = FileTools(
                 db=sessionmanager,
-                settings=settings,
+                settings=settings_snapshot,
                 session_id=session_id,
                 turn_id=turn_id,
             )
@@ -67,7 +71,7 @@ class AgentFactoryService:
         if operational_mode == OperationalMode.CODING:
             patcher_tools = PatcherTools(
                 db=sessionmanager,
-                settings=settings,
+                settings=settings_snapshot,
                 session_id=session_id,
                 turn_id=turn_id,
             )
@@ -76,6 +80,7 @@ class AgentFactoryService:
         system_prompt = await self.agent_context_service.build_system_prompt(
             session_id,
             operational_mode=operational_mode,
+            settings_snapshot=settings_snapshot,
         )
 
         return CoderAgent(tools=tools, llm=llm, system_prompt=system_prompt)

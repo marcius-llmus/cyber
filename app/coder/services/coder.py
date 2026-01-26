@@ -27,6 +27,8 @@ from app.core.config import settings
 from app.core.db import DatabaseSessionManager
 from app.core.enums import OperationalMode
 from app.sessions.services import SessionService
+from app.settings.schemas import AgentSettingsSnapshot
+from app.settings.services import SettingsService
 from app.usage.event_handlers import UsageCollector
 
 logger = logging.getLogger(__name__)
@@ -39,7 +41,8 @@ class CoderService:
         chat_service_factory: Callable[[AsyncSession], Awaitable[ChatService]],
         session_service_factory: Callable[[AsyncSession], Awaitable[SessionService]],
         workflow_service_factory: Callable[[AsyncSession], Awaitable[WorkflowService]],
-        agent_factory: Callable[[AsyncSession, int, str], Coroutine[Any, Any, Any]],
+        settings_service_factory: Callable[[AsyncSession], Awaitable[SettingsService]],
+        agent_factory: Callable[..., Coroutine[Any, Any, Any]],
         usage_service_factory: Callable[[AsyncSession], Awaitable[Any]],
         turn_handler_factory: Callable[[], Awaitable[MessagingTurnEventHandler]],
         turn_service_factory: Callable[[AsyncSession], Awaitable[ChatTurnService]],
@@ -54,6 +57,7 @@ class CoderService:
         self.session_service_factory = session_service_factory
         self.agent_factory = agent_factory
         self.workflow_service_factory = workflow_service_factory
+        self.settings_service_factory = settings_service_factory
         self.usage_service_factory = usage_service_factory
         self.turn_handler_factory = turn_handler_factory
         self.turn_service_factory = turn_service_factory
@@ -71,18 +75,24 @@ class CoderService:
             # 1. Init Event Handler (Stateful for this turn, includes Accumulator)
             messaging_turn_handler = await self.turn_handler_factory()
 
+            async with self.db.session() as session:
+                settings_service = await self.settings_service_factory(session)
+                settings_snapshot = await settings_service.get_settings_snapshot()
+
             yield AgentStateEvent(status="Thinking...")
 
             async with UsageCollector() as event_collector:
-                workflow = await self._build_workflow(
-                    session_id=session_id, turn_id=turn_id
-                )
-                ctx = await self._get_workflow_context(
-                    session_id=session_id, workflow=workflow
-                )
-                chat_history = await self._get_chat_history(session_id=session_id)
-
                 try:
+                    workflow = await self._build_workflow(
+                        session_id=session_id,
+                        turn_id=turn_id,
+                        settings_snapshot=settings_snapshot,
+                    )
+                    ctx = await self._get_workflow_context(
+                        session_id=session_id, workflow=workflow
+                    )
+                    chat_history = await self._get_chat_history(session_id=session_id)
+
                     handler = workflow.run(
                         user_msg=user_message,
                         chat_history=chat_history,
@@ -159,9 +169,20 @@ class CoderService:
 
         return turn_id, _stream()
 
-    async def _build_workflow(self, *, session_id: int, turn_id: str) -> Any:
+    async def _build_workflow(
+        self,
+        *,
+        session_id: int,
+        turn_id: str,
+        settings_snapshot: AgentSettingsSnapshot,
+    ) -> Any:
         async with self.db.session() as session:
-            return await self.agent_factory(session, session_id, turn_id)
+            return await self.agent_factory(
+                session,
+                session_id,
+                turn_id,
+                settings_snapshot=settings_snapshot,
+            )
 
     async def _get_workflow_context(self, *, session_id: int, workflow: Any) -> Any:
         async with self.db.session() as session:

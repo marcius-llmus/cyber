@@ -1,4 +1,3 @@
-from decimal import Decimal
 from unittest.mock import AsyncMock
 
 import pytest
@@ -6,14 +5,13 @@ import pytest
 from app.agents.services.agent_factory import AgentFactoryService
 from app.core.enums import OperationalMode
 from app.llms.enums import LLMModel
-from app.settings.models import Settings
 
 
 class TestAgentFactoryService:
     async def test_build_agent_uses_settings_and_llm_settings_to_create_llm_client(
         self,
         agent_factory_service: AgentFactoryService,
-        settings_service_mock,
+        settings_snapshot,
         llm_service_mock,
         session_service_mock,
         agent_context_service_mock,
@@ -24,14 +22,6 @@ class TestAgentFactoryService:
     ):
         """Should request settings + coding llm settings and build llm client with expected args."""
 
-        settings = Settings(
-            max_history_length=50,
-            coding_llm_temperature=float(Decimal("0.7")),
-            ast_token_limit=2000,
-            grep_token_limit=4000,
-        )
-
-        settings_service_mock.get_settings = AsyncMock(return_value=settings)
         llm_service_mock.get_coding_llm = AsyncMock(
             return_value=llm_settings_coder_mock
         )
@@ -48,27 +38,29 @@ class TestAgentFactoryService:
             return_value=coder_agent_mock,
         )
 
-        agent = await agent_factory_service.build_agent(session_id=123)
+        agent = await agent_factory_service.build_agent(
+            session_id=123, settings_snapshot=settings_snapshot
+        )
 
         assert agent is coder_agent_mock
 
-        settings_service_mock.get_settings.assert_awaited_once_with()
         llm_service_mock.get_coding_llm.assert_awaited_once_with()
         llm_service_mock.get_client.assert_awaited_once_with(
             model_name=LLMModel(llm_settings_coder_mock.model_name),
-            temperature=settings.coding_llm_temperature,
+            temperature=settings_snapshot.coding_llm_temperature,
         )
         session_service_mock.get_operational_mode.assert_awaited_once_with(123)
         agent_context_service_mock.build_system_prompt.assert_awaited_once_with(
             123,
             operational_mode=OperationalMode.CHAT,
+            settings_snapshot=settings_snapshot,
         )
         coder_agent_cls_mock.assert_called_once()
 
     async def test_build_agent_requests_operational_mode_from_session_service(
         self,
         agent_factory_service: AgentFactoryService,
-        settings_service_mock,
+        settings_snapshot,
         llm_service_mock,
         session_service_mock,
         agent_context_service_mock,
@@ -78,14 +70,6 @@ class TestAgentFactoryService:
         mocker,
     ):
         """Should await SessionService.get_operational_mode(session_id) exactly once."""
-        settings_service_mock.get_settings = AsyncMock(
-            return_value=Settings(
-                max_history_length=50,
-                coding_llm_temperature=float(Decimal("0.1")),
-                ast_token_limit=2000,
-                grep_token_limit=4000,
-            )
-        )
         llm_service_mock.get_coding_llm = AsyncMock(
             return_value=llm_settings_coder_mock
         )
@@ -102,14 +86,16 @@ class TestAgentFactoryService:
             return_value=coder_agent_mock,
         )
 
-        await agent_factory_service.build_agent(session_id=999)
+        await agent_factory_service.build_agent(
+            session_id=999, settings_snapshot=settings_snapshot
+        )
 
         session_service_mock.get_operational_mode.assert_awaited_once_with(999)
 
     async def test_build_agent_builds_system_prompt_with_operational_mode(
         self,
         agent_factory_service: AgentFactoryService,
-        settings_service_mock,
+        settings_snapshot,
         llm_service_mock,
         session_service_mock,
         agent_context_service_mock,
@@ -119,14 +105,6 @@ class TestAgentFactoryService:
         mocker,
     ):
         """Should call AgentContextService.build_system_prompt(session_id, operational_mode=mode)."""
-        settings_service_mock.get_settings = AsyncMock(
-            return_value=Settings(
-                max_history_length=50,
-                coding_llm_temperature=float(Decimal("0.1")),
-                ast_token_limit=2000,
-                grep_token_limit=4000,
-            )
-        )
         llm_service_mock.get_coding_llm = AsyncMock(
             return_value=llm_settings_coder_mock
         )
@@ -143,11 +121,14 @@ class TestAgentFactoryService:
             return_value=coder_agent_mock,
         )
 
-        await agent_factory_service.build_agent(session_id=1)
+        await agent_factory_service.build_agent(
+            session_id=1, settings_snapshot=settings_snapshot
+        )
 
         agent_context_service_mock.build_system_prompt.assert_awaited_once_with(
             1,
             operational_mode=OperationalMode.PLANNER,
+            settings_snapshot=settings_snapshot,
         )
 
     @pytest.mark.parametrize(
@@ -167,10 +148,10 @@ class TestAgentFactoryService:
         expect_file: bool,
         expect_patcher: bool,
         agent_factory_service: AgentFactoryService,
+        settings_snapshot,
         search_tools_inst,
         file_tools_inst,
         patcher_tools_inst,
-        settings_service_mock,
         llm_service_mock,
         session_service_mock,
         agent_context_service_mock,
@@ -180,13 +161,6 @@ class TestAgentFactoryService:
         mocker,
     ):
         """Should include tools based on operational mode (read-only vs patcher)."""
-        settings = Settings(
-            max_history_length=50,
-            coding_llm_temperature=float(Decimal("0.1")),
-            ast_token_limit=2000,
-            grep_token_limit=4000,
-        )
-        settings_service_mock.get_settings = AsyncMock(return_value=settings)
         llm_service_mock.get_coding_llm = AsyncMock(
             return_value=llm_settings_coder_mock
         )
@@ -214,7 +188,9 @@ class TestAgentFactoryService:
             return_value=coder_agent_mock,
         )
 
-        await agent_factory_service.build_agent(session_id=1, turn_id="t")
+        await agent_factory_service.build_agent(
+            session_id=1, turn_id="t", settings_snapshot=settings_snapshot
+        )
 
         if expect_search:
             search_tools_cls_mock.assert_called_once()
@@ -248,10 +224,10 @@ class TestAgentFactoryService:
     async def test_build_agent_passes_turn_id_to_file_and_patcher_tools(
         self,
         agent_factory_service: AgentFactoryService,
+        settings_snapshot,
         search_tools_inst,
         file_tools_inst,
         patcher_tools_inst,
-        settings_service_mock,
         llm_service_mock,
         session_service_mock,
         agent_context_service_mock,
@@ -261,13 +237,6 @@ class TestAgentFactoryService:
         mocker,
     ):
         """Should pass turn_id into FileTools/PatcherTools constructors."""
-        settings = Settings(
-            max_history_length=50,
-            coding_llm_temperature=float(Decimal("0.1")),
-            ast_token_limit=2000,
-            grep_token_limit=4000,
-        )
-        settings_service_mock.get_settings = AsyncMock(return_value=settings)
         llm_service_mock.get_coding_llm = AsyncMock(
             return_value=llm_settings_coder_mock
         )
@@ -296,55 +265,38 @@ class TestAgentFactoryService:
             return_value=coder_agent_mock,
         )
 
-        await agent_factory_service.build_agent(session_id=1, turn_id="turn_123")
+        await agent_factory_service.build_agent(
+            session_id=1, turn_id="turn_123", settings_snapshot=settings_snapshot
+        )
 
         # kwargs are easiest to assert; we don't care about db/sessionmanager identity here.
         assert file_tools_cls_mock.call_args.kwargs["turn_id"] == "turn_123"
         assert patcher_tools_cls_mock.call_args.kwargs["turn_id"] == "turn_123"
 
-    async def test_build_agent_propagates_error_from_settings_service(
-        self,
-        agent_factory_service: AgentFactoryService,
-        settings_service_mock,
-    ):
-        """Should surface exceptions from SettingsService.get_settings."""
-        settings_service_mock.get_settings = AsyncMock(side_effect=ValueError("Boom"))
-
-        with pytest.raises(ValueError, match="Boom"):
-            await agent_factory_service.build_agent(session_id=1)
-
-        settings_service_mock.get_settings.assert_awaited_once_with()
-
     async def test_build_agent_propagates_error_from_llm_service_get_client(
         self,
         agent_factory_service: AgentFactoryService,
-        settings_service_mock,
+        settings_snapshot,
         llm_service_mock,
         llm_settings_coder_mock,
     ):
         """Should surface exceptions from LLMService.get_client."""
-        settings_service_mock.get_settings = AsyncMock(
-            return_value=Settings(
-                max_history_length=50,
-                coding_llm_temperature=float(Decimal("0.1")),
-                ast_token_limit=2000,
-                grep_token_limit=4000,
-            )
-        )
         llm_service_mock.get_coding_llm = AsyncMock(
             return_value=llm_settings_coder_mock
         )
         llm_service_mock.get_client = AsyncMock(side_effect=ValueError("Boom"))
 
         with pytest.raises(ValueError, match="Boom"):
-            await agent_factory_service.build_agent(session_id=1)
+            await agent_factory_service.build_agent(
+                session_id=1, settings_snapshot=settings_snapshot
+            )
 
         llm_service_mock.get_client.assert_awaited_once()
 
     async def test_build_agent_propagates_error_from_agent_context_service(
         self,
         agent_factory_service: AgentFactoryService,
-        settings_service_mock,
+        settings_snapshot,
         llm_service_mock,
         session_service_mock,
         agent_context_service_mock,
@@ -352,14 +304,6 @@ class TestAgentFactoryService:
         llm_settings_coder_mock,
     ):
         """Should surface exceptions from AgentContextService.build_system_prompt."""
-        settings_service_mock.get_settings = AsyncMock(
-            return_value=Settings(
-                max_history_length=50,
-                coding_llm_temperature=float(Decimal("0.1")),
-                ast_token_limit=2000,
-                grep_token_limit=4000,
-            )
-        )
         llm_service_mock.get_coding_llm = AsyncMock(
             return_value=llm_settings_coder_mock
         )
@@ -372,6 +316,8 @@ class TestAgentFactoryService:
         )
 
         with pytest.raises(ValueError, match="Boom"):
-            await agent_factory_service.build_agent(session_id=1)
+            await agent_factory_service.build_agent(
+                session_id=1, settings_snapshot=settings_snapshot
+            )
 
         agent_context_service_mock.build_system_prompt.assert_awaited_once()

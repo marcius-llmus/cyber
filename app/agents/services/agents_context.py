@@ -17,6 +17,7 @@ from app.projects.exceptions import ActiveProjectRequiredException
 from app.projects.models import Project
 from app.projects.services import ProjectService
 from app.prompts.services import PromptService
+from app.settings.schemas import AgentSettingsSnapshot
 
 
 class AgentContextService:
@@ -43,6 +44,8 @@ class AgentContextService:
         self,
         session_id: int,
         operational_mode: OperationalMode = OperationalMode.CODING,
+        *,
+        settings_snapshot: AgentSettingsSnapshot,
     ) -> str:
         project = await self.project_service.get_active_project()
         if not project:
@@ -89,7 +92,9 @@ class AgentContextService:
 
         # fetch repo map (semi-stable)
         repo_map = await self.repo_map_service.generate_repo_map(
-            session_id=session_id, include_active_content=False
+            session_id=session_id,
+            include_active_content=False,
+            settings_snapshot=settings_snapshot,
         )
 
         # fetch active context (volatile)

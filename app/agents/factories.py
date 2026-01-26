@@ -15,7 +15,7 @@ from app.llms.factories import build_llm_service
 from app.projects.factories import build_project_service
 from app.prompts.factories import build_prompt_service
 from app.sessions.factories import build_session_service
-from app.settings.factories import build_settings_service
+from app.settings.schemas import AgentSettingsSnapshot
 
 
 async def build_workflow_service(db: AsyncSession) -> WorkflowService:
@@ -40,21 +40,31 @@ async def build_agent_context_service(db: AsyncSession) -> AgentContextService:
 
 
 async def build_agent_factory_service(db: AsyncSession) -> AgentFactoryService:
-    settings_service = await build_settings_service(db)
     llm_service = await build_llm_service(db)
     session_service = await build_session_service(db)
     agent_context_service = await build_agent_context_service(db)
 
     return AgentFactoryService(
-        settings_service=settings_service,
         llm_service=llm_service,
         session_service=session_service,
         agent_context_service=agent_context_service,
     )
 
 
-async def build_agent(db: AsyncSession, session_id: int, turn_id: str | None = None):
+async def build_agent(
+    db: AsyncSession,
+    session_id: int,
+    turn_id: str | None = None,
+    *,
+    settings_snapshot: AgentSettingsSnapshot,
+):
+    """Build an agent for a specific turn using an explicit settings snapshot.
+
+    The snapshot must be captured at the turn boundary (e.g. in CoderService).
+    """
     agent_factory_service = await build_agent_factory_service(db)
     return await agent_factory_service.build_agent(
-        session_id=session_id, turn_id=turn_id
+        session_id=session_id,
+        turn_id=turn_id,
+        settings_snapshot=settings_snapshot,
     )

@@ -123,17 +123,12 @@ class TestAgentsFactories:
         self,
         db_session_mock,
         mocker,
-        settings_service_mock,
         llm_service_mock,
         session_service_mock,
         agent_context_service_mock,
     ):
-        """Factory should await and inject settings/llm/session/context services into AgentFactoryService."""
+        """Factory should await and inject llm/session/context services into AgentFactoryService."""
 
-        build_settings_service_mock = mocker.patch(
-            "app.agents.factories.build_settings_service",
-            new=AsyncMock(return_value=settings_service_mock),
-        )
         build_llm_service_mock = mocker.patch(
             "app.agents.factories.build_llm_service",
             new=AsyncMock(return_value=llm_service_mock),
@@ -150,12 +145,10 @@ class TestAgentsFactories:
         service = await build_agent_factory_service(db_session_mock)
 
         assert isinstance(service, AgentFactoryService)
-        assert service.settings_service is settings_service_mock
         assert service.llm_service is llm_service_mock
         assert service.session_service is session_service_mock
         assert service.agent_context_service is agent_context_service_mock
 
-        build_settings_service_mock.assert_awaited_once_with(db_session_mock)
         build_llm_service_mock.assert_awaited_once_with(db_session_mock)
         build_session_service_mock.assert_awaited_once_with(db_session_mock)
         build_agent_context_service_mock.assert_awaited_once_with(db_session_mock)
@@ -163,7 +156,6 @@ class TestAgentsFactories:
     @pytest.mark.parametrize(
         "patch_target",
         [
-            "app.agents.factories.build_settings_service",
             "app.agents.factories.build_llm_service",
             "app.agents.factories.build_session_service",
             "app.agents.factories.build_agent_context_service",
@@ -193,6 +185,7 @@ class TestAgentsFactories:
         mocker,
         agent_factory_service_mock,
         coder_agent_mock,
+        settings_snapshot,
     ):
         """Thin build_agent factory should delegate to AgentFactoryService.build_agent and return it."""
         agent_factory_service_mock.build_agent = AsyncMock(
@@ -204,12 +197,19 @@ class TestAgentsFactories:
             new=AsyncMock(return_value=agent_factory_service_mock),
         )
 
-        agent = await build_agent(db=db_session_mock, session_id=123, turn_id="t1")
+        agent = await build_agent(
+            db=db_session_mock,
+            session_id=123,
+            turn_id="t1",
+            settings_snapshot=settings_snapshot,
+        )
 
         assert agent is coder_agent_mock
         build_agent_factory_service_mock.assert_awaited_once_with(db_session_mock)
         agent_factory_service_mock.build_agent.assert_awaited_once_with(
-            session_id=123, turn_id="t1"
+            session_id=123,
+            turn_id="t1",
+            settings_snapshot=settings_snapshot,
         )
 
     async def test_build_agent_propagates_error_from_agent_factory_service(
@@ -217,6 +217,7 @@ class TestAgentsFactories:
         db_session_mock,
         mocker,
         agent_factory_service_mock,
+        settings_snapshot,
     ):
         """Thin build_agent factory should surface exceptions raised by AgentFactoryService.build_agent."""
         agent_factory_service_mock.build_agent = AsyncMock(
@@ -228,9 +229,16 @@ class TestAgentsFactories:
         )
 
         with pytest.raises(ValueError, match="Boom"):
-            await build_agent(db=db_session_mock, session_id=123, turn_id=None)
+            await build_agent(
+                db=db_session_mock,
+                session_id=123,
+                turn_id=None,
+                settings_snapshot=settings_snapshot,
+            )
 
         build_agent_factory_service_mock.assert_awaited_once_with(db_session_mock)
         agent_factory_service_mock.build_agent.assert_awaited_once_with(
-            session_id=123, turn_id=None
+            session_id=123,
+            turn_id=None,
+            settings_snapshot=settings_snapshot,
         )

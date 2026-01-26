@@ -124,19 +124,23 @@ class TestAgentContextService:
         self,
         agent_context_service: AgentContextService,
         project_service_mock: MagicMock,
+        settings_snapshot,
     ):
         """Should raise ActiveProjectRequiredException when there is no active project."""
         project_service_mock.get_active_project = AsyncMock(return_value=None)
 
         with pytest.raises(ActiveProjectRequiredException):
             await agent_context_service.build_system_prompt(
-                session_id=1, operational_mode=OperationalMode.CODING
+                session_id=1,
+                operational_mode=OperationalMode.CODING,
+                settings_snapshot=settings_snapshot,
             )
 
     async def test_build_system_prompt_chat_mode_is_minimal(
         self,
         agent_context_service: AgentContextService,
         project_service_mock: MagicMock,
+        settings_snapshot,
     ):
         """CHAT mode should not include repo map, active context, or tool rules."""
         project_service_mock.get_active_project = AsyncMock(
@@ -144,7 +148,9 @@ class TestAgentContextService:
         )
 
         prompt = await agent_context_service.build_system_prompt(
-            session_id=1, operational_mode=OperationalMode.CHAT
+            session_id=1,
+            operational_mode=OperationalMode.CHAT,
+            settings_snapshot=settings_snapshot,
         )
 
         assert "<IDENTITY>" in prompt
@@ -164,6 +170,7 @@ class TestAgentContextService:
         repo_map_service_mock: MagicMock,
         workspace_service_mock: MagicMock,
         codebase_service_mock: MagicMock,
+        settings_snapshot,
     ):
         """CODING mode should include both the repo map and active context when available."""
         project_service_mock.get_active_project = AsyncMock(
@@ -181,7 +188,9 @@ class TestAgentContextService:
         )
 
         prompt = await agent_context_service.build_system_prompt(
-            session_id=1, operational_mode=OperationalMode.CODING
+            session_id=1,
+            operational_mode=OperationalMode.CODING,
+            settings_snapshot=settings_snapshot,
         )
 
         assert "<REPOSITORY_MAP>" in prompt
@@ -194,6 +203,7 @@ class TestAgentContextService:
         agent_context_service: AgentContextService,
         project_service_mock: MagicMock,
         repo_map_service_mock: MagicMock,
+        settings_snapshot,
     ):
         """ASK mode should include repo map when available and respect read-only constraints."""
         project_service_mock.get_active_project = AsyncMock(
@@ -202,7 +212,9 @@ class TestAgentContextService:
         repo_map_service_mock.generate_repo_map = AsyncMock(return_value="tree")
 
         prompt = await agent_context_service.build_system_prompt(
-            session_id=1, operational_mode=OperationalMode.ASK
+            session_id=1,
+            operational_mode=OperationalMode.ASK,
+            settings_snapshot=settings_snapshot,
         )
 
         assert "<REPOSITORY_MAP>" in prompt
@@ -212,6 +224,7 @@ class TestAgentContextService:
         self,
         agent_context_service: AgentContextService,
         project_service_mock: MagicMock,
+        settings_snapshot,
     ):
         """ASK mode should include tool usage rules since read-only tools are available."""
         project_service_mock.get_active_project = AsyncMock(
@@ -219,7 +232,9 @@ class TestAgentContextService:
         )
 
         prompt = await agent_context_service.build_system_prompt(
-            session_id=1, operational_mode=OperationalMode.ASK
+            session_id=1,
+            operational_mode=OperationalMode.ASK,
+            settings_snapshot=settings_snapshot,
         )
 
         assert "<RULES>" in prompt
@@ -229,6 +244,7 @@ class TestAgentContextService:
         agent_context_service: AgentContextService,
         project_service_mock: MagicMock,
         repo_map_service_mock: MagicMock,
+        settings_snapshot,
     ):
         """PLANNER mode should include repo map when available and not require patcher tooling."""
         project_service_mock.get_active_project = AsyncMock(
@@ -237,7 +253,9 @@ class TestAgentContextService:
         repo_map_service_mock.generate_repo_map = AsyncMock(return_value="tree")
 
         prompt = await agent_context_service.build_system_prompt(
-            session_id=1, operational_mode=OperationalMode.PLANNER
+            session_id=1,
+            operational_mode=OperationalMode.PLANNER,
+            settings_snapshot=settings_snapshot,
         )
 
         assert "<REPOSITORY_MAP>" in prompt
@@ -246,6 +264,7 @@ class TestAgentContextService:
         self,
         agent_context_service: AgentContextService,
         project_service_mock: MagicMock,
+        settings_snapshot,
     ):
         """SINGLE_SHOT mode should exclude tool usage rules since no tools are available."""
         project_service_mock.get_active_project = AsyncMock(
@@ -253,7 +272,9 @@ class TestAgentContextService:
         )
 
         prompt = await agent_context_service.build_system_prompt(
-            session_id=1, operational_mode=OperationalMode.SINGLE_SHOT
+            session_id=1,
+            operational_mode=OperationalMode.SINGLE_SHOT,
+            settings_snapshot=settings_snapshot,
         )
 
         # single-shot has no tools
@@ -264,6 +285,7 @@ class TestAgentContextService:
         self,
         agent_context_service: AgentContextService,
         project_service_mock: MagicMock,
+        settings_snapshot,
     ):
         """PLANNER mode should include tool usage rules since read-only tools are available."""
         project_service_mock.get_active_project = AsyncMock(
@@ -271,7 +293,9 @@ class TestAgentContextService:
         )
 
         prompt = await agent_context_service.build_system_prompt(
-            session_id=1, operational_mode=OperationalMode.PLANNER
+            session_id=1,
+            operational_mode=OperationalMode.PLANNER,
+            settings_snapshot=settings_snapshot,
         )
 
         assert "<RULES>" in prompt
@@ -280,6 +304,7 @@ class TestAgentContextService:
         self,
         agent_context_service: AgentContextService,
         project_service_mock: MagicMock,
+        settings_snapshot,
     ):
         """Non-CHAT modes should include coder behavior guidelines."""
         project_service_mock.get_active_project = AsyncMock(
@@ -293,7 +318,9 @@ class TestAgentContextService:
             OperationalMode.SINGLE_SHOT,
         ]:
             prompt = await agent_context_service.build_system_prompt(
-                session_id=1, operational_mode=mode
+                session_id=1,
+                operational_mode=mode,
+                settings_snapshot=settings_snapshot,
             )
             assert "<GUIDELINES>" in prompt
 
@@ -302,6 +329,7 @@ class TestAgentContextService:
         agent_context_service: AgentContextService,
         project_service_mock: MagicMock,
         prompt_service_mock: MagicMock,
+        settings_snapshot,
     ):
         """Non-CHAT modes should embed active prompts XML when prompts exist for the project."""
         project_service_mock.get_active_project = AsyncMock(
@@ -312,7 +340,9 @@ class TestAgentContextService:
         )
 
         prompt = await agent_context_service.build_system_prompt(
-            session_id=1, operational_mode=OperationalMode.CODING
+            session_id=1,
+            operational_mode=OperationalMode.CODING,
+            settings_snapshot=settings_snapshot,
         )
 
         assert "<CUSTOM_INSTRUCTIONS>\n" in prompt
@@ -324,6 +354,7 @@ class TestAgentContextService:
         agent_context_service: AgentContextService,
         project_service_mock: MagicMock,
         prompt_service_mock: MagicMock,
+        settings_snapshot,
     ):
         """Non-CHAT modes should omit CUSTOM_INSTRUCTIONS section when no active prompts exist."""
         project_service_mock.get_active_project = AsyncMock(
@@ -332,7 +363,9 @@ class TestAgentContextService:
         prompt_service_mock.get_active_prompts = AsyncMock(return_value=[])
 
         prompt = await agent_context_service.build_system_prompt(
-            session_id=1, operational_mode=OperationalMode.CODING
+            session_id=1,
+            operational_mode=OperationalMode.CODING,
+            settings_snapshot=settings_snapshot,
         )
 
         # Prompt structure text includes the literal '<CUSTOM_INSTRUCTIONS>' tag in its description.
@@ -344,6 +377,7 @@ class TestAgentContextService:
         agent_context_service: AgentContextService,
         project_service_mock: MagicMock,
         workspace_service_mock: MagicMock,
+        settings_snapshot,
     ):
         """Non-CHAT modes should omit ACTIVE_CONTEXT when workspace has no active files."""
         project_service_mock.get_active_project = AsyncMock(
@@ -352,7 +386,9 @@ class TestAgentContextService:
         workspace_service_mock.get_active_context = AsyncMock(return_value=[])
 
         prompt = await agent_context_service.build_system_prompt(
-            session_id=1, operational_mode=OperationalMode.CODING
+            session_id=1,
+            operational_mode=OperationalMode.CODING,
+            settings_snapshot=settings_snapshot,
         )
 
         assert "<ACTIVE_CONTEXT>\n" not in prompt
@@ -362,6 +398,7 @@ class TestAgentContextService:
         agent_context_service: AgentContextService,
         project_service_mock: MagicMock,
         repo_map_service_mock: MagicMock,
+        settings_snapshot,
     ):
         """Non-CHAT modes should omit REPOSITORY_MAP section when repo map is unavailable."""
         project_service_mock.get_active_project = AsyncMock(
@@ -370,7 +407,9 @@ class TestAgentContextService:
         repo_map_service_mock.generate_repo_map = AsyncMock(return_value=None)
 
         prompt = await agent_context_service.build_system_prompt(
-            session_id=1, operational_mode=OperationalMode.CODING
+            session_id=1,
+            operational_mode=OperationalMode.CODING,
+            settings_snapshot=settings_snapshot,
         )
 
         assert "<REPOSITORY_MAP>\n" not in prompt
@@ -381,6 +420,7 @@ class TestAgentContextService:
         project_service_mock: MagicMock,
         workspace_service_mock: MagicMock,
         codebase_service_mock: MagicMock,
+        settings_snapshot,
     ):
         """Active context builder should only include files that were read successfully."""
         project_service_mock.get_active_project = AsyncMock(
@@ -405,7 +445,9 @@ class TestAgentContextService:
         codebase_service_mock.read_file = AsyncMock(side_effect=read_side_effect)
 
         prompt = await agent_context_service.build_system_prompt(
-            session_id=1, operational_mode=OperationalMode.CODING
+            session_id=1,
+            operational_mode=OperationalMode.CODING,
+            settings_snapshot=settings_snapshot,
         )
 
         assert "good.py" in prompt
@@ -419,6 +461,7 @@ class TestAgentContextService:
         workspace_service_mock: MagicMock,
         codebase_service_mock: MagicMock,
         prompt_service_mock: MagicMock,
+        settings_snapshot,
     ):
         """build_system_prompt should produce sections in a stable, predictable order."""
         project_service_mock.get_active_project = AsyncMock(
@@ -438,7 +481,9 @@ class TestAgentContextService:
         )
 
         prompt = await agent_context_service.build_system_prompt(
-            session_id=1, operational_mode=OperationalMode.CODING
+            session_id=1,
+            operational_mode=OperationalMode.CODING,
+            settings_snapshot=settings_snapshot,
         )
 
         # Use exact wrappers so we don't match tag mentions inside the prompt structure text.
@@ -473,6 +518,7 @@ class TestAgentContextService:
         agent_context_service: AgentContextService,
         project_service_mock: MagicMock,
         repo_map_service_mock: MagicMock,
+        settings_snapshot,
     ):
         """REPOSITORY_MAP section should include the descriptive HTML comment."""
         project_service_mock.get_active_project = AsyncMock(
@@ -481,7 +527,9 @@ class TestAgentContextService:
         repo_map_service_mock.generate_repo_map = AsyncMock(return_value="MAP")
 
         prompt = await agent_context_service.build_system_prompt(
-            session_id=1, operational_mode=OperationalMode.CODING
+            session_id=1,
+            operational_mode=OperationalMode.CODING,
+            settings_snapshot=settings_snapshot,
         )
 
         assert "<!--" in prompt
@@ -493,6 +541,7 @@ class TestAgentContextService:
         project_service_mock: MagicMock,
         workspace_service_mock: MagicMock,
         codebase_service_mock: MagicMock,
+        settings_snapshot,
     ):
         """ACTIVE_CONTEXT section should include the descriptive HTML comment."""
         project_service_mock.get_active_project = AsyncMock(
@@ -508,7 +557,9 @@ class TestAgentContextService:
         )
 
         prompt = await agent_context_service.build_system_prompt(
-            session_id=1, operational_mode=OperationalMode.CODING
+            session_id=1,
+            operational_mode=OperationalMode.CODING,
+            settings_snapshot=settings_snapshot,
         )
 
         assert "<!--" in prompt
@@ -519,6 +570,7 @@ class TestAgentContextService:
         agent_context_service: AgentContextService,
         project_service_mock: MagicMock,
         repo_map_service_mock: MagicMock,
+        settings_snapshot,
     ):
         """build_system_prompt should surface exceptions raised by RepoMapService.generate_repo_map."""
         project_service_mock.get_active_project = AsyncMock(
@@ -529,13 +581,17 @@ class TestAgentContextService:
         )
 
         with pytest.raises(Exception, match="Repo Map Error"):
-            await agent_context_service.build_system_prompt(session_id=1)
+            await agent_context_service.build_system_prompt(
+                session_id=1,
+                settings_snapshot=settings_snapshot,
+            )
 
     async def test_build_system_prompt_propagates_workspace_service_errors(
         self,
         agent_context_service: AgentContextService,
         project_service_mock: MagicMock,
         workspace_service_mock: MagicMock,
+        settings_snapshot,
     ):
         """build_system_prompt should surface exceptions raised by WorkspaceService.get_active_context."""
         project_service_mock.get_active_project = AsyncMock(
@@ -546,7 +602,10 @@ class TestAgentContextService:
         )
 
         with pytest.raises(Exception, match="Workspace Error"):
-            await agent_context_service.build_system_prompt(session_id=1)
+            await agent_context_service.build_system_prompt(
+                session_id=1,
+                settings_snapshot=settings_snapshot,
+            )
 
     async def test_build_system_prompt_propagates_codebase_service_errors(
         self,
@@ -554,6 +613,7 @@ class TestAgentContextService:
         project_service_mock: MagicMock,
         workspace_service_mock: MagicMock,
         codebase_service_mock: MagicMock,
+        settings_snapshot,
     ):
         """build_system_prompt should surface exceptions raised by CodebaseService.read_file."""
         project_service_mock.get_active_project = AsyncMock(
@@ -567,7 +627,10 @@ class TestAgentContextService:
         )
 
         with pytest.raises(Exception, match="Codebase Error"):
-            await agent_context_service.build_system_prompt(session_id=1)
+            await agent_context_service.build_system_prompt(
+                session_id=1,
+                settings_snapshot=settings_snapshot,
+            )
 
     async def test_build_active_context_xml_returns_empty_when_workspace_returns_none(
         self,
@@ -725,6 +788,7 @@ class TestAgentContextService:
         project_service_mock: MagicMock,
         workspace_service_mock: MagicMock,
         codebase_service_mock: MagicMock,
+        settings_snapshot,
     ):
         """build_system_prompt should omit ACTIVE_CONTEXT when no files are successfully read."""
         project_service_mock.get_active_project = AsyncMock(
@@ -739,7 +803,9 @@ class TestAgentContextService:
             )
         )
 
-        prompt = await agent_context_service.build_system_prompt(session_id=1)
+        prompt = await agent_context_service.build_system_prompt(
+            session_id=1, settings_snapshot=settings_snapshot
+        )
         assert "<ACTIVE_CONTEXT>\n" not in prompt
 
     async def test_build_system_prompt_excludes_repo_map_when_repo_map_is_none(
@@ -747,6 +813,7 @@ class TestAgentContextService:
         agent_context_service: AgentContextService,
         project_service_mock: MagicMock,
         repo_map_service_mock: MagicMock,
+        settings_snapshot,
     ):
         """build_system_prompt should omit REPOSITORY_MAP when repo map service returns None."""
         project_service_mock.get_active_project = AsyncMock(
@@ -754,7 +821,9 @@ class TestAgentContextService:
         )
         repo_map_service_mock.generate_repo_map = AsyncMock(return_value=None)
 
-        prompt = await agent_context_service.build_system_prompt(session_id=1)
+        prompt = await agent_context_service.build_system_prompt(
+            session_id=1, settings_snapshot=settings_snapshot
+        )
         assert "<REPOSITORY_MAP>\n" not in prompt
 
     @pytest.mark.parametrize(
@@ -772,6 +841,7 @@ class TestAgentContextService:
         agent_context_service: AgentContextService,
         project_service_mock: MagicMock,
         prompt_service_mock: MagicMock,
+        settings_snapshot,
     ):
         project_service_mock.get_active_project = AsyncMock(
             return_value=Project(id=1, name="p", path="/")
@@ -781,7 +851,9 @@ class TestAgentContextService:
         )
 
         prompt = await agent_context_service.build_system_prompt(
-            session_id=1, operational_mode=mode
+            session_id=1,
+            operational_mode=mode,
+            settings_snapshot=settings_snapshot,
         )
 
         assert "<CUSTOM_INSTRUCTIONS>\n" in prompt
@@ -793,6 +865,7 @@ class TestAgentContextService:
         agent_context_service: AgentContextService,
         project_service_mock: MagicMock,
         prompt_service_mock: MagicMock,
+        settings_snapshot,
     ):
         project_service_mock.get_active_project = AsyncMock(
             return_value=Project(id=1, name="p", path="/")
@@ -802,7 +875,9 @@ class TestAgentContextService:
         )
 
         prompt = await agent_context_service.build_system_prompt(
-            session_id=1, operational_mode=OperationalMode.CHAT
+            session_id=1,
+            operational_mode=OperationalMode.CHAT,
+            settings_snapshot=settings_snapshot,
         )
 
         assert "<CUSTOM_INSTRUCTIONS>\n" not in prompt

@@ -1,6 +1,6 @@
 from app.agents.tools.tool_spec import CustomBaseToolSpec
 from app.core.db import DatabaseSessionManager
-from app.settings.models import Settings
+from app.settings.schemas import AgentSettingsSnapshot
 
 
 class BaseToolSet(CustomBaseToolSpec):
@@ -12,7 +12,7 @@ class BaseToolSet(CustomBaseToolSpec):
     def __init__(
         self,
         db: DatabaseSessionManager,
-        settings: Settings,
+        settings: AgentSettingsSnapshot,
         session_id: int | None = None,
         turn_id: str | None = None,
     ):
