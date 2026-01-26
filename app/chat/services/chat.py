@@ -1,7 +1,7 @@
 import uuid
 from typing import Any
 
-from llama_index.core.llms import ChatMessage, MessageRole
+from llama_index.core.llms import ChatMessage, MessageRole, TextBlock
 
 from app.chat.models import Message
 from app.chat.repositories import MessageRepository
@@ -77,7 +77,12 @@ class ChatService:
 
     async def get_chat_history(self, session_id: int) -> list[ChatMessage]:
         db_messages = await self.list_messages_by_session(session_id=session_id)
-        return [ChatMessage(role=msg.role, content=msg.content) for msg in db_messages]
+        history: list[ChatMessage] = []
+        for msg in db_messages:
+            history.append(
+                ChatMessage(role=msg.role, blocks=[TextBlock(text=msg.content)])
+            )
+        return history
 
     async def save_messages_for_turn(
         self,
