@@ -1,5 +1,6 @@
 """Dependency tests for the patches app."""
 
+import inspect
 from unittest.mock import AsyncMock
 
 import pytest
@@ -8,6 +9,10 @@ from app.patches.dependencies import get_diff_patch_service
 
 
 class TestPatchesDependencies:
+    async def test_get_diff_patch_service_is_async_dependency(self):
+        """get_diff_patch_service remains an async dependency (coroutine function)."""
+        assert inspect.iscoroutinefunction(get_diff_patch_service)
+
     async def test_get_diff_patch_service_delegates_to_factory_and_returns_instance(
         self,
         mocker,

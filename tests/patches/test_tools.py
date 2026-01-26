@@ -9,6 +9,7 @@ import pytest
 from app.patches.enums import DiffPatchStatus, PatchProcessorType
 from app.patches.schemas import DiffPatchCreate
 from app.patches.tools import PatcherTools, _build_apply_patch_metadata
+from app.settings.models import Settings
 
 
 class TestPatcherToolsToToolList:
@@ -194,9 +195,6 @@ class TestPatcherToolsApplyPatch:
         self, mocker
     ):
         """Should catch service exceptions and return safe error string."""
-        from app.patches.tools import PatcherTools
-        from app.settings.models import Settings
-
         toolset = PatcherTools(db=mocker.MagicMock(), settings=Settings())
         toolset.session_id = 1
         toolset.turn_id = "t"

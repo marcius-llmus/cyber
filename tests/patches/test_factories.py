@@ -13,7 +13,7 @@ from app.projects.services import ProjectService
 
 
 class TestPatchesFactories:
-    async def test_build_diff_patch_service_returns_service(self, db_session_mock):
+    async def test_build_diff_patch_service_returns_service(self):
         """Should return a DiffPatchService instance."""
         service = await build_diff_patch_service()
         assert isinstance(service, DiffPatchService)
@@ -54,13 +54,13 @@ class TestPatchesFactories:
         assert service.project_service_factory is build_project_service_mock
         assert service.codebase_service_factory is build_codebase_service_mock
 
-    async def test_build_diff_patch_service_subfactories_are_awaitables(self):
-        """Should wire llm_service_factory/project_service_factory/codebase_service_factory as awaitables."""
-        service = await build_diff_patch_service()
-
         assert callable(service.llm_service_factory)
         assert callable(service.project_service_factory)
         assert callable(service.codebase_service_factory)
+
+    async def test_build_diff_patch_service_subfactories_are_awaitables(self):
+        """Should wire llm_service_factory/project_service_factory/codebase_service_factory as awaitables."""
+        service = await build_diff_patch_service()
 
     async def test_build_diff_patch_service_repo_factory_is_callable(self):
         """diff_patch_repo_factory should be callable and accept (AsyncSession) -> DiffPatchRepository."""

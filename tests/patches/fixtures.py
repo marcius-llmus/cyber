@@ -12,6 +12,7 @@ from app.llms.services import LLMService
 from app.patches.dependencies import get_diff_patch_service
 from app.patches.repositories import DiffPatchRepository
 from app.patches.services import DiffPatchService
+from app.patches.tools import PatcherTools
 from app.projects.services import ProjectService
 from app.settings.models import Settings
 
@@ -56,8 +57,6 @@ def sessionmanager_mock(mocker: MockerFixture) -> DatabaseSessionManager:
 
 @pytest.fixture
 def patcher_tools(mocker: MockerFixture, sessionmanager_mock, settings_mock):
-    from app.patches.tools import PatcherTools
-
     toolset = PatcherTools(db=sessionmanager_mock, settings=settings_mock)
     toolset.session_id = 123
     toolset.turn_id = "turn_123"

@@ -189,7 +189,7 @@ class TestDiffPatchService:
         )
         assert patches[0].processor_type == PatchProcessorType.UDIFF_LLM
 
-    async def test_process_diff_marks_applied_on_success(self, mocker):
+    async def test_process_diff_marks_applied_on_success(self, mocker, diff_patch_service):
         """Should create PENDING then update to APPLIED when processor succeeds."""
         processor = mocker.MagicMock()
         processor.apply_patch = AsyncMock(return_value=None)
@@ -198,7 +198,9 @@ class TestDiffPatchService:
             processor_type=PatchProcessorType.UDIFF_LLM,
             patches=[],
         )
-        patch_rep_mock = mocker.patch.object(PatchRepresentation, "from_text", return_value=rep_obj)
+        patch_rep_mock = mocker.patch.object(
+            PatchRepresentation, "from_text", return_value=rep_obj
+        )
 
         payload = DiffPatchCreate(
             session_id=1,
@@ -206,31 +208,24 @@ class TestDiffPatchService:
             diff="--- a/a.txt\n+++ b/a.txt\n",
             processor_type=PatchProcessorType.UDIFF_LLM,
         )
-        service = DiffPatchService(
-            db=mocker.MagicMock(),
-            diff_patch_repo_factory=mocker.MagicMock(),
-            llm_service_factory=AsyncMock(),
-            project_service_factory=AsyncMock(),
-            codebase_service_factory=AsyncMock(),
-        )
 
         create_pending_mock = mocker.patch.object(
-            service,
+            diff_patch_service,
             "_create_pending_patch",
             new=AsyncMock(return_value=123),
         )
         build_processor_mock = mocker.patch.object(
-            service,
+            diff_patch_service,
             "_build_processor",
             return_value=processor,
         )
         update_patch_mock = mocker.patch.object(
-            service,
+            diff_patch_service,
             "_update_patch",
             new=AsyncMock(return_value=None),
         )
 
-        result = await service.process_diff(payload)
+        result = await diff_patch_service.process_diff(payload)
 
         assert isinstance(result, DiffPatchApplyPatchResult)
         assert result.patch_id == 123
@@ -244,7 +239,9 @@ class TestDiffPatchService:
         create_pending_mock.assert_awaited_once_with(payload)
         assert update_patch_mock.await_count == 1
 
-    async def test_process_diff_returns_representation_on_success(self, mocker):
+    async def test_process_diff_returns_representation_on_success(
+        self, mocker, diff_patch_service
+    ):
         """Should include PatchRepresentation in result on success."""
         processor = mocker.MagicMock()
         processor.apply_patch = AsyncMock(return_value=None)
@@ -253,18 +250,13 @@ class TestDiffPatchService:
             processor_type=PatchProcessorType.UDIFF_LLM,
             patches=[],
         )
-        mocker.patch.object(PatchRepresentation, "from_text", return_value=rep_obj)
-
-        service = DiffPatchService(
-            db=mocker.MagicMock(),
-            diff_patch_repo_factory=mocker.MagicMock(),
-            llm_service_factory=AsyncMock(),
-            project_service_factory=AsyncMock(),
-            codebase_service_factory=AsyncMock(),
+        patch_rep_mock = mocker.patch.object(
+            PatchRepresentation, "from_text", return_value=rep_obj
         )
-        service._create_pending_patch = AsyncMock(return_value=1)
-        service._build_processor = mocker.MagicMock(return_value=processor)
-        service._update_patch = AsyncMock(return_value=None)
+
+        diff_patch_service._create_pending_patch = AsyncMock(return_value=1)
+        diff_patch_service._build_processor = mocker.MagicMock(return_value=processor)
+        diff_patch_service._update_patch = AsyncMock(return_value=None)
 
         payload = DiffPatchCreate(
             session_id=1,
@@ -272,24 +264,23 @@ class TestDiffPatchService:
             diff="--- a/a.txt\n+++ b/a.txt\n",
             processor_type=PatchProcessorType.UDIFF_LLM,
         )
-        result = await service.process_diff(payload)
+        result = await diff_patch_service.process_diff(payload)
         assert result.representation == rep_obj
+        processor.apply_patch.assert_awaited_once_with(payload.diff)
+        patch_rep_mock.assert_called_once_with(
+            raw_text=payload.diff, processor_type=payload.processor_type
+        )
 
-    async def test_process_diff_marks_failed_on_processor_error(self, mocker):
+    async def test_process_diff_marks_failed_on_processor_error(
+        self, mocker, diff_patch_service
+    ):
         """Should create PENDING then update to FAILED when processor raises."""
         processor = mocker.MagicMock()
         processor.apply_patch = AsyncMock(side_effect=ValueError("Boom"))
 
-        service = DiffPatchService(
-            db=mocker.MagicMock(),
-            diff_patch_repo_factory=mocker.MagicMock(),
-            llm_service_factory=AsyncMock(),
-            project_service_factory=AsyncMock(),
-            codebase_service_factory=AsyncMock(),
-        )
-        service._create_pending_patch = AsyncMock(return_value=5)
-        service._build_processor = mocker.MagicMock(return_value=processor)
-        service._update_patch = AsyncMock(return_value=None)
+        diff_patch_service._create_pending_patch = AsyncMock(return_value=5)
+        diff_patch_service._build_processor = mocker.MagicMock(return_value=processor)
+        diff_patch_service._update_patch = AsyncMock(return_value=None)
 
         payload = DiffPatchCreate(
             session_id=1,
@@ -297,24 +288,17 @@ class TestDiffPatchService:
             diff="d",
             processor_type=PatchProcessorType.UDIFF_LLM,
         )
-        result = await service.process_diff(payload)
+        result = await diff_patch_service.process_diff(payload)
         assert result.status == DiffPatchStatus.FAILED
         assert result.error_message == "Boom"
 
     async def test_process_diff_does_not_attempt_to_apply_when_build_processor_raises(
-        self, mocker
+        self, mocker, diff_patch_service
     ):
         """Should mark FAILED and not call processor.apply_patch if _build_processor raises."""
-        service = DiffPatchService(
-            db=mocker.MagicMock(),
-            diff_patch_repo_factory=mocker.MagicMock(),
-            llm_service_factory=AsyncMock(),
-            project_service_factory=AsyncMock(),
-            codebase_service_factory=AsyncMock(),
-        )
-        service._create_pending_patch = AsyncMock(return_value=5)
-        service._build_processor = mocker.MagicMock(side_effect=ValueError("Boom"))
-        service._update_patch = AsyncMock(return_value=None)
+        diff_patch_service._create_pending_patch = AsyncMock(return_value=5)
+        diff_patch_service._build_processor = mocker.MagicMock(side_effect=ValueError("Boom"))
+        diff_patch_service._update_patch = AsyncMock(return_value=None)
 
         payload = DiffPatchCreate(
             session_id=1,
@@ -322,27 +306,20 @@ class TestDiffPatchService:
             diff="d",
             processor_type=PatchProcessorType.UDIFF_LLM,
         )
-        result = await service.process_diff(payload)
+        result = await diff_patch_service.process_diff(payload)
         assert result.status == DiffPatchStatus.FAILED
         assert result.error_message == "Boom"
 
     async def test_process_diff_keeps_representation_none_when_processor_errors_before_parsing(
-        self, mocker
+        self, mocker, diff_patch_service
     ):
         """Should return representation=None when processor raises before parsing diff."""
         processor = mocker.MagicMock()
         processor.apply_patch = AsyncMock(side_effect=ValueError("Boom"))
 
-        service = DiffPatchService(
-            db=mocker.MagicMock(),
-            diff_patch_repo_factory=mocker.MagicMock(),
-            llm_service_factory=AsyncMock(),
-            project_service_factory=AsyncMock(),
-            codebase_service_factory=AsyncMock(),
-        )
-        service._create_pending_patch = AsyncMock(return_value=5)
-        service._build_processor = mocker.MagicMock(return_value=processor)
-        service._update_patch = AsyncMock(return_value=None)
+        diff_patch_service._create_pending_patch = AsyncMock(return_value=5)
+        diff_patch_service._build_processor = mocker.MagicMock(return_value=processor)
+        diff_patch_service._update_patch = AsyncMock(return_value=None)
 
         payload = DiffPatchCreate(
             session_id=1,
@@ -350,34 +327,25 @@ class TestDiffPatchService:
             diff="d",
             processor_type=PatchProcessorType.UDIFF_LLM,
         )
-        result = await service.process_diff(payload)
+        result = await diff_patch_service.process_diff(payload)
         assert result.representation is None
 
     async def test_process_diff_updates_failed_when_representation_parsing_raises(
-        self, mocker
+        self, mocker, diff_patch_service
     ):
         """Should set FAILED if PatchRepresentation.from_text raises after apply_patch."""
         processor = mocker.MagicMock()
         processor.apply_patch = AsyncMock(return_value=None)
 
-        import app.patches.services.diff_patches as mod
-
         mocker.patch.object(
-            mod.PatchRepresentation,
+            PatchRepresentation,
             "from_text",
             side_effect=ValueError("Boom"),
         )
 
-        service = DiffPatchService(
-            db=mocker.MagicMock(),
-            diff_patch_repo_factory=mocker.MagicMock(),
-            llm_service_factory=AsyncMock(),
-            project_service_factory=AsyncMock(),
-            codebase_service_factory=AsyncMock(),
-        )
-        service._create_pending_patch = AsyncMock(return_value=5)
-        service._build_processor = mocker.MagicMock(return_value=processor)
-        service._update_patch = AsyncMock(return_value=None)
+        diff_patch_service._create_pending_patch = AsyncMock(return_value=5)
+        diff_patch_service._build_processor = mocker.MagicMock(return_value=processor)
+        diff_patch_service._update_patch = AsyncMock(return_value=None)
 
         payload = DiffPatchCreate(
             session_id=1,
@@ -385,22 +353,15 @@ class TestDiffPatchService:
             diff="d",
             processor_type=PatchProcessorType.UDIFF_LLM,
         )
-        result = await service.process_diff(payload)
+        result = await diff_patch_service.process_diff(payload)
         assert result.status == DiffPatchStatus.FAILED
         assert result.error_message == "Boom"
 
     async def test_process_diff_marks_failed_when_create_pending_patch_raises(
-        self, mocker
+        self, mocker, diff_patch_service
     ):
         """Should surface/propagate if _create_pending_patch fails before having patch_id."""
-        service = DiffPatchService(
-            db=mocker.MagicMock(),
-            diff_patch_repo_factory=mocker.MagicMock(),
-            llm_service_factory=AsyncMock(),
-            project_service_factory=AsyncMock(),
-            codebase_service_factory=AsyncMock(),
-        )
-        service._create_pending_patch = AsyncMock(side_effect=ValueError("Boom"))
+        diff_patch_service._create_pending_patch = AsyncMock(side_effect=ValueError("Boom"))
 
         payload = DiffPatchCreate(
             session_id=1,
@@ -409,25 +370,18 @@ class TestDiffPatchService:
             processor_type=PatchProcessorType.UDIFF_LLM,
         )
         with pytest.raises(ValueError, match="Boom"):
-            await service.process_diff(payload)
+            await diff_patch_service.process_diff(payload)
 
     async def test_process_diff_propagates_update_error_when_patch_not_found(
-        self, mocker
+        self, mocker, diff_patch_service
     ):
         """Should surface ValueError('DiffPatch X not found') when update cannot find patch row."""
         processor = mocker.MagicMock()
         processor.apply_patch = AsyncMock(side_effect=ValueError("Boom"))
 
-        service = DiffPatchService(
-            db=mocker.MagicMock(),
-            diff_patch_repo_factory=mocker.MagicMock(),
-            llm_service_factory=AsyncMock(),
-            project_service_factory=AsyncMock(),
-            codebase_service_factory=AsyncMock(),
-        )
-        service._create_pending_patch = AsyncMock(return_value=55)
-        service._build_processor = mocker.MagicMock(return_value=processor)
-        service._update_patch = AsyncMock(
+        diff_patch_service._create_pending_patch = AsyncMock(return_value=55)
+        diff_patch_service._build_processor = mocker.MagicMock(return_value=processor)
+        diff_patch_service._update_patch = AsyncMock(
             side_effect=ValueError("DiffPatch 55 not found")
         )
 
@@ -438,7 +392,7 @@ class TestDiffPatchService:
             processor_type=PatchProcessorType.UDIFF_LLM,
         )
         with pytest.raises(ValueError, match="DiffPatch 55 not found"):
-            await service.process_diff(payload)
+            await diff_patch_service.process_diff(payload)
 
     def test_build_processor_chooses_udiff(self):
         """Should return UDiffProcessor for UDIFF_LLM."""
