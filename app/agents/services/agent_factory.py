@@ -55,13 +55,16 @@ class AgentFactoryService:
             OperationalMode.PLANNER,
         ]:
             search_tools = SearchTools(
-                db=sessionmanager, settings=settings_snapshot, session_id=session_id
+                db=sessionmanager,
+                settings_snapshot=settings_snapshot,
+                session_id=session_id,
+                turn_id=turn_id,
             )
             tools.extend(search_tools.to_tool_list())
 
             file_tools = FileTools(
                 db=sessionmanager,
-                settings=settings_snapshot,
+                settings_snapshot=settings_snapshot,
                 session_id=session_id,
                 turn_id=turn_id,
             )
@@ -71,7 +74,7 @@ class AgentFactoryService:
         if operational_mode == OperationalMode.CODING:
             patcher_tools = PatcherTools(
                 db=sessionmanager,
-                settings=settings_snapshot,
+                settings_snapshot=settings_snapshot,
                 session_id=session_id,
                 turn_id=turn_id,
             )

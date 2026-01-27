@@ -12,12 +12,11 @@ class BaseToolSet(CustomBaseToolSpec):
     def __init__(
         self,
         db: DatabaseSessionManager,
-        settings: AgentSettingsSnapshot,
+        settings_snapshot: AgentSettingsSnapshot,
         session_id: int | None = None,
         turn_id: str | None = None,
     ):
-        super().__init__()
         self.db = db
-        self.settings = settings
+        self.settings_snapshot = settings_snapshot
         self.session_id = session_id
         self.turn_id = turn_id
