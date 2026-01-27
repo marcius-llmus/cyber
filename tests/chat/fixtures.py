@@ -52,8 +52,11 @@ def chat_service_mock(mocker: MockerFixture) -> MagicMock:
 @pytest.fixture
 def chat_turn_service(
     chat_turn_repository_mock: MagicMock,
+    settings_service_mock: MagicMock,
 ) -> ChatTurnService:
-    return ChatTurnService(turn_repo=chat_turn_repository_mock)
+    return ChatTurnService(
+        turn_repo=chat_turn_repository_mock, settings_service=settings_service_mock
+    )
 
 
 @pytest.fixture
