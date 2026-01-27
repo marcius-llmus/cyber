@@ -54,6 +54,14 @@ class FormattedMessage(BaseModel):
             if tool.get("name") != "apply_patch":
                 continue
 
+            meta = block.get("meta") or {}
+            processor_type_raw = meta.get("patch_processor_type")
+            if not processor_type_raw:
+                raise ValueError(
+                    "apply_patch tool block missing meta.patch_processor_type"
+                )
+            processor_type = PatchProcessorType(processor_type_raw)
+
             kwargs = tool.get("kwargs") or {}
             patch_text = str(kwargs.get("patch") or "")
             if not patch_text:
@@ -61,7 +69,7 @@ class FormattedMessage(BaseModel):
 
             representation = PatchRepresentation.from_text(
                 raw_text=patch_text,
-                processor_type=PatchProcessorType.UDIFF_LLM,
+                processor_type=processor_type,
             )
 
             block["formatted"] = {

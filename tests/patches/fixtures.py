@@ -5,9 +5,8 @@ from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.context.services import CodebaseService
-from app.core.db import DatabaseSessionManager
 from app.llms.services import LLMService
-from app.patches.dependencies import get_diff_patch_service
+from app.patches.enums import PatchProcessorType
 from app.patches.repositories import DiffPatchRepository
 from app.patches.services import DiffPatchService
 from app.patches.tools import PatcherTools
@@ -35,11 +34,11 @@ def diff_patch_repo_factory_mock(
 
 @pytest.fixture
 def diff_patch_service(
-    sessionmanager_mock: DatabaseSessionManager,
+    db_sessionmanager_mock,
     diff_patch_repo_factory_mock: MagicMock,
 ) -> DiffPatchService:
     return DiffPatchService(
-        db=sessionmanager_mock,
+        db=db_sessionmanager_mock,
         diff_patch_repo_factory=diff_patch_repo_factory_mock,
         llm_service_factory=AsyncMock(),
         project_service_factory=AsyncMock(),
@@ -53,14 +52,9 @@ def diff_patch_service_mock(mocker: MockerFixture) -> MagicMock:
 
 
 @pytest.fixture
-def sessionmanager_mock(mocker: MockerFixture) -> DatabaseSessionManager:
-    return mocker.create_autospec(DatabaseSessionManager, instance=True)
-
-
-@pytest.fixture
-def patcher_tools(mocker: MockerFixture, sessionmanager_mock, settings_snapshot):
+def patcher_tools(mocker: MockerFixture, db_sessionmanager_mock, settings_snapshot):
     toolset = PatcherTools(
-        db=sessionmanager_mock,
+        db=db_sessionmanager_mock,
         settings_snapshot=settings_snapshot,
     )
     toolset.session_id = 123
@@ -98,9 +92,36 @@ def file_read_result_success(mocker: MockerFixture):
 
 
 @pytest.fixture
-def override_get_diff_patch_service(client, diff_patch_service_mock: MagicMock):
-    client.app.dependency_overrides[get_diff_patch_service] = (
-        lambda: diff_patch_service_mock
+def udiff_text_with_2_additions_1_deletion() -> str:
+    return (
+        "--- a/a.txt\n"
+        "+++ b/a.txt\n"
+        "@@ -1,1 +1,2 @@\n"
+        "-bye\n"
+        "+hello\n"
+        "+world\n"
     )
-    yield
-    client.app.dependency_overrides.pop(get_diff_patch_service, None)
+
+
+@pytest.fixture
+def codex_text_with_2_additions_1_deletion() -> str:
+    return (
+        "*** Begin Patch\n"
+        "*** Update File: a.txt\n"
+        "@@\n"
+        "-bye\n"
+        "+hello\n"
+        "+world\n"
+        "*** End Patch\n"
+    )
+
+
+@pytest.fixture
+def diff_text_by_processor_type(
+    udiff_text_with_2_additions_1_deletion: str,
+    codex_text_with_2_additions_1_deletion: str,
+) -> dict[PatchProcessorType, str]:
+    return {
+        PatchProcessorType.UDIFF_LLM: udiff_text_with_2_additions_1_deletion,
+        PatchProcessorType.CODEX_APPLY: codex_text_with_2_additions_1_deletion,
+    }

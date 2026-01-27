@@ -5,6 +5,7 @@ import pytest
 
 from app.context.schemas import FileReadResult, FileStatus
 from app.llms.enums import LLMModel
+from app.patches.services.processors.codex_processor import CodexProcessor
 from app.patches.services.processors.udiff_processor import UDiffProcessor
 from app.projects.exceptions import ActiveProjectRequiredException
 
@@ -310,3 +311,91 @@ class TestUDiffProcessor:
         assert messages[0].role == "system"
         assert "ORIGINAL CONTENT:" in messages[1].content
         assert "DIFF PATCH:" in messages[2].content
+
+
+class TestCodexProcessor:
+    async def test_apply_patch_raises_when_no_active_project(
+        self,
+        mocker,
+        db_sessionmanager_mock,
+        project_service_mock,
+    ):
+        """Should raise ActiveProjectRequiredException if no active project exists."""
+        project_service_mock.get_active_project = AsyncMock(return_value=None)
+
+        processor = CodexProcessor(
+            db=db_sessionmanager_mock,
+            diff_patch_repo_factory=mocker.MagicMock(),
+            llm_service_factory=AsyncMock(),
+            project_service_factory=AsyncMock(return_value=project_service_mock),
+            codebase_service_factory=AsyncMock(),
+        )
+
+        with pytest.raises(
+            ActiveProjectRequiredException, match="Active project required"
+        ):
+            await processor.apply_patch("RAW")
+
+    async def test_apply_patch_calls_apply_patch_py_with_project_workdir(
+        self,
+        mocker,
+        db_sessionmanager_mock,
+        project_service_mock,
+        project,
+    ):
+        """Should await apply_patch(diff, workdir=Path(project.path))."""
+        project_service_mock.get_active_project = AsyncMock(return_value=project)
+
+        affected = mocker.MagicMock()
+        affected.success = True
+
+        apply_patch_mock = mocker.patch(
+            "app.patches.services.processors.codex_processor.apply_patch",
+            new=AsyncMock(return_value=affected),
+        )
+
+        processor = CodexProcessor(
+            db=db_sessionmanager_mock,
+            diff_patch_repo_factory=mocker.MagicMock(),
+            llm_service_factory=AsyncMock(),
+            project_service_factory=AsyncMock(return_value=project_service_mock),
+            codebase_service_factory=AsyncMock(),
+        )
+
+        await processor.apply_patch("RAW")
+
+        apply_patch_mock.assert_awaited_once()
+        assert apply_patch_mock.await_args.args[0] == "RAW"
+        assert str(apply_patch_mock.await_args.kwargs["workdir"]) == str(project.path)
+
+    async def test_apply_patch_raises_when_apply_patch_returns_success_false(
+        self,
+        mocker,
+        db_sessionmanager_mock,
+        project_service_mock,
+        project,
+    ):
+        """Should raise ValueError when apply_patch returns affected.success == False."""
+        project_service_mock.get_active_project = AsyncMock(return_value=project)
+
+        affected = mocker.MagicMock()
+        affected.success = False
+        affected.__str__ = lambda self=affected: "AffectedPaths(success=False)"  # type: ignore[assignment]
+
+        apply_patch_mock = mocker.patch(
+            "app.patches.services.processors.codex_processor.apply_patch",
+            new=AsyncMock(return_value=affected),
+        )
+
+        processor = CodexProcessor(
+            db=db_sessionmanager_mock,
+            diff_patch_repo_factory=mocker.MagicMock(),
+            llm_service_factory=AsyncMock(),
+            project_service_factory=AsyncMock(return_value=project_service_mock),
+            codebase_service_factory=AsyncMock(),
+        )
+
+        with pytest.raises(ValueError, match="Failed to apply patch"):
+            await processor.apply_patch("RAW")
+
+        apply_patch_mock.assert_awaited_once()

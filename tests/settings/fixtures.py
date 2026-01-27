@@ -83,5 +83,6 @@ def settings_snapshot() -> AgentSettingsSnapshot:
         grep_token_limit=4000,
         diff_patches_auto_open=True,
         diff_patches_auto_apply=True,
+        diff_patch_processor_type="UDIFF_LLM",
         coding_llm_temperature=Decimal("0.7"),
     )
