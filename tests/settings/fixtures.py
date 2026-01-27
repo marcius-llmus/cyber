@@ -79,9 +79,9 @@ def override_get_settings_service(client, settings_service_mock: MagicMock):
 def settings_snapshot() -> AgentSettingsSnapshot:
     return AgentSettingsSnapshot(
         max_history_length=50,
-        ast_token_limit=4000,
+        ast_token_limit=10_000,
         grep_token_limit=4000,
         diff_patches_auto_open=True,
         diff_patches_auto_apply=True,
-        coding_llm_temperature=Decimal("0.10"),
+        coding_llm_temperature=Decimal("0.7"),
     )
