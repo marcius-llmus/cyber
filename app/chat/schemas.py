@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, computed_field
 from app.chat.enums import ChatTurnStatus
 from app.patches.enums import PatchProcessorType
 from app.patches.schemas.commons import PatchRepresentation
+from app.settings.schemas import AgentSettingsSnapshot
 
 
 class TurnRequest(BaseModel):
@@ -96,3 +97,8 @@ class ChatTurnCreate(BaseModel):
 
 class ChatTurnUpdate(BaseModel):
     status: ChatTurnStatus
+
+
+class Turn(BaseModel):
+    turn_id: str
+    settings_snapshot: AgentSettingsSnapshot

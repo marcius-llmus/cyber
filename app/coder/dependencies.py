@@ -16,7 +16,6 @@ from app.core.db import sessionmanager
 from app.patches.factories import build_diff_patch_service
 from app.sessions.factories import build_session_service
 from app.settings.dependencies import get_settings_service
-from app.settings.factories import build_settings_service
 from app.settings.services import SettingsService
 from app.usage.dependencies import get_usage_page_service
 from app.usage.factories import build_usage_service
@@ -44,7 +43,6 @@ async def get_coder_service() -> CoderService:
         turn_service_factory=build_chat_turn_service,
         session_service_factory=build_session_service,
         workflow_service_factory=build_workflow_service,
-        settings_service_factory=build_settings_service,
         usage_service_factory=build_usage_service,
         agent_factory=build_agent,
         turn_handler_factory=build_messaging_turn_event_handler,

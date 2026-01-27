@@ -5,6 +5,7 @@ from app.chat.services import ChatService
 from app.chat.services.turn import ChatTurnService
 from app.projects.factories import build_project_service
 from app.sessions.factories import build_session_service
+from app.settings.factories import build_settings_service
 
 
 async def build_chat_service(db: AsyncSession) -> ChatService:
@@ -19,4 +20,8 @@ async def build_chat_service(db: AsyncSession) -> ChatService:
 
 
 async def build_chat_turn_service(db: AsyncSession) -> ChatTurnService:
-    return ChatTurnService(turn_repo=ChatTurnRepository(db=db))
+    settings_service = await build_settings_service(db)
+    return ChatTurnService(
+        turn_repo=ChatTurnRepository(db=db),
+        settings_service=settings_service,
+    )

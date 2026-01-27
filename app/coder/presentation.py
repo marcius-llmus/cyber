@@ -6,6 +6,7 @@ from typing import Any
 from fastapi import WebSocketDisconnect
 from pydantic import ValidationError
 
+from app.chat.schemas import Turn
 from app.coder.schemas import (
     AgentStateEvent,
     AIMessageBlockStartEvent,
@@ -24,7 +25,6 @@ from app.coder.schemas import (
 from app.coder.services import CoderService
 from app.commons.websockets import WebSocketConnectionManager
 from app.core.templating import templates
-from app.patches.enums import PatchProcessorType
 from app.patches.schemas.commons import PatchRepresentation
 
 logger = logging.getLogger(__name__)
@@ -55,12 +55,12 @@ class WebSocketOrchestrator:
             ContextFilesUpdatedEvent: self._render_context_files_updated,
         }
 
-    async def _process_event(self, event: CoderEvent, turn_id: str):
+    async def _process_event(self, event: CoderEvent, turn: Turn):
         # todo check later if it is okay to get by klass type directly
         if not (handler := self.event_handlers.get(type(event))):
             logger.warning(f"No handler for event type: {type(event)}")
             return
-        await handler(event, turn_id=turn_id)
+        await handler(event, turn=turn)
 
     async def _prepare_ui_for_new_turn(self, message_content: str, turn_id: str) -> str:
         await self._render_user_message(message_content, turn_id)
@@ -87,31 +87,31 @@ class WebSocketOrchestrator:
                     await self._render_error(f"Invalid message format: {e}")
                     continue
 
-                turn_id, stream = await self.coder_service.handle_user_message(
+                turn, stream = await self.coder_service.handle_user_message(
                     user_message=message.message,
                     session_id=self.session_id,
-                    turn_id=message.retry_turn_id,
+                    retry_turn_id=message.retry_turn_id,
                 )
 
                 if message.retry_turn_id:
-                    await self._prepare_ui_for_retry_turn(turn_id)
+                    await self._prepare_ui_for_retry_turn(turn.turn_id)
                 else:
-                    await self._prepare_ui_for_new_turn(message.message, turn_id)
+                    await self._prepare_ui_for_new_turn(message.message, turn.turn_id)
 
                 try:
                     async for event in stream:
-                        await self._process_event(event, turn_id)
+                        await self._process_event(event, turn)
 
                 except Exception as e:
                     logger.error(
-                        f"An error occurred in WebSocket turn {turn_id}: {e}",
+                        f"An error occurred in WebSocket turn {turn.turn_id}: {e}",
                         exc_info=True,
                     )
                     await self._render_workflow_error(
                         event=WorkflowErrorEvent(
                             message=str(e), original_message=message.message
                         ),
-                        turn_id=turn_id,
+                        turn=turn,
                     )
 
         except WebSocketDisconnect:
@@ -136,15 +136,15 @@ class WebSocketOrchestrator:
         await self.ws_manager.send_html(template)
 
     async def _render_text_block_start(
-        self, event: AIMessageBlockStartEvent, turn_id: str
+        self, event: AIMessageBlockStartEvent, turn: Turn, **kwargs
     ):
         """
         Mounts a new text block container when explicitly instructed by the service.
         """
-        await self._mount_text_block_container(turn_id, event.block_id)
+        await self._mount_text_block_container(turn.turn_id, event.block_id)
 
     async def _render_ai_message_chunk(
-        self, event: AIMessageChunkEvent, turn_id: str
+        self, event: AIMessageChunkEvent, turn: Turn, **kwargs
     ):  # noqa
         context = {"delta": event.delta, "block_id": event.block_id}
         template = templates.get_template("chat/partials/ai_message_chunk.html").render(
@@ -158,9 +158,9 @@ class WebSocketOrchestrator:
         )
         await self.ws_manager.send_html(template)
 
-    async def _render_agent_state(self, event: AgentStateEvent, turn_id: str):
+    async def _render_agent_state(self, event: AgentStateEvent, turn: Turn, **kwargs):
         # Update status in UI
-        context = {"status": event.status, "turn_id": turn_id}
+        context = {"status": event.status, "turn_id": turn.turn_id}
         template = templates.get_template("chat/partials/ai_status_update.html").render(
             context
         )
@@ -173,7 +173,7 @@ class WebSocketOrchestrator:
             )
 
     async def _render_usage_metrics(
-        self, event: UsageMetricsUpdatedEvent, turn_id: str
+        self, event: UsageMetricsUpdatedEvent, turn: Turn, **kwargs
     ):  # noqa
         context = {
             "session_cost": event.session_cost,
@@ -187,13 +187,13 @@ class WebSocketOrchestrator:
         ).render({"metrics": context})
         await self.ws_manager.send_html(template)
 
-    async def _render_tool_call(self, event: ToolCallEvent, turn_id: str):
+    async def _render_tool_call(self, event: ToolCallEvent, turn: Turn, **kwargs):
         # 1. ALWAYS Render the Tool Call Log Item (Footer)
         tool_context = {
             "tool_id": event.tool_id,
             "tool_name": event.tool_name,
             "tool_kwargs": event.tool_kwargs,
-            "turn_id": turn_id,
+            "turn_id": turn.turn_id,
             "internal_tool_call_id": event.internal_tool_call_id,
         }
         html_response = templates.get_template(
@@ -208,7 +208,7 @@ class WebSocketOrchestrator:
 
             representation = PatchRepresentation.from_text(
                 raw_text=patch_text,
-                processor_type=PatchProcessorType.UDIFF_LLM,
+                processor_type=turn.settings_snapshot.diff_patch_processor_type,
             )
 
             for parsed in representation.patches:
@@ -216,7 +216,7 @@ class WebSocketOrchestrator:
                     "tool_id": event.tool_id,
                     "file_path": parsed.path,
                     "diff": parsed.diff,
-                    "turn_id": turn_id,
+                    "turn_id": turn.turn_id,
                     "additions": parsed.additions,
                     "deletions": parsed.deletions,
                     "internal_tool_call_id": event.internal_tool_call_id,
@@ -229,7 +229,7 @@ class WebSocketOrchestrator:
                 await self.ws_manager.send_html(diff_template)
 
     async def _render_tool_result(
-        self, event: ToolCallResultEvent, turn_id: str
+        self, event: ToolCallResultEvent, turn: Turn, **kwargs
     ):  # noqa
         await self._handle_workflow_log(
             WorkflowLogEvent(
@@ -260,7 +260,7 @@ class WebSocketOrchestrator:
             await self.ws_manager.send_html(diff_template)
 
     async def _render_single_shot_applied(
-        self, event: SingleShotDiffAppliedEvent, turn_id: str
+        self, event: SingleShotDiffAppliedEvent, turn: Turn, **kwargs
     ):
         await self._handle_workflow_log(
             WorkflowLogEvent(
@@ -270,7 +270,7 @@ class WebSocketOrchestrator:
         )
 
     async def _render_context_files_updated(
-        self, event: ContextFilesUpdatedEvent, turn_id: str
+        self, event: ContextFilesUpdatedEvent, turn: Turn, **kwargs
     ):  # noqa
         template = templates.get_template(
             "context/partials/context_file_list_items.html"
@@ -293,7 +293,9 @@ class WebSocketOrchestrator:
         template = templates.get_template("logs/partials/log_item.html").render(context)
         await self.ws_manager.send_html(template)
 
-    async def _render_workflow_error(self, event: WorkflowErrorEvent, turn_id: str):
+    async def _render_workflow_error(
+        self, event: WorkflowErrorEvent, turn: Turn, **kwargs
+    ):
         # Log the error to the logs panel
         await self._handle_workflow_log(
             WorkflowLogEvent(message=event.message, level=LogLevel.ERROR)
@@ -302,13 +304,13 @@ class WebSocketOrchestrator:
         # Remove AI message placeholder
         remove_template = templates.get_template(
             "chat/partials/remove_ai_message.html"
-        ).render({"turn_id": turn_id})
+        ).render({"turn_id": turn.turn_id})
         await self.ws_manager.send_html(remove_template)
 
         # Render retry button on user message
         retry_template = templates.get_template(
             "chat/partials/retry_button.html"
-        ).render({"turn_id": turn_id, "original_message": event.original_message})
+        ).render({"turn_id": turn.turn_id, "original_message": event.original_message})
         await self.ws_manager.send_html(retry_template)
 
     async def _remove_user_message_controls(self, turn_id: str):
