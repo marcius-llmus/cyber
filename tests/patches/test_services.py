@@ -252,17 +252,36 @@ class TestDiffPatchService:
         diff_text_by_processor_type,
         processor_type: PatchProcessorType,
     ):
-        """Should include a PatchRepresentation and populate ParsedPatch additions/deletions for each processor."""
-
+        """Should call PatchRepresentation.from_text and return its value (service orchestration only)."""
         processor = mocker.MagicMock()
         processor.apply_patch = AsyncMock(return_value=None)
-        mocker.patch.object(
-            diff_patch_service, "_build_processor", return_value=processor
-        )
-        diff_patch_service._create_pending_patch = AsyncMock(return_value=1)
-        diff_patch_service._update_patch = AsyncMock(return_value=None)
 
         diff_text = diff_text_by_processor_type[processor_type]
+
+        rep_obj = PatchRepresentation(
+            processor_type=processor_type,
+            patches=[],
+        )
+        patch_rep_mock = mocker.patch(
+            "app.patches.services.diff_patches.PatchRepresentation.from_text",
+            return_value=rep_obj,
+        )
+
+        create_pending_mock = mocker.patch.object(
+            diff_patch_service,
+            "_create_pending_patch",
+            new=AsyncMock(return_value=1),
+        )
+        build_processor_mock = mocker.patch.object(
+            diff_patch_service,
+            "_build_processor",
+            return_value=processor,
+        )
+        update_patch_mock = mocker.patch.object(
+            diff_patch_service,
+            "_update_patch",
+            new=AsyncMock(return_value=None),
+        )
 
         payload = DiffPatchCreate(
             session_id=1,
@@ -274,13 +293,21 @@ class TestDiffPatchService:
         result = await diff_patch_service.process_diff(payload)
 
         assert result.status == DiffPatchStatus.APPLIED
-        assert result.representation is not None
-        assert result.representation.processor_type == processor_type
-        assert len(result.representation.patches) >= 1
-        assert result.representation.patches[0].additions == 2
-        assert result.representation.patches[0].deletions == 1
+        assert result.representation == rep_obj
 
+        create_pending_mock.assert_awaited_once_with(payload)
+        build_processor_mock.assert_called_once_with(processor_type)
         processor.apply_patch.assert_awaited_once_with(diff_text)
+        patch_rep_mock.assert_called_once_with(
+            raw_text=diff_text,
+            processor_type=processor_type,
+        )
+        update_patch_mock.assert_awaited_once()
+
+        update_obj = update_patch_mock.call_args.kwargs["update"]
+        assert update_obj.status == DiffPatchStatus.APPLIED
+        assert update_obj.error_message is None
+        assert update_obj.applied_at is not None
 
     async def test_process_diff_marks_failed_on_processor_error(
         self, mocker, diff_patch_service

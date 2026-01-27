@@ -5,7 +5,6 @@ from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.context.services import CodebaseService
-from app.core.db import DatabaseSessionManager
 from app.llms.services import LLMService
 from app.patches.enums import PatchProcessorType
 from app.patches.repositories import DiffPatchRepository
@@ -35,11 +34,11 @@ def diff_patch_repo_factory_mock(
 
 @pytest.fixture
 def diff_patch_service(
-    sessionmanager_mock: DatabaseSessionManager,
+    db_sessionmanager_mock,
     diff_patch_repo_factory_mock: MagicMock,
 ) -> DiffPatchService:
     return DiffPatchService(
-        db=sessionmanager_mock,
+        db=db_sessionmanager_mock,
         diff_patch_repo_factory=diff_patch_repo_factory_mock,
         llm_service_factory=AsyncMock(),
         project_service_factory=AsyncMock(),
@@ -53,14 +52,9 @@ def diff_patch_service_mock(mocker: MockerFixture) -> MagicMock:
 
 
 @pytest.fixture
-def sessionmanager_mock(mocker: MockerFixture) -> DatabaseSessionManager:
-    return mocker.create_autospec(DatabaseSessionManager, instance=True)
-
-
-@pytest.fixture
-def patcher_tools(mocker: MockerFixture, sessionmanager_mock, settings_snapshot):
+def patcher_tools(mocker: MockerFixture, db_sessionmanager_mock, settings_snapshot):
     toolset = PatcherTools(
-        db=sessionmanager_mock,
+        db=db_sessionmanager_mock,
         settings_snapshot=settings_snapshot,
     )
     toolset.session_id = 123

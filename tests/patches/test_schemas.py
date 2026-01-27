@@ -1,5 +1,5 @@
 import pytest
-from apply_patch_py.models import UpdateFileChunk, UpdateFile
+from apply_patch_py.models import AddFile, DeleteFile, UpdateFile, UpdateFileChunk
 
 from app.patches.enums import ParsedPatchOperation, PatchProcessorType
 from app.patches.schemas import (
@@ -14,7 +14,6 @@ from app.patches.schemas.udiff import DEV_NULL, ParsedDiffPatch
 class TestCodexPatchRepresentationExtractor:
     def test_extract_parses_add_file_hunk(self, mocker):
         """Should return ParsedPatch(operation=ADD) and count additions from content lines."""
-        from apply_patch_py.models import AddFile
 
         class _FakePatch:
             def __init__(self, hunks):
@@ -39,7 +38,6 @@ class TestCodexPatchRepresentationExtractor:
 
     def test_extract_parses_delete_file_hunk(self, mocker):
         """Should return ParsedPatch(operation=DELETE) when PatchParser yields DeleteFile."""
-        from apply_patch_py.models import DeleteFile
 
         class _FakePatch:
             def __init__(self, hunks):
@@ -64,7 +62,6 @@ class TestCodexPatchRepresentationExtractor:
 
     def test_extract_parses_update_file_modify_hunk(self, mocker):
         """Should return ParsedPatch(operation=MODIFY) and count added/removed lines from chunks."""
-        from apply_patch_py.models import UpdateFile, UpdateFileChunk
 
         class _FakePatch:
             def __init__(self, hunks):
@@ -94,7 +91,6 @@ class TestCodexPatchRepresentationExtractor:
 
     def test_extract_parses_update_file_rename_hunk(self, mocker):
         """Should return ParsedPatch(operation=RENAME) and count added/removed lines from chunks."""
-        from apply_patch_py.models import UpdateFile, UpdateFileChunk
 
         class _FakePatch:
             def __init__(self, hunks):
