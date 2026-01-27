@@ -267,21 +267,9 @@ class TestDiffPatchService:
             return_value=rep_obj,
         )
 
-        create_pending_mock = mocker.patch.object(
-            diff_patch_service,
-            "_create_pending_patch",
-            new=AsyncMock(return_value=1),
-        )
-        build_processor_mock = mocker.patch.object(
-            diff_patch_service,
-            "_build_processor",
-            return_value=processor,
-        )
-        update_patch_mock = mocker.patch.object(
-            diff_patch_service,
-            "_update_patch",
-            new=AsyncMock(return_value=None),
-        )
+        diff_patch_service._create_pending_patch = AsyncMock(return_value=1)
+        diff_patch_service._build_processor = mocker.MagicMock(return_value=processor)
+        diff_patch_service._update_patch = AsyncMock(return_value=None)
 
         payload = DiffPatchCreate(
             session_id=1,
@@ -295,16 +283,15 @@ class TestDiffPatchService:
         assert result.status == DiffPatchStatus.APPLIED
         assert result.representation == rep_obj
 
-        create_pending_mock.assert_awaited_once_with(payload)
-        build_processor_mock.assert_called_once_with(processor_type)
+        diff_patch_service._create_pending_patch.assert_awaited_once_with(payload)
+        diff_patch_service._build_processor.assert_called_once_with(processor_type)
         processor.apply_patch.assert_awaited_once_with(diff_text)
         patch_rep_mock.assert_called_once_with(
             raw_text=diff_text,
             processor_type=processor_type,
         )
-        update_patch_mock.assert_awaited_once()
-
-        update_obj = update_patch_mock.call_args.kwargs["update"]
+        diff_patch_service._update_patch.assert_awaited_once()
+        update_obj = diff_patch_service._update_patch.call_args.kwargs["update"]
         assert update_obj.status == DiffPatchStatus.APPLIED
         assert update_obj.error_message is None
         assert update_obj.applied_at is not None
