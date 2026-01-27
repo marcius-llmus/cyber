@@ -67,6 +67,7 @@ class WebSocketOrchestrator:
         await self._render_ai_bubble_placeholder(turn_id)
         return turn_id
 
+    # todo: some receive turn, others turn id? what is the logic? let's make a pattern
     async def _prepare_ui_for_retry_turn(self, turn_id: str) -> str:
         await self._render_ai_bubble_placeholder(turn_id)
         await self._remove_user_message_controls(turn_id)
