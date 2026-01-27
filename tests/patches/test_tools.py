@@ -191,11 +191,11 @@ class TestPatcherToolsApplyPatch:
         assert out == "Error saving/applying patch: Boom"
 
     async def test_apply_patch_returns_error_string_when_service_process_diff_raises(
-        self, mocker, settings_snapshot
+        self, mocker, db_sessionmanager_mock, settings_snapshot
     ):
         """Should catch service exceptions and return safe error string."""
         toolset = PatcherTools(
-            db=mocker.MagicMock(),
+            db=db_sessionmanager_mock,
             settings_snapshot=settings_snapshot,
         )
         toolset.session_id = 1
