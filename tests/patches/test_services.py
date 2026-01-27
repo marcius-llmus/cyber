@@ -163,8 +163,9 @@ class TestDiffPatchService:
             processor_type=PatchProcessorType.UDIFF_LLM,
             patches=[],
         )
-        patch_rep_mock = mocker.patch.object(
-            PatchRepresentation, "from_text", return_value=rep_obj
+        patch_rep_mock = mocker.patch(
+            "app.patches.services.diff_patches.PatchRepresentation.from_text",
+            return_value=rep_obj,
         )
 
         payload = DiffPatchCreate(
@@ -215,8 +216,9 @@ class TestDiffPatchService:
             processor_type=PatchProcessorType.UDIFF_LLM,
             patches=[],
         )
-        patch_rep_mock = mocker.patch.object(
-            PatchRepresentation, "from_text", return_value=rep_obj
+        patch_rep_mock = mocker.patch(
+            "app.patches.services.diff_patches.PatchRepresentation.from_text",
+            return_value=rep_obj,
         )
 
         diff_patch_service._create_pending_patch = AsyncMock(return_value=1)
@@ -235,6 +237,50 @@ class TestDiffPatchService:
         patch_rep_mock.assert_called_once_with(
             raw_text=payload.diff, processor_type=payload.processor_type
         )
+
+    @pytest.mark.parametrize(
+        "processor_type",
+        [
+            PatchProcessorType.UDIFF_LLM,
+            PatchProcessorType.CODEX_APPLY,
+        ],
+    )
+    async def test_process_diff_includes_representation_with_line_counts_for_processor_type(
+        self,
+        mocker,
+        diff_patch_service,
+        diff_text_by_processor_type,
+        processor_type: PatchProcessorType,
+    ):
+        """Should include a PatchRepresentation and populate ParsedPatch additions/deletions for each processor."""
+
+        processor = mocker.MagicMock()
+        processor.apply_patch = AsyncMock(return_value=None)
+        mocker.patch.object(
+            diff_patch_service, "_build_processor", return_value=processor
+        )
+        diff_patch_service._create_pending_patch = AsyncMock(return_value=1)
+        diff_patch_service._update_patch = AsyncMock(return_value=None)
+
+        diff_text = diff_text_by_processor_type[processor_type]
+
+        payload = DiffPatchCreate(
+            session_id=1,
+            turn_id="t1",
+            diff=diff_text,
+            processor_type=processor_type,
+        )
+
+        result = await diff_patch_service.process_diff(payload)
+
+        assert result.status == DiffPatchStatus.APPLIED
+        assert result.representation is not None
+        assert result.representation.processor_type == processor_type
+        assert len(result.representation.patches) >= 1
+        assert result.representation.patches[0].additions == 2
+        assert result.representation.patches[0].deletions == 1
+
+        processor.apply_patch.assert_awaited_once_with(diff_text)
 
     async def test_process_diff_marks_failed_on_processor_error(
         self, mocker, diff_patch_service
@@ -304,9 +350,8 @@ class TestDiffPatchService:
         processor = mocker.MagicMock()
         processor.apply_patch = AsyncMock(return_value=None)
 
-        mocker.patch.object(
-            PatchRepresentation,
-            "from_text",
+        mocker.patch(
+            "app.patches.services.diff_patches.PatchRepresentation.from_text",
             side_effect=ValueError("Boom"),
         )
 
@@ -373,12 +418,17 @@ class TestDiffPatchService:
         )
         assert processor.db is diff_patch_service.db
 
-    def test_build_processor_raises_for_codex_until_implemented(
-        self, diff_patch_service
-    ):
-        """Should raise NotImplementedError for CODEX_APPLY."""
-        with pytest.raises(NotImplementedError, match="CODEX_APPLY"):
-            diff_patch_service._build_processor(PatchProcessorType.CODEX_APPLY)
+    def test_build_processor_chooses_codex(self, diff_patch_service):
+        """Should return CodexProcessor for CODEX_APPLY."""
+        from app.patches.services.processors.codex_processor import CodexProcessor
+
+        processor = diff_patch_service._build_processor(PatchProcessorType.CODEX_APPLY)
+        assert isinstance(processor, CodexProcessor)
+        assert (
+            processor.diff_patch_repo_factory
+            is diff_patch_service.diff_patch_repo_factory
+        )
+        assert processor.db is diff_patch_service.db
 
     def test_build_processor_raises_for_unknown_processor_type(
         self, diff_patch_service

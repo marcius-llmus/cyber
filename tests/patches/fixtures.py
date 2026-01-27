@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.context.services import CodebaseService
 from app.core.db import DatabaseSessionManager
 from app.llms.services import LLMService
-from app.patches.dependencies import get_diff_patch_service
+from app.patches.enums import PatchProcessorType
 from app.patches.repositories import DiffPatchRepository
 from app.patches.services import DiffPatchService
 from app.patches.tools import PatcherTools
@@ -98,9 +98,36 @@ def file_read_result_success(mocker: MockerFixture):
 
 
 @pytest.fixture
-def override_get_diff_patch_service(client, diff_patch_service_mock: MagicMock):
-    client.app.dependency_overrides[get_diff_patch_service] = (
-        lambda: diff_patch_service_mock
+def udiff_text_with_2_additions_1_deletion() -> str:
+    return (
+        "--- a/a.txt\n"
+        "+++ b/a.txt\n"
+        "@@ -1,1 +1,2 @@\n"
+        "-bye\n"
+        "+hello\n"
+        "+world\n"
     )
-    yield
-    client.app.dependency_overrides.pop(get_diff_patch_service, None)
+
+
+@pytest.fixture
+def codex_text_with_2_additions_1_deletion() -> str:
+    return (
+        "*** Begin Patch\n"
+        "*** Update File: a.txt\n"
+        "@@\n"
+        "-bye\n"
+        "+hello\n"
+        "+world\n"
+        "*** End Patch\n"
+    )
+
+
+@pytest.fixture
+def diff_text_by_processor_type(
+    udiff_text_with_2_additions_1_deletion: str,
+    codex_text_with_2_additions_1_deletion: str,
+) -> dict[PatchProcessorType, str]:
+    return {
+        PatchProcessorType.UDIFF_LLM: udiff_text_with_2_additions_1_deletion,
+        PatchProcessorType.CODEX_APPLY: codex_text_with_2_additions_1_deletion,
+    }

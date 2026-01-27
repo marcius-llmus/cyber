@@ -1,4 +1,5 @@
 import pytest
+from apply_patch_py.models import UpdateFileChunk, UpdateFile
 
 from app.patches.enums import ParsedPatchOperation, PatchProcessorType
 from app.patches.schemas import (
@@ -12,7 +13,7 @@ from app.patches.schemas.udiff import DEV_NULL, ParsedDiffPatch
 
 class TestCodexPatchRepresentationExtractor:
     def test_extract_parses_add_file_hunk(self, mocker):
-        """Should return ParsedPatch(operation=ADD) when PatchParser yields AddFile."""
+        """Should return ParsedPatch(operation=ADD) and count additions from content lines."""
         from apply_patch_py.models import AddFile
 
         class _FakePatch:
@@ -21,7 +22,7 @@ class TestCodexPatchRepresentationExtractor:
 
         extractor = CodexPatchRepresentationExtractor()
         raw_text = "RAW"
-        hunk = AddFile(path="a.txt", content="hello")
+        hunk = AddFile(path="a.txt", content="hello\nworld\n")
 
         mocker.patch(
             "app.patches.schemas.codex.PatchParser.parse",
@@ -33,6 +34,8 @@ class TestCodexPatchRepresentationExtractor:
         assert patches[0].operation == ParsedPatchOperation.ADD
         assert patches[0].is_added_file is True
         assert patches[0].path == "a.txt"
+        assert patches[0].additions == 2
+        assert patches[0].deletions == 0
 
     def test_extract_parses_delete_file_hunk(self, mocker):
         """Should return ParsedPatch(operation=DELETE) when PatchParser yields DeleteFile."""
@@ -56,10 +59,12 @@ class TestCodexPatchRepresentationExtractor:
         assert patches[0].operation == ParsedPatchOperation.DELETE
         assert patches[0].is_removed_file is True
         assert patches[0].path == "a.txt"
+        assert patches[0].additions == 0
+        assert patches[0].deletions == 0
 
     def test_extract_parses_update_file_modify_hunk(self, mocker):
-        """Should return ParsedPatch(operation=MODIFY, is_modified_file=True) for UpdateFile without move."""
-        from apply_patch_py.models import UpdateFile
+        """Should return ParsedPatch(operation=MODIFY) and count added/removed lines from chunks."""
+        from apply_patch_py.models import UpdateFile, UpdateFileChunk
 
         class _FakePatch:
             def __init__(self, hunks):
@@ -67,7 +72,11 @@ class TestCodexPatchRepresentationExtractor:
 
         extractor = CodexPatchRepresentationExtractor()
         raw_text = "RAW"
-        hunk = UpdateFile(path="a.txt", chunks=[])
+        # 1 unchanged line, 1 removed line, 2 added lines
+        chunk = UpdateFileChunk(
+            old_lines=["same", "old"], new_lines=["same", "new", "new2"]
+        )
+        hunk = UpdateFile(path="a.txt", chunks=[chunk])
 
         mocker.patch(
             "app.patches.schemas.codex.PatchParser.parse",
@@ -80,10 +89,12 @@ class TestCodexPatchRepresentationExtractor:
         assert patches[0].is_modified_file is True
         assert patches[0].is_rename is False
         assert patches[0].path == "a.txt"
+        assert patches[0].additions == 2
+        assert patches[0].deletions == 1
 
     def test_extract_parses_update_file_rename_hunk(self, mocker):
-        """Should return ParsedPatch(operation=RENAME, is_rename=True) for UpdateFile with move_to."""
-        from apply_patch_py.models import UpdateFile
+        """Should return ParsedPatch(operation=RENAME) and count added/removed lines from chunks."""
+        from apply_patch_py.models import UpdateFile, UpdateFileChunk
 
         class _FakePatch:
             def __init__(self, hunks):
@@ -91,7 +102,8 @@ class TestCodexPatchRepresentationExtractor:
 
         extractor = CodexPatchRepresentationExtractor()
         raw_text = "RAW"
-        hunk = UpdateFile(path="a.txt", chunks=[], move_to="b.txt")
+        chunk = UpdateFileChunk(old_lines=["same", "old"], new_lines=["same", "new"])
+        hunk = UpdateFile(path="a.txt", chunks=[chunk], move_to="b.txt")
 
         mocker.patch(
             "app.patches.schemas.codex.PatchParser.parse",
@@ -105,6 +117,8 @@ class TestCodexPatchRepresentationExtractor:
         assert patches[0].path == "b.txt"
         assert patches[0].old_path == "a.txt"
         assert patches[0].new_path == "b.txt"
+        assert patches[0].additions == 1
+        assert patches[0].deletions == 1
 
     def test_extract_raises_for_unsupported_hunk_type(self, mocker):
         """Should raise ValueError for unexpected hunk classes."""
@@ -136,6 +150,33 @@ class TestPatchRepresentation:
         )
         assert rep.processor_type == PatchProcessorType.UDIFF_LLM
         assert len(rep.patches) == 1
+        assert rep.patches[0].additions == 1
+        assert rep.patches[0].deletions == 0
+
+    def test_from_text_routes_to_codex_extractor_and_counts(self, mocker):
+        """Should select Codex extractor and populate additions/deletions based on codex hunks."""
+
+        class _FakePatch:
+            def __init__(self, hunks):
+                self.hunks = hunks
+
+        raw_text = (
+            "*** Begin Patch\n*** Update File: a.txt\n@@\n-hello\n+hi\n*** End Patch"
+        )
+        chunk = UpdateFileChunk(old_lines=["hello"], new_lines=["hi"])
+        hunk = UpdateFile(path="a.txt", chunks=[chunk])
+        mocker.patch(
+            "app.patches.schemas.codex.PatchParser.parse",
+            return_value=_FakePatch([hunk]),
+        )
+
+        rep = PatchRepresentation.from_text(
+            raw_text=raw_text, processor_type=PatchProcessorType.CODEX_APPLY
+        )
+        assert rep.processor_type == PatchProcessorType.CODEX_APPLY
+        assert len(rep.patches) == 1
+        assert rep.patches[0].additions == 1
+        assert rep.patches[0].deletions == 1
 
     def test_has_changes_true_when_patches_present(self):
         """Should return True when representation.patches is non-empty."""

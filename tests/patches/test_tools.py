@@ -35,12 +35,8 @@ class TestPatcherToolsToToolList:
     def test_to_tool_list_raises_for_invalid_processor_type(
         self, mocker, patcher_tools
     ):
-        """Should raise RuntimeError if _get_patch_processor_type_from_settings returns unknown type."""
-        mocker.patch.object(
-            patcher_tools,
-            "_get_patch_processor_type_from_settings",
-            return_value="NOPE",
-        )
+        """Should raise RuntimeError if settings_snapshot.diff_patch_processor_type is unknown type."""
+        patcher_tools.settings_snapshot.diff_patch_processor_type = "NOPE"  # type: ignore[assignment]
         with pytest.raises(RuntimeError, match="Invalid processor type"):
             patcher_tools.to_tool_list()
 
@@ -151,11 +147,9 @@ class TestPatcherToolsApplyPatch:
     async def test_apply_patch_uses_processor_type_from_settings(
         self, mocker, patcher_tools
     ):
-        """Should use _get_patch_processor_type_from_settings() and include it in DiffPatchCreate."""
-        mocker.patch.object(
-            patcher_tools,
-            "_get_patch_processor_type_from_settings",
-            return_value=PatchProcessorType.UDIFF_LLM,
+        """Should use settings_snapshot.diff_patch_processor_type and include it in DiffPatchCreate."""
+        patcher_tools.settings_snapshot.diff_patch_processor_type = (
+            PatchProcessorType.UDIFF_LLM
         )
         diff_patch_service = mocker.MagicMock()
         diff_patch_service.process_diff = AsyncMock(
@@ -182,11 +176,17 @@ class TestPatcherToolsApplyPatch:
         self, mocker, patcher_tools
     ):
         """Should catch exception and return 'Error saving/applying patch: ...'."""
-        mocker.patch.object(
-            patcher_tools,
-            "_get_patch_processor_type_from_settings",
-            side_effect=ValueError("Boom"),
+        patcher_tools.settings_snapshot.diff_patch_processor_type = (
+            PatchProcessorType.UDIFF_LLM
         )
+
+        diff_patch_service = mocker.MagicMock()
+        diff_patch_service.process_diff = AsyncMock(side_effect=RuntimeError("Boom"))
+        mocker.patch(
+            "app.patches.tools.build_diff_patch_service",
+            new=AsyncMock(return_value=diff_patch_service),
+        )
+
         out = await patcher_tools.apply_patch("d", internal_tool_call_id="x")
         assert out == "Error saving/applying patch: Boom"
 
