@@ -5,7 +5,6 @@ import pytest
 from app.patches.enums import DiffPatchStatus, PatchProcessorType
 from app.patches.schemas import DiffPatchCreate
 from app.patches.tools import PatcherTools, _build_apply_patch_metadata
-from app.settings.models import Settings
 
 
 class TestPatcherToolsToToolList:
@@ -192,10 +191,13 @@ class TestPatcherToolsApplyPatch:
         assert out == "Error saving/applying patch: Boom"
 
     async def test_apply_patch_returns_error_string_when_service_process_diff_raises(
-        self, mocker
+        self, mocker, settings_snapshot
     ):
         """Should catch service exceptions and return safe error string."""
-        toolset = PatcherTools(db=mocker.MagicMock(), settings=Settings())
+        toolset = PatcherTools(
+            db=mocker.MagicMock(),
+            settings_snapshot=settings_snapshot,
+        )
         toolset.session_id = 1
         toolset.turn_id = "t"
 
