@@ -26,7 +26,7 @@ async def test_grep_no_project(service, project_service_mock, settings_snapshot)
     with pytest.raises(ActiveProjectRequiredException):
         await service.grep(
             "pattern",
-            settings_snapshot=settings_snapshot,
+            token_limit=settings_snapshot.grep_token_limit,
         )
 
 
@@ -37,7 +37,7 @@ async def test_grep_empty_pattern_list(
         return_value=Project(id=1, name="p", path="/tmp")
     )
 
-    result = await service.grep([], settings_snapshot=settings_snapshot)
+    result = await service.grep([], token_limit=settings_snapshot.grep_token_limit)
     assert result == "Error: Empty search pattern."
 
     project_service_mock.get_active_project.assert_awaited_once_with()
@@ -65,7 +65,7 @@ async def test_grep_success(
     tree_instance.format.return_value = "def foo(): pass"
 
     # 3. Execute
-    result = await service.grep("foo", settings_snapshot=settings_snapshot)
+    result = await service.grep("foo", token_limit=settings_snapshot.grep_token_limit)
 
     # 4. Assert
     assert "file.py:" in result
@@ -97,7 +97,9 @@ async def test_grep_no_matches(
     tree_instance.grep.return_value = []
 
     # 3. Execute
-    result = await service.grep("pattern", settings_snapshot=settings_snapshot)
+    result = await service.grep(
+        "pattern", token_limit=settings_snapshot.grep_token_limit
+    )
 
     # 4. Assert
     assert result == "No matches found."
@@ -141,7 +143,9 @@ async def test_grep_token_limit(
     service.encoding.encode = MagicMock(return_value=[1] * 20)
 
     # 3. Execute
-    result = await service.grep("pattern", settings_snapshot=settings_snapshot)
+    result = await service.grep(
+        "pattern", token_limit=settings_snapshot.grep_token_limit
+    )
 
     # 4. Assert
     assert "truncated due to token limit" in result
@@ -189,7 +193,9 @@ async def test_grep_integration_patterns(
     # Case A: Simple String
     # grep_ast returns contextual blocks, so "Goodbye" can still appear as surrounding context.
     # We assert that the hello function is present.
-    result = await service.grep("\\[ERROR\\]", settings_snapshot=settings_snapshot)
+    result = await service.grep(
+        "\\[ERROR\\]", token_limit=settings_snapshot.grep_token_limit
+    )
     assert "src/grep_playground.py:" in result
     assert "[ERROR] Something went wrong" in result
 
@@ -225,7 +231,7 @@ async def test_grep_integration_context_can_include_adjacent_function(
     service.encoding = MagicMock()
     service.encoding.encode = MagicMock(return_value=[1])
 
-    result = await service.grep("Hello", settings_snapshot=settings_snapshot)
+    result = await service.grep("Hello", token_limit=settings_snapshot.grep_token_limit)
     assert "test_file.py:" in result
     assert "Hello World" in result
     assert "def goodbye():" in result
@@ -263,7 +269,9 @@ async def test_grep_integration_context_does_not_include_distant_function(
     service.encoding = MagicMock()
     service.encoding.encode = MagicMock(return_value=[1])
 
-    result = await service.grep("\\[ERROR\\]", settings_snapshot=settings_snapshot)
+    result = await service.grep(
+        "\\[ERROR\\]", token_limit=settings_snapshot.grep_token_limit
+    )
     assert "src/grep_playground.py:" in result
     assert "[ERROR] Something went wrong" in result
     assert "█" in result
@@ -328,7 +336,7 @@ async def test_grep_regex_complexity_real_tree_context(
         pattern,
         file_patterns=["src/grep_playground.py"],
         ignore_case=ignore_case,
-        settings_snapshot=settings_snapshot,
+        token_limit=settings_snapshot.grep_token_limit,
     )
 
     assert isinstance(result, str)
@@ -369,7 +377,7 @@ async def test_grep_invalid_regex_best_effort_per_file(
     result = await service.grep(
         r"[unclosed",
         file_patterns=["src/regex_cases.py"],
-        settings_snapshot=settings_snapshot,
+        token_limit=settings_snapshot.grep_token_limit,
     )
     assert "Error processing" in result
     assert "regex_cases.py" in result
@@ -399,7 +407,7 @@ async def test_grep_skips_ignored_and_binary_via_read_file_status(
     result = await service.grep(
         r".",
         file_patterns=["bin/data.bin", "logs/app.log"],
-        settings_snapshot=settings_snapshot,
+        token_limit=settings_snapshot.grep_token_limit,
     )
     assert result == "No matches found."
 
@@ -436,7 +444,7 @@ async def test_grep_defaults_to_scan_all_pattern_when_file_patterns_none(
     service.encoding = MagicMock()
     service.encoding.encode = MagicMock(return_value=[1])
 
-    await service.grep("print", settings_snapshot=settings_snapshot)
+    await service.grep("print", token_limit=settings_snapshot.grep_token_limit)
     codebase_service_mock.resolve_file_patterns.assert_awaited_once_with(
         temp_codebase.root, None
     )
@@ -474,6 +482,8 @@ async def test_grep_unknown_language_reports_error_per_file(
     service.encoding = MagicMock()
     service.encoding.encode = MagicMock(return_value=[1])
 
-    result = await service.grep(r"\\[ERROR\\]", settings_snapshot=settings_snapshot)
+    result = await service.grep(
+        r"\\[ERROR\\]", token_limit=settings_snapshot.grep_token_limit
+    )
     assert "Error processing src/regex_cases.txt:" in result
     assert "Unknown language" in result

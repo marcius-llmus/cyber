@@ -28,7 +28,8 @@ async def test_generate_repo_map_no_project(
     project_service_mock.get_active_project = AsyncMock(return_value=None)
     with pytest.raises(ActiveProjectRequiredException):
         await service.generate_repo_map(
-            session_id=1, settings_snapshot=settings_snapshot
+            session_id=1,
+            token_limit=settings_snapshot.ast_token_limit,
         )
 
 
@@ -72,7 +73,7 @@ async def test_generate_repo_map_success(
         mentioned_filenames={"other.py"},
         mentioned_idents={"Foo", "Bar"},
         include_active_content=False,
-        settings_snapshot=settings_snapshot,
+        token_limit=settings_snapshot.ast_token_limit,
     )
 
     # 3. Assert
