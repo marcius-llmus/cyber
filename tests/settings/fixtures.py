@@ -9,6 +9,7 @@ from app.llms.registry import LLMFactory
 from app.settings.dependencies import get_settings_service
 from app.settings.models import Settings
 from app.settings.repositories import SettingsRepository
+from app.settings.schemas import AgentSettingsSnapshot
 from app.settings.services import SettingsPageService, SettingsService
 
 
@@ -72,3 +73,15 @@ def override_get_settings_service(client, settings_service_mock: MagicMock):
     )
     yield
     client.app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def settings_snapshot() -> AgentSettingsSnapshot:
+    return AgentSettingsSnapshot(
+        max_history_length=50,
+        ast_token_limit=4000,
+        grep_token_limit=4000,
+        diff_patches_auto_open=True,
+        diff_patches_auto_apply=True,
+        coding_llm_temperature=Decimal("0.10"),
+    )

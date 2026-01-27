@@ -58,4 +58,4 @@ class SettingsUpdate(BaseModel):
 
 
 class AgentSettingsSnapshot(SettingsBase):
-    pass
+    model_config = ConfigDict(from_attributes=True)

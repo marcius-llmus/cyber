@@ -7,7 +7,6 @@ from app.context.schemas import FileStatus
 from app.context.services.codebase import CodebaseService
 from app.projects.exceptions import ActiveProjectRequiredException
 from app.projects.services import ProjectService
-from app.settings.services import SettingsService
 
 logger = logging.getLogger(__name__)
 
@@ -21,11 +20,9 @@ class SearchService:
         self,
         project_service: ProjectService,
         codebase_service: CodebaseService,
-        settings_service: SettingsService,
     ):
         self.project_service = project_service
         self.codebase_service = codebase_service
-        self.settings_service = settings_service
         self.encoding = tiktoken.get_encoding("cl100k_base")
 
     async def grep(
@@ -33,6 +30,8 @@ class SearchService:
         search_pattern: str | list[str],
         file_patterns: list[str] | None = None,
         ignore_case: bool = True,
+        *,
+        token_limit: int,
     ) -> str:
         """
         Searches for a pattern in the active project.
@@ -42,9 +41,6 @@ class SearchService:
             raise ActiveProjectRequiredException(
                 "Active project required to grep code."
             )
-
-        settings = await self.settings_service.get_settings()
-        token_limit = settings.grep_token_limit
 
         if isinstance(search_pattern, list):
             if not search_pattern:

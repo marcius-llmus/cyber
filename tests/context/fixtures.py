@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 from pytest_mock import MockerFixture
@@ -18,7 +18,6 @@ from app.context.services import (
     WorkspaceService,
 )
 from app.projects.services import ProjectService
-from app.settings.services import SettingsService
 
 
 @dataclass
@@ -277,12 +276,10 @@ def file_system_service_mock(mocker: MockerFixture) -> MagicMock:
 def search_service(
     project_service_mock: MagicMock,
     codebase_service_mock: MagicMock,
-    settings_service_mock: MagicMock,
 ) -> SearchService:
     return SearchService(
         project_service=project_service_mock,
         codebase_service=codebase_service_mock,
-        settings_service=settings_service_mock,
     )
 
 
@@ -296,12 +293,10 @@ def repomap_service(
     workspace_service_mock: MagicMock,
     project_service_mock: MagicMock,
     codebase_service_mock: MagicMock,
-    settings_service_mock: MagicMock,
 ) -> RepoMapService:
     return RepoMapService(
         context_service=workspace_service_mock,
         codebase_service=codebase_service_mock,
-        settings_service=settings_service_mock,
         project_service=project_service_mock,
     )
 
@@ -309,13 +304,6 @@ def repomap_service(
 @pytest.fixture
 def repomap_service_mock(mocker: MockerFixture) -> MagicMock:
     return mocker.create_autospec(RepoMapService, instance=True)
-
-
-@pytest.fixture
-def settings_service_mock(mocker: MockerFixture) -> MagicMock:
-    service = mocker.create_autospec(SettingsService, instance=True)
-    service.get_settings = AsyncMock()
-    return service
 
 
 @pytest.fixture

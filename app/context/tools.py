@@ -6,8 +6,6 @@ from pydantic import Field
 from app.commons.tools import BaseToolSet
 from app.context.factories import build_filesystem_service, build_search_service
 from app.context.schemas import FileStatus
-from app.core.db import DatabaseSessionManager
-from app.settings.models import Settings
 
 logger = logging.getLogger(__name__)
 
@@ -210,14 +208,6 @@ class SearchTools(BaseToolSet):
 
     spec_functions = ["grep"]
 
-    def __init__(
-        self,
-        db: DatabaseSessionManager,
-        settings: Settings,
-        session_id: int | None = None,
-    ):
-        super().__init__(db, settings, session_id)
-
     async def grep(
         self,
         search_pattern: Annotated[
@@ -274,7 +264,10 @@ class SearchTools(BaseToolSet):
             async with self.db.session() as session:
                 search_service = await build_search_service(session)
                 return await search_service.grep(
-                    search_pattern, file_patterns, ignore_case
+                    search_pattern,
+                    file_patterns,
+                    ignore_case,
+                    token_limit=self.settings_snapshot.grep_token_limit,
                 )
         except Exception as e:
             logger.error(f"SearchTools.grep failed: {e}", exc_info=True)
