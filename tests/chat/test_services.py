@@ -60,7 +60,9 @@ class TestChatService:
         self, chat_service, session_service_mock
     ):
         """get_or_create_session_for_project creates a new session if none exist for the project."""
-        session_service_mock.get_most_recent_session_by_project = AsyncMock(return_value=None)
+        session_service_mock.get_most_recent_session_by_project = AsyncMock(
+            return_value=None
+        )
 
         expected_session = ChatSession(id=11, project_id=1)
         session_service_mock.create_session = AsyncMock(return_value=expected_session)
@@ -109,11 +111,15 @@ class TestChatService:
         self, chat_service, message_repository_mock
     ):
         """get_chat_history maps db Message models to llama_index ChatMessage objects."""
-        msg1 = Message(role=MessageRole.USER, blocks=[{"type": "text", "content": "hi"}])
+        msg1 = Message(
+            role=MessageRole.USER, blocks=[{"type": "text", "content": "hi"}]
+        )
         msg2 = Message(
             role=MessageRole.ASSISTANT, blocks=[{"type": "text", "content": "hello"}]
         )
-        message_repository_mock.list_by_session_id = AsyncMock(return_value=[msg1, msg2])
+        message_repository_mock.list_by_session_id = AsyncMock(
+            return_value=[msg1, msg2]
+        )
 
         history = await chat_service.get_chat_history(session_id=1)
         assert len(history) == 2
@@ -123,7 +129,9 @@ class TestChatService:
         assert history[1].role == MessageRole.ASSISTANT
         assert history[1].blocks == [TextBlock(text="hello")]
         assert history[1].content == "hello"
-        message_repository_mock.list_by_session_id.assert_awaited_once_with(session_id=1)
+        message_repository_mock.list_by_session_id.assert_awaited_once_with(
+            session_id=1
+        )
 
     async def test_get_session_by_id_delegates_to_session_service(
         self, chat_service, session_service_mock
@@ -139,7 +147,9 @@ class TestChatService:
         """list_messages_by_session calls message_repo.list_by_session_id."""
         message_repository_mock.list_by_session_id = AsyncMock()
         await chat_service.list_messages_by_session(session_id=1)
-        message_repository_mock.list_by_session_id.assert_awaited_once_with(session_id=1)
+        message_repository_mock.list_by_session_id.assert_awaited_once_with(
+            session_id=1
+        )
 
     async def test_save_messages_for_turn_saves_user_then_ai_message(
         self, chat_service, message_repository_mock
@@ -160,7 +170,9 @@ class TestChatService:
         """clear_session_messages delegates to message_repo.delete_by_session_id."""
         message_repository_mock.delete_by_session_id = AsyncMock()
         await chat_service.clear_session_messages(session_id=1)
-        message_repository_mock.delete_by_session_id.assert_awaited_once_with(session_id=1)
+        message_repository_mock.delete_by_session_id.assert_awaited_once_with(
+            session_id=1
+        )
 
 
 class TestChatTurnService:
@@ -260,7 +272,9 @@ class TestChatTurnService:
     ):
         """mark_succeeded should update turn status to SUCCEEDED."""
         db_turn = ChatTurn(id="t1", status=ChatTurnStatus.PENDING)
-        chat_turn_repository_mock.get_by_id_and_session = AsyncMock(return_value=db_turn)
+        chat_turn_repository_mock.get_by_id_and_session = AsyncMock(
+            return_value=db_turn
+        )
         chat_turn_repository_mock.update = AsyncMock(return_value=db_turn)
 
         await chat_turn_service.mark_succeeded(session_id=1, turn_id="t1")
