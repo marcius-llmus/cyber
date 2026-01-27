@@ -86,14 +86,11 @@ class PatcherTools(BaseToolSet):
         raise NotImplementedError(f"Unhandled DiffPatchStatus: {status} ")
 
     def to_tool_list(self, *args, **kwargs):
-        processor_type = self._get_patch_processor_type_from_settings()
+        processor_type = self.settings_snapshot.diff_patch_processor_type
         metadata = _build_apply_patch_metadata(processor_type=processor_type)
         return super().to_tool_list(
             *args, **kwargs, func_to_metadata_mapping={"apply_patch": metadata}
         )
-
-    def _get_patch_processor_type_from_settings(self) -> PatchProcessorType:
-        return self.settings_snapshot.diff_patch_processor_type
 
     async def apply_patch(self, patch: str, internal_tool_call_id: str) -> str:
         try:
@@ -103,7 +100,7 @@ class PatcherTools(BaseToolSet):
             if not self.turn_id:
                 raise RuntimeError("No active turn_id available for patch tool")
 
-            processor_type = self._get_patch_processor_type_from_settings()
+            processor_type = self.settings_snapshot.diff_patch_processor_type
 
             diff_patch_service = await build_diff_patch_service()
             payload = DiffPatchCreate(

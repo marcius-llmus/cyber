@@ -16,6 +16,7 @@ from app.patches.schemas import (
     DiffPatchUpdate,
     PatchRepresentation,
 )
+from app.patches.services.processors.codex_processor import CodexProcessor
 from app.patches.services.processors.udiff_processor import UDiffProcessor
 from app.projects.services import ProjectService
 
@@ -116,7 +117,13 @@ class DiffPatchService:
                 codebase_service_factory=self.codebase_service_factory,
             )
         if processor_type == PatchProcessorType.CODEX_APPLY:
-            raise NotImplementedError("CODEX_APPLY processor not implemented yet")
+            return CodexProcessor(
+                db=self.db,
+                diff_patch_repo_factory=self.diff_patch_repo_factory,
+                llm_service_factory=self.llm_service_factory,
+                project_service_factory=self.project_service_factory,
+                codebase_service_factory=self.codebase_service_factory,
+            )
         raise NotImplementedError(f"Unknown PatchProcessorType: {processor_type}")
 
     def extract_diffs_from_blocks(
