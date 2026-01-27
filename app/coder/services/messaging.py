@@ -10,6 +10,7 @@ from llama_index.core.agent.workflow.workflow_events import (
 )
 
 from app.agents.workflows.workflow_events import ToolCall, ToolCallResult
+from app.chat.schemas import Turn
 from app.coder.schemas import (
     AgentStateEvent,
     AIMessageBlockStartEvent,
@@ -20,6 +21,7 @@ from app.coder.schemas import (
     ToolCallResultEvent,
     WorkflowLogEvent,
 )
+from app.patches.enums import PatchProcessorType
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +52,13 @@ class _MessageStateAccumulator:
         return self.current_text_block_id
 
     def add_tool_call(
-        self, internal_tool_call_id: str, tool_id: str, name: str, kwargs: dict
+        self,
+        internal_tool_call_id: str,
+        tool_id: str,
+        name: str,
+        kwargs: dict[str, Any],
+        *,
+        meta: dict[str, Any] | None = None,
     ):
         self.current_text_block_id = None  # Reset text block on tool call
         self.blocks.append(
@@ -58,6 +66,7 @@ class _MessageStateAccumulator:
                 "type": "tool",
                 "internal_tool_call_id": internal_tool_call_id,
                 "tool_name": name,
+                "meta": meta or {},
                 "tool_call_data": {
                     "id": tool_id,
                     "name": name,
@@ -92,7 +101,8 @@ class MessagingTurnEventHandler:
     Holds the state (accumulator) for the duration of the stream.
     """
 
-    def __init__(self):
+    def __init__(self, *, turn: Turn):
+        self._turn = turn
         self._accumulator = _MessageStateAccumulator()
         self.handlers: dict[type, Callable[[Any], AsyncGenerator[CoderEvent]]] = {
             AgentStream: self._handle_agent_stream_event,
@@ -131,11 +141,20 @@ class MessagingTurnEventHandler:
         yield AgentStateEvent(status=f"Calling tool `{event.tool_name}`...")
 
         tool_event = await self._build_tool_call_event(event)
+
+        meta: dict[str, Any] = {}
+        if event.tool_name == "apply_patch":
+            processor_type = self._turn.settings_snapshot.diff_patch_processor_type
+            if not isinstance(processor_type, PatchProcessorType):
+                processor_type = PatchProcessorType(processor_type)
+            meta["patch_processor_type"] = processor_type.value
+
         self._accumulator.add_tool_call(
             internal_tool_call_id=tool_event.internal_tool_call_id,
             tool_id=tool_event.tool_id,
             name=tool_event.tool_name,
             kwargs=tool_event.tool_kwargs,
+            meta=meta,
         )
         yield tool_event
 
