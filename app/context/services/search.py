@@ -7,7 +7,6 @@ from app.context.schemas import FileStatus
 from app.context.services.codebase import CodebaseService
 from app.projects.exceptions import ActiveProjectRequiredException
 from app.projects.services import ProjectService
-from app.settings.schemas import AgentSettingsSnapshot
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +31,7 @@ class SearchService:
         file_patterns: list[str] | None = None,
         ignore_case: bool = True,
         *,
-        settings_snapshot: AgentSettingsSnapshot,
+        token_limit: int,
     ) -> str:
         """
         Searches for a pattern in the active project.
@@ -42,9 +41,6 @@ class SearchService:
             raise ActiveProjectRequiredException(
                 "Active project required to grep code."
             )
-
-        # todo: ok, that's weird... like, passing the settings for a simple arg??
-        token_limit = settings_snapshot.grep_token_limit
 
         if isinstance(search_pattern, list):
             if not search_pattern:

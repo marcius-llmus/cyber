@@ -5,7 +5,6 @@ from app.context.services.codebase import CodebaseService
 from app.context.services.context import WorkspaceService
 from app.projects.exceptions import ActiveProjectRequiredException
 from app.projects.services import ProjectService
-from app.settings.schemas import AgentSettingsSnapshot
 
 
 class RepoMapService:
@@ -30,7 +29,7 @@ class RepoMapService:
         mentioned_idents: set[str] | None = None,
         include_active_content: bool = True,
         *,
-        settings_snapshot: AgentSettingsSnapshot,
+        token_limit: int,
     ) -> str:
         project = await self.project_service.get_active_project()
         if not project:
@@ -59,7 +58,7 @@ class RepoMapService:
             active_context_files=active_files_abs,
             mentioned_filenames=mentioned_filenames,
             mentioned_idents=mentioned_idents,
-            token_limit=settings_snapshot.ast_token_limit,
+            token_limit=token_limit,
             root=project.path,
         )
         return await repo_mapper.generate(include_active_content=include_active_content)

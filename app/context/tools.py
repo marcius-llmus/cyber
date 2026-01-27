@@ -277,7 +277,7 @@ class SearchTools(BaseToolSet):
                     search_pattern,
                     file_patterns,
                     ignore_case,
-                    settings_snapshot=self.settings,
+                    token_limit=self.settings.grep_token_limit,
                 )
         except Exception as e:
             logger.error(f"SearchTools.grep failed: {e}", exc_info=True)

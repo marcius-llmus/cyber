@@ -94,7 +94,7 @@ class AgentContextService:
         repo_map = await self.repo_map_service.generate_repo_map(
             session_id=session_id,
             include_active_content=False,
-            settings_snapshot=settings_snapshot,
+            token_limit=settings_snapshot.ast_token_limit,
         )
 
         # fetch active context (volatile)
