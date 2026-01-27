@@ -43,7 +43,7 @@ class CoderService:
         workflow_service_factory: Callable[[AsyncSession], Awaitable[WorkflowService]],
         agent_factory: Callable[..., Coroutine[Any, Any, Any]],
         usage_service_factory: Callable[[AsyncSession], Awaitable[Any]],
-        turn_handler_factory: Callable[[], Awaitable[MessagingTurnEventHandler]],
+        turn_handler_factory: Callable[..., Awaitable[MessagingTurnEventHandler]],
         turn_service_factory: Callable[[AsyncSession], Awaitable[ChatTurnService]],
         diff_patch_service_factory: Callable[[], Awaitable[Any]],
         context_service_factory: Callable[[AsyncSession], Awaitable[WorkspaceService]],
@@ -74,7 +74,7 @@ class CoderService:
 
         async def _stream() -> AsyncGenerator[CoderEvent]:
             # 1. Init Event Handler (Stateful for this turn, includes Accumulator)
-            messaging_turn_handler = await self.turn_handler_factory()
+            messaging_turn_handler = await self.turn_handler_factory(turn=turn)
 
             yield AgentStateEvent(status="Thinking...")
 
