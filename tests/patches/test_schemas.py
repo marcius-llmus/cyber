@@ -71,7 +71,9 @@ class TestCodexPatchRepresentationExtractor:
         raw_text = "RAW"
         # 1 unchanged line, 1 removed line, 2 added lines
         chunk = UpdateFileChunk(
-            old_lines=["same", "old"], new_lines=["same", "new", "new2"]
+            diff="",
+            old_lines=["same", "old"],
+            new_lines=["same", "new", "new2"],
         )
         hunk = UpdateFile(path="a.txt", chunks=[chunk])
 
@@ -98,7 +100,11 @@ class TestCodexPatchRepresentationExtractor:
 
         extractor = CodexPatchRepresentationExtractor()
         raw_text = "RAW"
-        chunk = UpdateFileChunk(old_lines=["same", "old"], new_lines=["same", "new"])
+        chunk = UpdateFileChunk(
+            diff="",
+            old_lines=["same", "old"],
+            new_lines=["same", "new"],
+        )
         hunk = UpdateFile(path="a.txt", chunks=[chunk], move_to="b.txt")
 
         mocker.patch(
@@ -159,7 +165,7 @@ class TestPatchRepresentation:
         raw_text = (
             "*** Begin Patch\n*** Update File: a.txt\n@@\n-hello\n+hi\n*** End Patch"
         )
-        chunk = UpdateFileChunk(old_lines=["hello"], new_lines=["hi"])
+        chunk = UpdateFileChunk(diff="", old_lines=["hello"], new_lines=["hi"])
         hunk = UpdateFile(path="a.txt", chunks=[chunk])
         mocker.patch(
             "app.patches.schemas.codex.PatchParser.parse",

@@ -34,7 +34,8 @@ class CodexPatchRepresentationExtractor(PatchRepresentationExtractor):
         raise ValueError(f"Unsupported codex patch hunk type: {type(hunk)}")
 
     def extract(self, raw_text: str) -> list[ParsedPatch]:
-        patch = PatchParser.parse(raw_text)
+        parser = PatchParser()
+        patch = parser.parse(raw_text)
 
         parsed_items: list[ParsedPatch] = []
         for hunk in patch.hunks:
@@ -43,7 +44,7 @@ class CodexPatchRepresentationExtractor(PatchRepresentationExtractor):
                 additions, deletions = self._count_hunk_lines(hunk)
                 parsed_items.append(
                     ParsedPatch(
-                        diff=raw_text,
+                        diff=hunk.diff,
                         old_path=None,
                         new_path=new_path,
                         operation=ParsedPatchOperation.ADD,
@@ -63,7 +64,6 @@ class CodexPatchRepresentationExtractor(PatchRepresentationExtractor):
                 additions, deletions = self._count_hunk_lines(hunk)
                 parsed_items.append(
                     ParsedPatch(
-                        diff=raw_text,
                         old_path=old_path,
                         new_path=None,
                         operation=ParsedPatchOperation.DELETE,
@@ -95,7 +95,7 @@ class CodexPatchRepresentationExtractor(PatchRepresentationExtractor):
                 is_rename = operation == ParsedPatchOperation.RENAME
                 parsed_items.append(
                     ParsedPatch(
-                        diff=raw_text,
+                        diff=hunk.diff,
                         old_path=old_path,
                         new_path=new_path,
                         operation=operation,

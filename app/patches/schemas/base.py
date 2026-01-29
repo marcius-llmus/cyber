@@ -6,7 +6,7 @@ from app.patches.enums import ParsedPatchOperation
 
 
 class ParsedPatch(BaseModel):
-    diff: str
+    diff: str | None = None
     old_path: str | None = None
     new_path: str | None = None
     operation: ParsedPatchOperation
