@@ -21,6 +21,7 @@ from app.coder.schemas import (
     WebSocketMessage,
     WorkflowErrorEvent,
     WorkflowLogEvent,
+    TurnExecution,
 )
 from app.coder.services import CoderService
 from app.commons.websockets import WebSocketConnectionManager
@@ -107,30 +108,54 @@ class WebSocketOrchestrator:
                     async for event in execution.stream:
                         await self._process_event(event, execution.turn)
 
+                except WebSocketDisconnect:
+                    logger.info("Client disconnected during turn stream.")
+                    await self._cancel_active_run(execution)
+                    return
+
                 except Exception as e:
                     logger.error(
                         f"An error occurred in WebSocket turn {execution.turn.turn_id}: {e}",
                         exc_info=True,
                     )
-                    await self._render_workflow_error(
-                        event=WorkflowErrorEvent(
-                            message=str(e), original_message=message.message
-                        ),
-                        turn=execution.turn,
-                    )
+                    await self._cancel_active_run(execution)
+                    try:
+                        await self._render_workflow_error(
+                            event=WorkflowErrorEvent(
+                                message=str(e), original_message=message.message
+                            ),
+                            turn=execution.turn,
+                        )
+                    except WebSocketDisconnect:
+                        logger.info(
+                            "Client disconnected while rendering workflow error."
+                        )
+                        return
 
         except WebSocketDisconnect:
             logger.info("Client disconnected. Connection handled gracefully.")
-            if execution and execution.handler:
-                logger.info("Cancelling active workflow run...")
-                await execution.handler.cancel_run()
+            await self._cancel_active_run(execution)
+            return
 
         except Exception as e:
             # This handler catches connection/parsing errors. Workflow errors are handled above.
             logger.error(
                 f"An error occurred in WebSocket connection handler: {e}", exc_info=True
             )
-            await self._render_error(str(e))
+            await self._cancel_active_run(execution)
+            try:
+                await self._render_error(str(e))
+            except WebSocketDisconnect:
+                logger.info("Client disconnected while rendering error.")
+                return
+
+    @staticmethod
+    async def _cancel_active_run(execution: TurnExecution | None) -> None:
+        if not execution or not execution.handler:
+            return
+
+        logger.info("Cancelling active workflow run...")
+        await execution.handler.cancel_run()
 
     async def _render_user_message(self, message: str, turn_id: str):
         template = templates.get_template("chat/partials/user_message.html").render(
