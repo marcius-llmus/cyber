@@ -86,7 +86,9 @@ class CodebaseService:
             abs_path = (root / path).resolve()
 
         if not self._is_subpath(root, abs_path):
-            raise ValueError(f"Access denied: '{path_str}' is outside project root.")
+            raise ValueError(
+                f"Access denied: '{path_str}' targets outside project root."
+            )
 
         return root, abs_path
 
@@ -200,14 +202,8 @@ class CodebaseService:
         Lists contents of a directory, respecting ignores.
         Returns list of names (appended with / for dirs).
         """
-        root = Path(project_root).resolve()
+        root, target_path = await self._resolve_safe_path(project_root, dir_path)
         spec = await self.matcher.get_spec(project_root)
-
-        target_path = (root / dir_path).resolve()
-
-        # todo: we could unify file traversal checking
-        if not self._is_subpath(root, target_path):
-            raise ValueError(f"Access denied: '{dir_path}' is outside project root.")
 
         if not target_path.exists() or not target_path.is_dir():
             raise ValueError(f"Directory not found: '{dir_path}'")
@@ -287,17 +283,14 @@ class CodebaseService:
             patterns = SCAN_ALL_PATTERN
 
         for pattern in patterns:
-            full_pattern = str(root / pattern)
-
-            if not self._is_subpath(root, Path(full_pattern)):
-                raise ValueError(
-                    f"Access denied: Pattern '{pattern}' targets outside project root."
-                )
+            _, safe_pattern_base = await self._resolve_safe_path(project_root, pattern)
+            full_pattern = str(safe_pattern_base)
 
             matched_paths = glob.glob(full_pattern, recursive=True)
 
             for p in matched_paths:
-                path_obj = Path(p)
+                _, abs_match = await self._resolve_safe_path(project_root, p)
+                path_obj = Path(abs_match)
 
                 files = await self._collect_files(root, path_obj, spec)
                 results.update(files)

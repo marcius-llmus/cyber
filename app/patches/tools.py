@@ -83,6 +83,7 @@ class PatcherTools(BaseToolSet):
             return f"Failed to apply patch (patch_id={patch_id}): {error_message or 'Unknown error'}"
         if status == DiffPatchStatus.PENDING:
             return f"Patch saved (patch_id={patch_id}). Not applied (status=PENDING)."
+
         raise NotImplementedError(f"Unhandled DiffPatchStatus: {status} ")
 
     def to_tool_list(self, *args, **kwargs):

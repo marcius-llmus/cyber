@@ -162,14 +162,14 @@ wheels = [
 
 [[package]]
 name = "apply-patch-py"
-version = "0.3.0"
+version = "0.4.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiofiles" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c1/63/7e3dbbe2ad3e8632885b380e4779d29f37039be1a2e7fb1508a1feff1b42/apply_patch_py-0.3.0.tar.gz", hash = "sha256:43a929a3b1199d40576b4c91e991c6d42bd3dfad023c2e6a32848ac4079c3715", size = 162451, upload-time = "2026-01-19T17:39:34.659Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e2/19/1aa86be77253f278aeea8f037ab277d4ca05ba018a32c9ce88451086d15e/apply_patch_py-0.4.0.tar.gz", hash = "sha256:45ca547dfc883fe71726ef446e31dfbf041d232d3177c08937149b3b5483b494", size = 170705, upload-time = "2026-01-29T14:41:23.823Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b4/1b/21cd9fca9b84277442e21d781bf5d7a2fb9f507ac6a7ff00781a74e93e04/apply_patch_py-0.3.0-py3-none-any.whl", hash = "sha256:d9fddd4b0b67932ac39a1ce491cd073aa75a6a46ce53b65409dbd8200cd7f902", size = 12885, upload-time = "2026-01-19T17:39:33.129Z" },
+    { url = "https://files.pythonhosted.org/packages/1d/48/a7ba0c4b58e218812c188b8c029d0e0d344624af3408b8fc78e8310ca69f/apply_patch_py-0.4.0-py3-none-any.whl", hash = "sha256:aaaab7230ccf6ea4b3405947c60b0f4e9dc3676681af44b710b7333d74459b28", size = 15159, upload-time = "2026-01-29T14:41:21.873Z" },
 ]
 
 [[package]]
@@ -596,7 +596,7 @@ dev = [
 requires-dist = [
     { name = "aiofiles", specifier = ">=25.1.0" },
     { name = "alembic", specifier = ">=1.13.2" },
-    { name = "apply-patch-py", specifier = ">=0.3.0" },
+    { name = "apply-patch-py", specifier = ">=0.4.0" },
     { name = "arize-phoenix", specifier = ">=12.18.0" },
     { name = "async-lru", specifier = ">=2.0.5" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.120.2" },
