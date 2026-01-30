@@ -11,7 +11,22 @@ from .base import (
 
 class CodexPatchRepresentationExtractor(PatchRepresentationExtractor):
     @staticmethod
-    def _count_hunk_lines(hunk: AddFile | DeleteFile | UpdateFile) -> tuple[int, int]:
+    def _count_chunk_diff_lines(diff_text: str) -> tuple[int, int]:
+        additions = 0
+        deletions = 0
+        for line in diff_text.splitlines():
+            if line.startswith("@@"):
+                continue
+            if line.startswith("+"):
+                additions += 1
+                continue
+            if line.startswith("-"):
+                deletions += 1
+        return additions, deletions
+
+    def _count_hunk_lines(
+        self, hunk: AddFile | DeleteFile | UpdateFile
+    ) -> tuple[int, int]:
         if isinstance(hunk, AddFile):
             return len(hunk.content.splitlines()), 0
 
@@ -22,13 +37,11 @@ class CodexPatchRepresentationExtractor(PatchRepresentationExtractor):
             additions = 0
             deletions = 0
             for chunk in hunk.chunks:
-                common = sum(
-                    1
-                    for old, new in zip(chunk.old_lines, chunk.new_lines, strict=False)
-                    if old == new
+                chunk_additions, chunk_deletions = self._count_chunk_diff_lines(
+                    chunk.diff
                 )
-                additions += max(0, len(chunk.new_lines) - common)
-                deletions += max(0, len(chunk.old_lines) - common)
+                additions += chunk_additions
+                deletions += chunk_deletions
             return additions, deletions
 
         raise ValueError(f"Unsupported codex patch hunk type: {type(hunk)}")
