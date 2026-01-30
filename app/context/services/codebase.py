@@ -42,7 +42,9 @@ class _IgnoreMatcher:
         check_path = f"{path}/" if is_dir else path
         return spec.match_file(check_path)
 
-    async def get_spec(self, project_root: str) -> PathSpec:
+    async def get_spec(
+        self, project_root: str, extra_patterns: list[str] | None = None
+    ) -> PathSpec:
         root = Path(project_root)
         gitignore_path = root / ".gitignore"
         lines = self.DEFAULT_PATTERNS[:]
@@ -51,6 +53,9 @@ class _IgnoreMatcher:
             async with aiofiles.open(gitignore_path) as f:
                 content = await f.read()
                 lines.extend(content.splitlines())
+
+        if extra_patterns:
+            lines.extend(p for p in extra_patterns if p.strip())
 
         return PathSpec.from_lines(GitWildMatchPattern, lines)
 
@@ -272,11 +277,15 @@ class CodebaseService:
         return results
 
     async def resolve_file_patterns(
-        self, project_root: str, patterns: list[str] | None = None
+        self,
+        project_root: str,
+        patterns: list[str] | None = None,
+        *,
+        ignore_patterns: list[str] | None = None,
     ) -> list[str]:
         """Resolves globs to relative file paths."""
         root = Path(project_root).resolve()
-        spec = await self.matcher.get_spec(project_root)
+        spec = await self.matcher.get_spec(project_root, extra_patterns=ignore_patterns)
         results = set()
 
         if not patterns:
