@@ -119,18 +119,12 @@ class WebSocketOrchestrator:
                         exc_info=True,
                     )
                     await self._cancel_active_run(execution)
-                    try:
-                        await self._render_workflow_error(
-                            event=WorkflowErrorEvent(
-                                message=str(e), original_message=message.message
-                            ),
-                            turn=execution.turn,
-                        )
-                    except WebSocketDisconnect:
-                        logger.info(
-                            "Client disconnected while rendering workflow error."
-                        )
-                        return
+                    await self._render_workflow_error(
+                        event=WorkflowErrorEvent(
+                            message=str(e), original_message=message.message
+                        ),
+                        turn=execution.turn,
+                    )
 
         except WebSocketDisconnect:
             logger.info("Client disconnected. Connection handled gracefully.")
@@ -143,11 +137,7 @@ class WebSocketOrchestrator:
                 f"An error occurred in WebSocket connection handler: {e}", exc_info=True
             )
             await self._cancel_active_run(execution)
-            try:
-                await self._render_error(str(e))
-            except WebSocketDisconnect:
-                logger.info("Client disconnected while rendering error.")
-                return
+            await self._render_error(str(e))
 
     @staticmethod
     async def _cancel_active_run(execution: TurnExecution | None) -> None:
