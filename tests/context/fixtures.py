@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from pytest_mock import MockerFixture
@@ -45,11 +45,11 @@ def temp_codebase(tmp_path):
     directory.
     """
 
-    # 1. Project Root
+    # Project Root
     project_root = tmp_path / "project"
     project_root.mkdir()
 
-    # 2. Files inside project
+    # Files inside project
     (project_root / ".gitignore").write_text(
         "*.log\nignore_me.txt\nsecret/", encoding="utf-8"
     )
@@ -60,7 +60,7 @@ def temp_codebase(tmp_path):
     ignored_file = project_root / "ignore_me.txt"
     ignored_file.write_text("should be ignored", encoding="utf-8")
 
-    # 3. Directories
+    # Directories
     src_dir = project_root / "src"
     src_dir.mkdir()
 
@@ -488,3 +488,20 @@ def repomap_instance(repomap_tmp_project) -> RepoMap:
         token_limit=10_000,
         root=root,
     )
+
+
+@pytest.fixture
+def repomap_mock(mocker: MockerFixture) -> MagicMock:
+    """Patches RepoMap where RepoMapService looks it up and returns an instance mock.
+
+    Use in RepoMapService wiring tests only. Integration tests should use the real
+    RepoMap implementation (see repomap_instance/repomap_tmp_project).
+    """
+
+    repomap_cls = mocker.patch("app.context.services.repomap.RepoMap")
+    instance = MagicMock()
+    instance.generate = AsyncMock(return_value="OUT")
+    instance.format_top_level_structure = MagicMock(return_value="OUT")
+    repomap_cls.return_value = instance
+    instance.mock_class = repomap_cls
+    return instance

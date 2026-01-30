@@ -1,6 +1,7 @@
-from sqlalchemy import Boolean, Column, Enum, Float, Integer
+from sqlalchemy import Boolean, Column, Enum, Float, Integer, String
 
 from app.core.db import Base
+from app.core.enums import RepoMapMode
 from app.patches.enums import PatchProcessorType
 
 
@@ -26,3 +27,6 @@ class Settings(Base):
         nullable=False,
         default=PatchProcessorType.UDIFF_LLM,
     )
+
+    repomap_mode = Column(Enum(RepoMapMode), nullable=False, default=RepoMapMode.AUTO)
+    repomap_ignore_patterns = Column(String, nullable=True)

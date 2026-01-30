@@ -14,12 +14,12 @@ def initialize_workspace() -> None:
     """
     logger.info("Initializing workspace...")
 
-    # 1. Ensure directories exist
+    # ensure directories exist
     os.makedirs(settings.PROJECTS_ROOT_DIR, exist_ok=True)
     os.makedirs(settings.BLUEPRINTS_ROOT_DIR, exist_ok=True)
 
-    # 2. Seed Hello World Project
-    # Source is relative to the working directory (/app) in the container
+    # seed Hello World Project
+    # source is relative to the working directory (/app) in the container
     hello_world_src = Path("seeds/projects/hello_world")
     hello_world_dst = Path(settings.PROJECTS_ROOT_DIR) / "hello_world"
 
@@ -27,7 +27,7 @@ def initialize_workspace() -> None:
         logger.info(f"Seeding 'hello_world' project to {hello_world_dst}")
         shutil.copytree(hello_world_src, hello_world_dst)
 
-    # 3. Seed Async Basics Blueprint
+    # seed Async Basics Blueprint
     blueprint_src = Path("seeds/blueprints/async_basics")
     blueprint_dst = Path(settings.BLUEPRINTS_ROOT_DIR) / "async_basics"
 

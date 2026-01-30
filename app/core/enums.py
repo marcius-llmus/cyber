@@ -22,3 +22,9 @@ class OperationalMode(StrEnum):
     CHAT = "CHAT"
     PLANNER = "PLANNER"
     SINGLE_SHOT = "SINGLE_SHOT"
+
+
+class RepoMapMode(StrEnum):
+    AUTO = "AUTO"
+    TREE = "TREE"
+    MANUAL = "MANUAL"

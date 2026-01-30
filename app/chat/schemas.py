@@ -67,22 +67,28 @@ class FormattedMessage(BaseModel):
             if not patch_text:
                 continue
 
-            representation = PatchRepresentation.from_text(
-                raw_text=patch_text,
-                processor_type=processor_type,
-            )
+            try:
+                # we currently save invalid diff calls to blocks. it is safe to skip rendering though
+                representation = PatchRepresentation.from_text(
+                    raw_text=patch_text,
+                    processor_type=processor_type,
+                )
 
-            block["formatted"] = {
-                "patches": [
-                    {
-                        "file_path": p.path,
-                        "diff": p.diff,
-                        "additions": p.additions,
-                        "deletions": p.deletions,
-                    }
-                    for p in representation.patches
-                ]
-            }
+                block["formatted"] = {
+                    "patches": [
+                        {
+                            "file_path": p.path,
+                            "diff": p.diff,
+                            "additions": p.additions,
+                            "deletions": p.deletions,
+                        }
+                        for p in representation.patches
+                    ]
+                }
+            except Exception:  # noqa
+                # If parsing fails (e.g. malformed patch in history), just skip formatting.
+                # todo: we must find a way to render errors for failed too calls later
+                continue
 
         return cls(
             id=message.id,

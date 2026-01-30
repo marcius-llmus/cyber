@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.core.enums import RepoMapMode
 from app.llms.enums import LLMModel, LLMProvider
 from app.patches.enums import PatchProcessorType
 
@@ -34,6 +35,8 @@ class SettingsBase(BaseModel):
     diff_patches_auto_open: bool
     diff_patches_auto_apply: bool
     diff_patch_processor_type: PatchProcessorType
+    repomap_mode: RepoMapMode
+    repomap_ignore_patterns: str | None = None
     coding_llm_temperature: Decimal = Field(
         ..., ge=0, le=1, max_digits=3, decimal_places=2
     )
@@ -50,6 +53,8 @@ class SettingsUpdate(BaseModel):
     diff_patches_auto_open: bool | None = None
     diff_patches_auto_apply: bool | None = None
     diff_patch_processor_type: PatchProcessorType | None = None
+    repomap_mode: RepoMapMode | None = None
+    repomap_ignore_patterns: str | None = None
     coding_llm_temperature: Decimal | None = Field(
         default=None, ge=0, le=1, max_digits=3, decimal_places=2
     )

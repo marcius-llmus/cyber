@@ -1,8 +1,8 @@
 # Ignore static vendor files in language statistics
-# 1. Global rule: Ignore any minified file anywhere in the project
+# Global rule: Ignore any minified file anywhere in the project
 *.min.js linguist-vendored
 *.min.css linguist-vendored
 
-# 2. Explicitly ignore the highlight.js library (even the unminified source is vendor code)
+# Explicitly ignore the highlight.js library (even the unminified source is vendor code)
 app/static/js/highlight.js linguist-vendored
 app/static/js/highlight/** linguist-vendored

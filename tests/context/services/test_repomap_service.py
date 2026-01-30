@@ -6,39 +6,30 @@ import pytest
 
 from app.context.exceptions import RepoMapExtractionException
 from app.context.repomap.repomap import RepoMap
-from app.context.services.repomap import RepoMapService
+from app.core.enums import RepoMapMode
 from app.projects.exceptions import ActiveProjectRequiredException
 from app.projects.models import Project
 
 
-@pytest.fixture
-def service(
-    workspace_service_mock,
-    codebase_service_mock,
-    project_service_mock,
-):
-    return RepoMapService(
-        workspace_service_mock, codebase_service_mock, project_service_mock
-    )
-
-
 async def test_generate_repo_map_no_project(
-    service, project_service_mock, settings_snapshot
+    repomap_service,
+    project_service_mock,
+    settings_snapshot,
 ):
     project_service_mock.get_active_project = AsyncMock(return_value=None)
     with pytest.raises(ActiveProjectRequiredException):
-        await service.generate_repo_map(
+        await repomap_service.generate_repo_map(
             session_id=1,
             token_limit=settings_snapshot.ast_token_limit,
         )
 
 
 async def test_generate_repo_map_success(
-    service,
+    repomap_service,
     workspace_service_mock,
+    repomap_mock,
     codebase_service_mock,
     project_service_mock,
-    mocker,
     settings_snapshot,
 ):
     # 1. Setup Mocks
@@ -62,26 +53,25 @@ async def test_generate_repo_map_success(
 
     settings_snapshot.ast_token_limit = 2000
 
-    # Patch RepoMap
-    repomap_cls = mocker.patch("app.context.services.repomap.RepoMap")
-    repomap_instance = repomap_cls.return_value
-    repomap_instance.generate = AsyncMock(return_value="Repo Map Content")
+    repomap_mock.generate.return_value = "Repo Map Content"
 
     # 2. Execute
-    result = await service.generate_repo_map(
+    result = await repomap_service.generate_repo_map(
         session_id=1,
         mentioned_filenames={"other.py"},
         mentioned_idents={"Foo", "Bar"},
         include_active_content=False,
+        mode=settings_snapshot.repomap_mode,
         token_limit=settings_snapshot.ast_token_limit,
+        ignore_patterns_str="*.log\nnode_modules/\n",
     )
 
     # 3. Assert
     assert result == "Repo Map Content"
 
     # Check constructor call
-    repomap_cls.assert_called_once()
-    _, kwargs = repomap_cls.call_args
+    repomap_mock.mock_class.assert_called_once()
+    _, kwargs = repomap_mock.mock_class.call_args
     assert kwargs["root"] == "/tmp/proj"
     assert "/tmp/proj/src/main.py" in kwargs["all_files"]
     assert "/tmp/proj/README.md" in kwargs["all_files"]
@@ -89,11 +79,14 @@ async def test_generate_repo_map_success(
     assert kwargs["mentioned_filenames"] == {"/tmp/proj/other.py"}
     assert kwargs["mentioned_idents"] == {"Foo", "Bar"}
     assert kwargs["token_limit"] == 2000
+    assert "ignore_patterns" not in kwargs
 
-    repomap_instance.generate.assert_awaited_once_with(include_active_content=False)
+    repomap_mock.generate.assert_awaited_once_with(include_active_content=False)
 
     project_service_mock.get_active_project.assert_awaited_once_with()
-    codebase_service_mock.resolve_file_patterns.assert_awaited_once_with("/tmp/proj")
+    codebase_service_mock.resolve_file_patterns.assert_awaited_once_with(
+        "/tmp/proj", ignore_patterns=["*.log", "node_modules/"]
+    )
     workspace_service_mock.get_active_file_paths_abs.assert_awaited_once_with(
         1, "/tmp/proj"
     )
@@ -265,7 +258,7 @@ async def test_repomap_generate_include_active_content_false_omits_active_contex
     assert "#### Active Context" not in out
 
 
-async def test_repomap_generate_respects_token_limit_file_structure_truncates(
+async def test_repomap_generate_does_not_truncate_file_structure_by_token_limit(
     repomap_tmp_project,
 ):
     root = repomap_tmp_project["root"]
@@ -282,7 +275,73 @@ async def test_repomap_generate_respects_token_limit_file_structure_truncates(
         token_limit=25,
     )
     out = await rm.generate(include_active_content=False)
-    assert "... (file list truncated)" in out
+    assert "... (file list truncated" not in out
+
+
+async def test_repomap_format_top_level_structure_includes_repo_map_and_file_structure_headers(
+    repomap_tmp_project,
+):
+    rm = RepoMap(
+        all_files=[
+            repomap_tmp_project["defs"],
+            repomap_tmp_project["use1"],
+        ],
+        active_context_files=[],
+        root=repomap_tmp_project["root"],
+    )
+
+    out = rm.format_top_level_structure()
+
+    assert out.startswith("### Repository Map\n#### File Structure\n")
+    assert "src/" in out
+    assert "#### Ranked Definitions" not in out
+    assert "#### Active Context" not in out
+    assert "```" not in out
+    # Ensure we did not accidentally include nested file paths.
+    assert "src/defs.py" not in out
+
+
+async def test_repomap_service_manual_mode_returns_only_top_level_structure_from_real_repo(
+    repomap_service,
+    workspace_service_mock,
+    codebase_service_mock,
+    project_service_mock,
+    repomap_tmp_project,
+):
+    project = Project(id=1, name="p", path=repomap_tmp_project["root"])
+    project_service_mock.get_active_project = AsyncMock(return_value=project)
+
+    codebase_service_mock.resolve_file_patterns = AsyncMock(
+        return_value=[
+            "src/defs.py",
+            "src/use1.py",
+            "src/use2.py",
+            "notes.unknown",
+        ]
+    )
+    workspace_service_mock.get_active_file_paths_abs = AsyncMock(return_value=[])
+
+    out = await repomap_service.generate_repo_map(
+        session_id=1,
+        mode=RepoMapMode.MANUAL,
+        include_active_content=False,
+        token_limit=10_000,
+    )
+
+    assert out.startswith("### Repository Map\n#### File Structure\n")
+
+    # Only top-level entries should appear.
+    assert "src/\n" in out
+    assert "notes.unknown\n" in out
+
+    # Nested paths must not appear.
+    assert "src/defs.py\n" not in out
+    assert "src/use1.py\n" not in out
+
+    # No ranked defs/snippets in MANUAL output.
+    assert "#### Ranked Definitions" not in out
+    assert "#### Active Context" not in out
+    assert "```" not in out
 
 
 async def test_repomap_generate_ranked_definitions_truncates_with_notice(
@@ -305,6 +364,362 @@ async def test_repomap_generate_ranked_definitions_truncates_with_notice(
     out = await rm.generate(include_active_content=False)
     assert "#### Ranked Definitions" in out
     assert "... (remaining definitions truncated due to token limit)" in out
+
+
+async def test_repomap_service_manual_mode_returns_top_level_structure_and_respects_ignore_patterns(
+    repomap_service,
+    workspace_service_mock,
+    codebase_service_mock,
+    project_service_mock,
+    settings_snapshot,
+    repomap_mock,
+):
+    project = Project(id=1, name="p", path="/tmp/proj")
+    project_service_mock.get_active_project = AsyncMock(return_value=project)
+
+    # Include both regular files and ones that should be ignored by ignore_patterns_str
+    codebase_service_mock.resolve_file_patterns = AsyncMock(
+        return_value=[
+            "README.md",
+            "src/main.py",
+            "src/utils.py",
+            "node_modules/lib.js",
+            "logs/app.log",
+        ]
+    )
+    workspace_service_mock.get_active_file_paths_abs = AsyncMock(return_value=[])
+
+    repomap_mock.format_top_level_structure.return_value = (
+        "### Repository Map\n#### File Structure\nREADME.md\nsrc/\n"
+    )
+
+    out = await repomap_service.generate_repo_map(
+        session_id=1,
+        mode=RepoMapMode.MANUAL,
+        include_active_content=False,
+        ignore_patterns_str="node_modules/\nlogs/\n*.log\n",
+        token_limit=100,
+    )
+
+    assert out.startswith("### Repository Map\n#### File Structure\n")
+    assert "src/" in out
+    assert "README.md" in out
+
+    codebase_service_mock.resolve_file_patterns.assert_awaited_once_with(
+        "/tmp/proj", ignore_patterns=["node_modules/", "logs/", "*.log"]
+    )
+
+    _, kwargs = repomap_mock.mock_class.call_args
+    assert "ignore_patterns" not in kwargs
+
+    repomap_mock.generate.assert_not_called()
+    repomap_mock.format_top_level_structure.assert_called_once()
+
+
+async def test_repomap_service_manual_mode_top_level_is_filtered_by_ignore_patterns(
+    repomap_service,
+    workspace_service_mock,
+    codebase_service_mock,
+    project_service_mock,
+    repomap_mock,
+):
+    """MANUAL mode must return only top-level entries *after* applying ignore patterns."""
+    project = Project(id=1, name="p", path="/tmp/proj")
+    project_service_mock.get_active_project = AsyncMock(return_value=project)
+
+    # Project contains both ignored and non-ignored top-level folders/files.
+    codebase_service_mock.resolve_file_patterns = AsyncMock(
+        return_value=[
+            "README.md",
+            "src/main.py",
+            "src/utils.py",
+            "node_modules/a.js",
+            "node_modules/nested/b.js",
+        ]
+    )
+    workspace_service_mock.get_active_file_paths_abs = AsyncMock(return_value=[])
+
+    repomap_mock.format_top_level_structure.return_value = (
+        "### Repository Map\n#### File Structure\nREADME.md\nsrc/\n"
+    )
+
+    out = await repomap_service.generate_repo_map(
+        session_id=1,
+        mode=RepoMapMode.MANUAL,
+        include_active_content=False,
+        ignore_patterns_str="node_modules/\n",
+        token_limit=1000,
+    )
+
+    assert out.startswith("### Repository Map\n#### File Structure\n")
+    assert "src/\n" in out
+    assert "README.md\n" in out
+    assert "node_modules/" not in out
+
+    codebase_service_mock.resolve_file_patterns.assert_awaited_once_with(
+        "/tmp/proj", ignore_patterns=["node_modules/"]
+    )
+    repomap_mock.generate.assert_not_called()
+    repomap_mock.format_top_level_structure.assert_called_once()
+
+
+async def test_repomap_service_parse_ignore_patterns_trims_and_drops_empty_lines(
+    repomap_service,
+):
+    patterns = repomap_service._parse_ignore_patterns("\n  src/  \n\n*.log\n   \n")
+    assert patterns == ["src/", "*.log"]
+
+
+async def test_repomap_service_ignore_patterns_are_passed_to_codebase(
+    repomap_service,
+    project_service_mock,
+    workspace_service_mock,
+    codebase_service_mock,
+    repomap_mock,
+):
+    project = Project(id=1, name="p", path="/tmp/proj")
+    project_service_mock.get_active_project = AsyncMock(return_value=project)
+    workspace_service_mock.get_active_file_paths_abs = AsyncMock(return_value=[])
+    codebase_service_mock.resolve_file_patterns = AsyncMock(return_value=["README.md"])
+
+    out = await repomap_service.generate_repo_map(
+        session_id=1,
+        mode=RepoMapMode.AUTO,
+        include_active_content=False,
+        ignore_patterns_str="  node_modules/  \n\n*.log\n",
+        token_limit=200,
+    )
+    assert out == "OUT"
+    codebase_service_mock.resolve_file_patterns.assert_awaited_once_with(
+        "/tmp/proj", ignore_patterns=["node_modules/", "*.log"]
+    )
+
+
+async def test_repomap_service_tree_mode_excludes_ranked_definitions_and_lists_all_files(
+    repomap_service,
+    workspace_service_mock,
+    codebase_service_mock,
+    project_service_mock,
+    repomap_mock,
+):
+    project = Project(id=1, name="p", path="/tmp/proj")
+    project_service_mock.get_active_project = AsyncMock(return_value=project)
+    codebase_service_mock.resolve_file_patterns = AsyncMock(
+        return_value=["README.md", "src/main.py", "src/utils.py"]
+    )
+    workspace_service_mock.get_active_file_paths_abs = AsyncMock(return_value=[])
+
+    # Avoid tree-sitter/tag extraction in this service-level test. We only want to assert
+    # the service disables definitions in TREE mode.
+    repomap_generate = AsyncMock(
+        return_value=(
+            "### Repository Map\n"
+            "#### File Structure\n"
+            "README.md\n"
+            "src/main.py\n"
+            "src/utils.py\n\n"
+        )
+    )
+
+    repomap_mock.generate = repomap_generate
+
+    out = await repomap_service.generate_repo_map(
+        session_id=1,
+        mode=RepoMapMode.TREE,
+        include_active_content=False,
+        token_limit=200,
+    )
+
+    assert "### Repository Map" in out
+    assert "#### File Structure" in out
+    assert "README.md\n" in out
+    assert "src/main.py\n" in out
+    assert "src/utils.py\n" in out
+    assert "#### Ranked Definitions" not in out
+
+    _, kwargs = repomap_mock.mock_class.call_args
+    assert kwargs["include_definitions"] is False
+
+    repomap_mock.generate.assert_awaited_once_with(include_active_content=False)
+
+
+async def test_repomap_service_tree_mode_returns_full_file_list_including_nested_paths_from_real_repo(
+    repomap_service,
+    workspace_service_mock,
+    codebase_service_mock,
+    project_service_mock,
+    repomap_tmp_project,
+):
+    project = Project(id=1, name="p", path=repomap_tmp_project["root"])
+    project_service_mock.get_active_project = AsyncMock(return_value=project)
+
+    codebase_service_mock.resolve_file_patterns = AsyncMock(
+        return_value=[
+            "src/defs.py",
+            "src/use1.py",
+            "src/use2.py",
+            "notes.unknown",
+        ]
+    )
+    workspace_service_mock.get_active_file_paths_abs = AsyncMock(return_value=[])
+
+    out = await repomap_service.generate_repo_map(
+        session_id=1,
+        mode=RepoMapMode.TREE,
+        include_active_content=False,
+        token_limit=10_000,
+    )
+
+    assert "### Repository Map" in out
+    assert "#### File Structure" in out
+
+    # TREE mode should include the nested paths (flat file structure list).
+    assert "src/defs.py\n" in out
+    assert "src/use1.py\n" in out
+    assert "src/use2.py\n" in out
+    assert "notes.unknown\n" in out
+
+    # TREE mode disables ranked definitions.
+    assert "#### Ranked Definitions" not in out
+
+
+async def test_repomap_service_auto_mode_returns_ranked_definitions_for_real_repo(
+    repomap_service,
+    workspace_service_mock,
+    codebase_service_mock,
+    project_service_mock,
+    repomap_tmp_project,
+):
+    project = Project(id=1, name="p", path=repomap_tmp_project["root"])
+    project_service_mock.get_active_project = AsyncMock(return_value=project)
+
+    codebase_service_mock.resolve_file_patterns = AsyncMock(
+        return_value=[
+            "src/defs.py",
+            "src/use1.py",
+            "src/use2.py",
+            "notes.unknown",
+        ]
+    )
+    workspace_service_mock.get_active_file_paths_abs = AsyncMock(return_value=[])
+
+    out = await repomap_service.generate_repo_map(
+        session_id=1,
+        mode=RepoMapMode.AUTO,
+        include_active_content=False,
+        token_limit=10_000,
+    )
+
+    assert "### Repository Map" in out
+    assert "#### File Structure" in out
+    assert "src/defs.py\n" in out
+
+    # AUTO mode should include ranked definitions when possible.
+    assert "#### Ranked Definitions" in out
+
+    # The definitions are in src/defs.py. Ensure a snippet header exists.
+    assert "src/defs.py:\n" in out
+    assert "core" in out
+    # Assert the actual definition line is present in the snippet.
+    assert "def core" in out
+
+
+async def test_repomap_service_tree_mode_still_applies_ignore_patterns(
+    repomap_service,
+    workspace_service_mock,
+    codebase_service_mock,
+    project_service_mock,
+    repomap_mock,
+):
+    project = Project(id=1, name="p", path="/tmp/proj")
+    project_service_mock.get_active_project = AsyncMock(return_value=project)
+    codebase_service_mock.resolve_file_patterns = AsyncMock(
+        return_value=[
+            "README.md",
+            "src/main.py",
+            "node_modules/lib.js",
+        ]
+    )
+    workspace_service_mock.get_active_file_paths_abs = AsyncMock(return_value=[])
+
+    out = await repomap_service.generate_repo_map(
+        session_id=1,
+        mode=RepoMapMode.TREE,
+        include_active_content=False,
+        ignore_patterns_str="node_modules/\n",
+        token_limit=200,
+    )
+
+    assert out == "OUT"
+    codebase_service_mock.resolve_file_patterns.assert_awaited_once_with(
+        "/tmp/proj", ignore_patterns=["node_modules/"]
+    )
+
+    _, kwargs = repomap_mock.mock_class.call_args
+    assert "ignore_patterns" not in kwargs
+
+
+async def test_repomap_service_auto_mode_includes_ranked_definitions_when_possible(
+    repomap_service,
+    workspace_service_mock,
+    codebase_service_mock,
+    project_service_mock,
+    repomap_mock,
+):
+    project = Project(id=1, name="p", path="/tmp/proj")
+    project_service_mock.get_active_project = AsyncMock(return_value=project)
+    codebase_service_mock.resolve_file_patterns = AsyncMock(
+        return_value=["src/defs.py", "src/use1.py"]
+    )
+    workspace_service_mock.get_active_file_paths_abs = AsyncMock(return_value=[])
+
+    out = await repomap_service.generate_repo_map(
+        session_id=1,
+        mode=RepoMapMode.AUTO,
+        include_active_content=False,
+        token_limit=123,
+    )
+
+    assert out == "OUT"
+
+    _, kwargs = repomap_mock.mock_class.call_args
+    assert kwargs["include_definitions"] is True
+
+
+async def test_repomap_service_auto_mode_applies_ignore_patterns_before_building_repomap(
+    repomap_service,
+    workspace_service_mock,
+    codebase_service_mock,
+    project_service_mock,
+    repomap_mock,
+):
+    project = Project(id=1, name="p", path="/tmp/proj")
+    project_service_mock.get_active_project = AsyncMock(return_value=project)
+    codebase_service_mock.resolve_file_patterns = AsyncMock(
+        return_value=[
+            "src/main.py",
+            "src/utils.py",
+            "logs/app.log",
+        ]
+    )
+    workspace_service_mock.get_active_file_paths_abs = AsyncMock(return_value=[])
+
+    out = await repomap_service.generate_repo_map(
+        session_id=1,
+        mode=RepoMapMode.AUTO,
+        include_active_content=False,
+        ignore_patterns_str="logs/\n*.log\n",
+        token_limit=200,
+    )
+
+    assert out == "OUT"
+    assert out == "OUT"
+    codebase_service_mock.resolve_file_patterns.assert_awaited_once_with(
+        "/tmp/proj", ignore_patterns=["logs/", "*.log"]
+    )
+
+    _, kwargs = repomap_mock.mock_class.call_args
+    assert kwargs["include_definitions"] is True
 
 
 async def test_repomap_generate_omits_ranked_definitions_when_no_defs_or_refs(tmp_path):

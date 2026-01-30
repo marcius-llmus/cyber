@@ -6,6 +6,7 @@ from pydantic import Field
 from app.commons.tools import BaseToolSet
 from app.context.factories import build_filesystem_service, build_search_service
 from app.context.schemas import FileStatus
+from app.core.enums import RepoMapMode
 
 logger = logging.getLogger(__name__)
 
@@ -133,7 +134,23 @@ The relative path of the directory to list. Defaults to '.' (root).
 class FileTools(BaseToolSet):
     """Tools for reading files from the codebase."""
 
-    spec_functions = ["read_files"]  # "list_files"
+    spec_functions = ["read_files"]
+
+    def __init__(
+        self,
+        db,
+        settings_snapshot,
+        session_id=None,
+        turn_id=None,
+    ):
+        super().__init__(db, settings_snapshot, session_id, turn_id)
+
+        if self._is_repomap_manual(settings_snapshot):
+            self.spec_functions = ["read_files", "list_files"]
+
+    @staticmethod
+    def _is_repomap_manual(settings_snapshot):
+        return settings_snapshot.repomap_mode == RepoMapMode.MANUAL
 
     async def read_files(
         self,

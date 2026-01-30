@@ -73,7 +73,7 @@ class CoderService:
         )
 
         async def _stream() -> AsyncGenerator[CoderEvent]:
-            # 1. Init Event Handler (Stateful for this turn, includes Accumulator)
+            # init Event Handler (Stateful for this turn, includes Accumulator)
             messaging_turn_handler = await self.turn_handler_factory(turn=turn)
 
             yield AgentStateEvent(status="Thinking...")
