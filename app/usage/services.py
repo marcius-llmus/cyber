@@ -33,7 +33,6 @@ class UsageService:
             if getattr(event, "response", None) is None:
                 raise ValueError(f"Event {type(event)} response is None or missing.")
 
-            # 1. Extract Identity from Event Tags (Injected by InstrumentedLLMMixin)
             if not (tags := event.tags):
                 raise ValueError(
                     "Event tags are missing. Ensure InstrumentedLLM is being used."

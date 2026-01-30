@@ -26,14 +26,14 @@ class ContextPageService:
         if not project:
             return {"file_tree": {}}
 
-        # 1. Get Pure Domain Tree
+        # get Pure Domain Tree
         domain_nodes = await self.fs_service.get_project_file_tree()
 
-        # 2. Get Active Context (to mark selection)
+        # get Active Context (to mark selection)
         active_files = await self.context_service.get_active_context(session_id)
         active_paths = {f.file_path for f in active_files}
 
-        # 3. Transform Domain Nodes -> UI Dicts
+        # transform Domain Nodes -> UI Dicts
         ui_tree = self._transform_tree(domain_nodes, active_paths)
 
         root_node = {

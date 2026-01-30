@@ -29,16 +29,13 @@ def instrument_generator(func):
 
     @functools.wraps(func)
     async def wrapper(self, *args, **kwargs):
-        # 1. Await the original method to get the actual generator
         stream = await func(self, *args, **kwargs)
 
-        # 2. Wrap the iteration in the instrumentation context
         async def wrapped_gen():
             with instrument_tags(self._get_instrumentation_tags()):
                 async for item in stream:
                     yield item
 
-        # 3. Return the wrapped generator (matching the original return type)
         return wrapped_gen()
 
     return wrapper

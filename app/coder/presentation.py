@@ -214,7 +214,7 @@ class WebSocketOrchestrator:
         await self.ws_manager.send_html(template)
 
     async def _render_tool_call(self, event: ToolCallEvent, turn: Turn, **kwargs):
-        # 1. ALWAYS Render the Tool Call Log Item (Footer)
+        # ALWAYS Render the Tool Call Log Item (Footer)
         tool_context = {
             "tool_id": event.tool_id,
             "tool_name": event.tool_name,
@@ -227,7 +227,7 @@ class WebSocketOrchestrator:
         ).render(tool_context)
         await self.ws_manager.send_html(html_response)
 
-        # 2. If it is apply_patch, ADDITIONALLY render the Visual Diff Card (Inline Stream)
+        # if it is apply_patch, ADDITIONALLY render the Visual Diff Card (Inline Stream)
         # todo: in coder service, check for tool call event type and create diff row from there
         if event.tool_name == "apply_patch":
             patch_text = event.tool_kwargs.get("patch", "")
@@ -274,7 +274,7 @@ class WebSocketOrchestrator:
         ).render(list_context)
         await self.ws_manager.send_html(html_response)
 
-        # 2. If it's a Diff Patch, ALSO update the Inline Visual Card
+        # if it's a Diff Patch, ALSO update the Inline Visual Card
         if event.tool_name == "apply_patch":
             diff_context = {
                 "tool_id": event.tool_id,

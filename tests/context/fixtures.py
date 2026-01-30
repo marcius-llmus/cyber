@@ -45,11 +45,11 @@ def temp_codebase(tmp_path):
     directory.
     """
 
-    # 1. Project Root
+    # Project Root
     project_root = tmp_path / "project"
     project_root.mkdir()
 
-    # 2. Files inside project
+    # Files inside project
     (project_root / ".gitignore").write_text(
         "*.log\nignore_me.txt\nsecret/", encoding="utf-8"
     )
@@ -60,7 +60,7 @@ def temp_codebase(tmp_path):
     ignored_file = project_root / "ignore_me.txt"
     ignored_file.write_text("should be ignored", encoding="utf-8")
 
-    # 3. Directories
+    # Directories
     src_dir = project_root / "src"
     src_dir.mkdir()
 
