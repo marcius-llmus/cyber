@@ -15,8 +15,6 @@ class CodexPatchRepresentationExtractor(PatchRepresentationExtractor):
         additions = 0
         deletions = 0
         for line in diff_text.splitlines():
-            if line.startswith("@@"):
-                continue
             if line.startswith("+"):
                 additions += 1
                 continue
