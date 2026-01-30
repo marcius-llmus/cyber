@@ -142,6 +142,40 @@ class TestCodexPatchRepresentationExtractor:
         with pytest.raises(ValueError, match="Unsupported codex patch hunk type"):
             extractor.extract("RAW")
 
+    def test_extract_parses_add_file_hunk_counts_blank_lines(self, mocker):
+        class _FakePatch:
+            def __init__(self, hunks):
+                self.hunks = hunks
+
+        extractor = CodexPatchRepresentationExtractor()
+        hunk = AddFile(path="a.txt", content="a\n\nB\n")
+
+        mocker.patch(
+            "app.patches.schemas.codex.PatchParser.parse",
+            return_value=_FakePatch([hunk]),
+        )
+
+        patches = extractor.extract("RAW")
+        assert patches[0].additions == 3
+        assert patches[0].deletions == 0
+
+    def test_extract_parses_delete_file_hunk_counts_zero(self, mocker):
+        class _FakePatch:
+            def __init__(self, hunks):
+                self.hunks = hunks
+
+        extractor = CodexPatchRepresentationExtractor()
+        hunk = DeleteFile(path="a.txt")
+
+        mocker.patch(
+            "app.patches.schemas.codex.PatchParser.parse",
+            return_value=_FakePatch([hunk]),
+        )
+
+        patches = extractor.extract("RAW")
+        assert patches[0].additions == 0
+        assert patches[0].deletions == 0
+
 
 class TestPatchRepresentation:
     def test_from_text_routes_to_extractor_by_processor_type(self):
