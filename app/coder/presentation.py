@@ -137,6 +137,8 @@ class WebSocketOrchestrator:
                 f"An error occurred in WebSocket connection handler: {e}", exc_info=True
             )
             await self._cancel_active_run(execution)
+            # todo: this crap is not working and I am too lazy to fix it now
+            #       errors from inner agents works. this should not be happening at all, so we can see it later
             await self._render_error(str(e))
 
     @staticmethod
