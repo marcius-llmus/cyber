@@ -71,7 +71,7 @@ class TestCodexPatchRepresentationExtractor:
         raw_text = "RAW"
         # 1 unchanged line, 1 removed line, 2 added lines
         chunk = UpdateFileChunk(
-            diff="",
+            diff="@@\n same\n-old\n+new\n+new2\n",
             old_lines=["same", "old"],
             new_lines=["same", "new", "new2"],
         )
@@ -101,7 +101,7 @@ class TestCodexPatchRepresentationExtractor:
         extractor = CodexPatchRepresentationExtractor()
         raw_text = "RAW"
         chunk = UpdateFileChunk(
-            diff="",
+            diff="@@\n same\n-old\n+new\n",
             old_lines=["same", "old"],
             new_lines=["same", "new"],
         )
@@ -142,6 +142,40 @@ class TestCodexPatchRepresentationExtractor:
         with pytest.raises(ValueError, match="Unsupported codex patch hunk type"):
             extractor.extract("RAW")
 
+    def test_extract_parses_add_file_hunk_counts_blank_lines(self, mocker):
+        class _FakePatch:
+            def __init__(self, hunks):
+                self.hunks = hunks
+
+        extractor = CodexPatchRepresentationExtractor()
+        hunk = AddFile(path="a.txt", content="a\n\nB\n")
+
+        mocker.patch(
+            "app.patches.schemas.codex.PatchParser.parse",
+            return_value=_FakePatch([hunk]),
+        )
+
+        patches = extractor.extract("RAW")
+        assert patches[0].additions == 3
+        assert patches[0].deletions == 0
+
+    def test_extract_parses_delete_file_hunk_counts_zero(self, mocker):
+        class _FakePatch:
+            def __init__(self, hunks):
+                self.hunks = hunks
+
+        extractor = CodexPatchRepresentationExtractor()
+        hunk = DeleteFile(path="a.txt")
+
+        mocker.patch(
+            "app.patches.schemas.codex.PatchParser.parse",
+            return_value=_FakePatch([hunk]),
+        )
+
+        patches = extractor.extract("RAW")
+        assert patches[0].additions == 0
+        assert patches[0].deletions == 0
+
 
 class TestPatchRepresentation:
     def test_from_text_routes_to_extractor_by_processor_type(self):
@@ -165,7 +199,9 @@ class TestPatchRepresentation:
         raw_text = (
             "*** Begin Patch\n*** Update File: a.txt\n@@\n-hello\n+hi\n*** End Patch"
         )
-        chunk = UpdateFileChunk(diff="", old_lines=["hello"], new_lines=["hi"])
+        chunk = UpdateFileChunk(
+            diff="@@\n-hello\n+hi\n", old_lines=["hello"], new_lines=["hi"]
+        )
         hunk = UpdateFile(path="a.txt", chunks=[chunk])
         mocker.patch(
             "app.patches.schemas.codex.PatchParser.parse",
