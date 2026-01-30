@@ -232,27 +232,33 @@ class WebSocketOrchestrator:
         if event.tool_name == "apply_patch":
             patch_text = event.tool_kwargs.get("patch", "")
 
-            representation = PatchRepresentation.from_text(
-                raw_text=patch_text,
-                processor_type=turn.settings_snapshot.diff_patch_processor_type,
-            )
+            try:
+                representation = PatchRepresentation.from_text(
+                    raw_text=patch_text,
+                    processor_type=turn.settings_snapshot.diff_patch_processor_type,
+                )
 
-            for parsed in representation.patches:
-                diff_context = {
-                    "tool_id": event.tool_id,
-                    "file_path": parsed.path,
-                    "diff": parsed.diff,
-                    "turn_id": turn.turn_id,
-                    "additions": parsed.additions,
-                    "deletions": parsed.deletions,
-                    "internal_tool_call_id": event.internal_tool_call_id,
-                    "tool_output": None,
-                }
-                diff_template = templates.get_template(
-                    "patches/partials/diff_patch_item_oob.html"
-                ).render(diff_context)
+                for parsed in representation.patches:
+                    diff_context = {
+                        "tool_id": event.tool_id,
+                        "file_path": parsed.path,
+                        "diff": parsed.diff,
+                        "turn_id": turn.turn_id,
+                        "additions": parsed.additions,
+                        "deletions": parsed.deletions,
+                        "internal_tool_call_id": event.internal_tool_call_id,
+                        "tool_output": None,
+                    }
+                    diff_template = templates.get_template(
+                        "patches/partials/diff_patch_item_oob.html"
+                    ).render(diff_context)
 
-                await self.ws_manager.send_html(diff_template)
+                    await self.ws_manager.send_html(diff_template)
+            except Exception as e:
+                logger.warning(f"Failed to parse patch for presentation: {e}")
+                await self._handle_workflow_log(
+                    WorkflowLogEvent(message=f"Error parsing patch for display: {e}", level=LogLevel.ERROR)
+                )
 
     async def _render_tool_result(
         self, event: ToolCallResultEvent, turn: Turn, **kwargs
