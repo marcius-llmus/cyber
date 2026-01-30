@@ -1,3 +1,4 @@
+import fnmatch
 import logging
 import os
 from collections import Counter, defaultdict
@@ -31,16 +32,33 @@ class RepoMap:
         active_context_files: list[str],
         mentioned_filenames: set[str] | None = None,
         mentioned_idents: set[str] | None = None,
+        ignore_patterns: list[str] | None = None,
         token_limit: int = 4096,
+        include_definitions: bool = True,
         root: str | None = None,
     ):
-        self.root = root or os.getcwd()
-        self.all_files = sorted(all_files)
+        self.root = root
+        self.ignore_patterns = ignore_patterns or []
+        self.all_files = self._filter_ignored_files(sorted(all_files))
         self.active_context_files = set(active_context_files)
         self.mentioned_filenames = mentioned_filenames or set()
         self.mentioned_idents = mentioned_idents or set()
         self.token_limit = token_limit
+        self.include_definitions = include_definitions
         self.queries_dir = Path(settings.queries_dir)
+
+    def _filter_ignored_files(self, files: list[str]) -> list[str]:
+        if not self.ignore_patterns:
+            return files
+
+        filtered = []
+        for f in files:
+            rel_path = self._get_rel_path(f)
+            if not any(
+                fnmatch.fnmatch(rel_path, pattern) for pattern in self.ignore_patterns
+            ):
+                filtered.append(f)
+        return filtered
 
     async def generate(self, include_active_content: bool = True) -> str:
         """
@@ -49,23 +67,19 @@ class RepoMap:
         output_parts = []
         current_tokens = 0
 
-        # 1. Add Header
         header = "### Repository Map\n"
         output_parts.append(header)
         current_tokens += self._estimate_token_count(header)
 
-        # 2. Add File Structure (Prioritized)
         current_tokens = self._add_file_structure(output_parts, current_tokens)
 
-        # 3. Add Full Content of Active Files (Context)
         if include_active_content:
             current_tokens = await self._add_active_files_content(
                 output_parts, current_tokens
             )
 
-        # 4. Add Ranked Definitions from Other Files
-        # We pass the responsibility of checking limits and adding headers to the method
-        await self._add_ranked_definitions(output_parts, current_tokens)
+        if self.include_definitions:
+            await self._add_ranked_definitions(output_parts, current_tokens)
 
         return "".join(output_parts)
 
@@ -83,17 +97,10 @@ class RepoMap:
         temp_parts = [header]
         temp_tokens = self._estimate_token_count(header)
 
-        # Use up to the global limit. File structure is priority #1.
-
         for file_path in self.all_files:
             rel_path = self._get_rel_path(file_path)
             line = f"{rel_path}\n"
             line_tokens = self._estimate_token_count(line)
-
-            if current_tokens + temp_tokens + line_tokens > self.token_limit:
-                temp_parts.append("... (file list truncated)\n")
-                temp_tokens += self._estimate_token_count("... (file list truncated)\n")
-                break
 
             temp_parts.append(line)
             temp_tokens += line_tokens
@@ -111,6 +118,21 @@ class RepoMap:
             return os.path.relpath(file_path, self.root)
         except ValueError:
             return file_path
+
+    def get_top_level_structure(self) -> list[str]:
+        rel_files = [self._get_rel_path(f) for f in self.all_files]
+        top_level = set()
+        for f in rel_files:
+            parts = f.split(os.sep)
+            if len(parts) > 1:
+                top_level.add(parts[0] + "/")
+            else:
+                top_level.add(parts[0])
+        return sorted(top_level)
+
+    def format_top_level_structure(self) -> str:
+        header = "### Repository Map\n#### File Structure\n"
+        return header + "\n".join(self.get_top_level_structure()) + "\n"
 
     async def extract_tags(self, file_path: str) -> list[Tag]:
         """
@@ -179,7 +201,7 @@ class RepoMap:
         references = defaultdict(list)
         definitions = defaultdict(list)
 
-        # 1. Collect Tags
+        # collect Tags
         for file_path in self.all_files:
             rel_path = self._get_rel_path(file_path)
             try:
@@ -194,7 +216,7 @@ class RepoMap:
                 elif tag.kind == "ref":
                     references[tag.name].append(rel_path)
 
-        # 2. Build Graph
+        # build Graph
         graph = nx.MultiDiGraph()
 
         # Add self-edges for definitions (ensures they have some weight even without refs)
@@ -234,7 +256,6 @@ class RepoMap:
         if not graph.nodes:
             return {}, definitions
 
-        # 3. PageRank
         try:
             ranked = nx.pagerank(graph, weight="weight")
         except Exception as e:

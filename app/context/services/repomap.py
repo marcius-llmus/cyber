@@ -3,6 +3,7 @@ import os
 from app.context.repomap import RepoMap
 from app.context.services.codebase import CodebaseService
 from app.context.services.context import WorkspaceService
+from app.core.enums import RepoMapMode
 from app.projects.exceptions import ActiveProjectRequiredException
 from app.projects.services import ProjectService
 
@@ -22,14 +23,21 @@ class RepoMapService:
         self.codebase_service = codebase_service
         self.project_service = project_service
 
+    @staticmethod
+    def _parse_ignore_patterns(ignore_patterns_str: str | None) -> list[str]:
+        return [
+            p.strip() for p in (ignore_patterns_str or "").splitlines() if p.strip()
+        ]
+
     async def generate_repo_map(
         self,
         session_id: int,
         mentioned_filenames: set[str] | None = None,
         mentioned_idents: set[str] | None = None,
         include_active_content: bool = True,
-        *,
-        token_limit: int,
+        mode: RepoMapMode = RepoMapMode.AUTO,
+        ignore_patterns_str: str | None = None,
+        token_limit: int = 4096,
     ) -> str:
         project = await self.project_service.get_active_project()
         if not project:
@@ -52,6 +60,8 @@ class RepoMapService:
         else:
             mentioned_filenames = set()
 
+        ignore_patterns = self._parse_ignore_patterns(ignore_patterns_str)
+
         # todo: create a factory service for it (just like in agents)
         repo_mapper = RepoMap(
             all_files=all_files_abs,
@@ -60,5 +70,11 @@ class RepoMapService:
             mentioned_idents=mentioned_idents,
             token_limit=token_limit,
             root=project.path,
+            ignore_patterns=ignore_patterns,
+            include_definitions=(mode == RepoMapMode.AUTO),
         )
+
+        if mode == RepoMapMode.MANUAL:
+            return repo_mapper.format_top_level_structure()
+
         return await repo_mapper.generate(include_active_content=include_active_content)

@@ -73,7 +73,9 @@ async def test_generate_repo_map_success(
         mentioned_filenames={"other.py"},
         mentioned_idents={"Foo", "Bar"},
         include_active_content=False,
+        mode=settings_snapshot.repomap_mode,
         token_limit=settings_snapshot.ast_token_limit,
+        ignore_patterns_str="*.log\nnode_modules/\n",
     )
 
     # 3. Assert
@@ -89,6 +91,7 @@ async def test_generate_repo_map_success(
     assert kwargs["mentioned_filenames"] == {"/tmp/proj/other.py"}
     assert kwargs["mentioned_idents"] == {"Foo", "Bar"}
     assert kwargs["token_limit"] == 2000
+    assert kwargs["ignore_patterns"] == ["*.log", "node_modules/"]
 
     repomap_instance.generate.assert_awaited_once_with(include_active_content=False)
 
@@ -265,7 +268,7 @@ async def test_repomap_generate_include_active_content_false_omits_active_contex
     assert "#### Active Context" not in out
 
 
-async def test_repomap_generate_respects_token_limit_file_structure_truncates(
+async def test_repomap_generate_does_not_truncate_file_structure_by_token_limit(
     repomap_tmp_project,
 ):
     root = repomap_tmp_project["root"]
@@ -282,7 +285,25 @@ async def test_repomap_generate_respects_token_limit_file_structure_truncates(
         token_limit=25,
     )
     out = await rm.generate(include_active_content=False)
-    assert "... (file list truncated)" in out
+    assert "... (file list truncated" not in out
+
+
+async def test_repomap_format_top_level_structure_includes_repo_map_and_file_structure_headers(
+    repomap_tmp_project,
+):
+    rm = RepoMap(
+        all_files=[
+            repomap_tmp_project["defs"],
+            repomap_tmp_project["use1"],
+        ],
+        active_context_files=[],
+        root=repomap_tmp_project["root"],
+    )
+
+    out = rm.format_top_level_structure()
+
+    assert out.startswith("### Repository Map\n#### File Structure\n")
+    assert "src/" in out
 
 
 async def test_repomap_generate_ranked_definitions_truncates_with_notice(

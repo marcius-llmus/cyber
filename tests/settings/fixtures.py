@@ -84,5 +84,7 @@ def settings_snapshot() -> AgentSettingsSnapshot:
         diff_patches_auto_open=True,
         diff_patches_auto_apply=True,
         diff_patch_processor_type="UDIFF_LLM",
+        repomap_mode="AUTO",
+        repomap_ignore_patterns=None,
         coding_llm_temperature=Decimal("0.7"),
     )
