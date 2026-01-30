@@ -1,4 +1,3 @@
-import fnmatch
 import logging
 import os
 from collections import Counter, defaultdict
@@ -32,33 +31,18 @@ class RepoMap:
         active_context_files: list[str],
         mentioned_filenames: set[str] | None = None,
         mentioned_idents: set[str] | None = None,
-        ignore_patterns: list[str] | None = None,
         token_limit: int = 4096,
         include_definitions: bool = True,
         root: str | None = None,
     ):
         self.root = root
-        self.ignore_patterns = ignore_patterns or []
-        self.all_files = self._filter_ignored_files(sorted(all_files))
+        self.all_files = sorted(all_files)
         self.active_context_files = set(active_context_files)
         self.mentioned_filenames = mentioned_filenames or set()
         self.mentioned_idents = mentioned_idents or set()
         self.token_limit = token_limit
         self.include_definitions = include_definitions
         self.queries_dir = Path(settings.queries_dir)
-
-    def _filter_ignored_files(self, files: list[str]) -> list[str]:
-        if not self.ignore_patterns:
-            return files
-
-        filtered = []
-        for f in files:
-            rel_path = self._get_rel_path(f)
-            if not any(
-                fnmatch.fnmatch(rel_path, pattern) for pattern in self.ignore_patterns
-            ):
-                filtered.append(f)
-        return filtered
 
     async def generate(self, include_active_content: bool = True) -> str:
         """
