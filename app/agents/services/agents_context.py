@@ -94,6 +94,8 @@ class AgentContextService:
         repo_map = await self.repo_map_service.generate_repo_map(
             session_id=session_id,
             include_active_content=False,
+            mode=settings_snapshot.repomap_mode,
+            ignore_patterns_str=settings_snapshot.repomap_ignore_patterns,
             token_limit=settings_snapshot.ast_token_limit,
         )
 
