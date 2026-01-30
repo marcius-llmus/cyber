@@ -1,7 +1,7 @@
 <div hx-swap-oob="innerHTML:#user-message-controls-{{ turn_id }}">
     <button
         ws-send
-        hx-vals='{"message": "{{ original_message | e }}", "retry_turn_id": "{{ turn_id }}"}'
+        hx-vals='{"message": {{ original_message | tojson }}, "retry_turn_id": {{ turn_id | tojson }} }'
         class="p-0 bg-transparent border-none text-red-400 hover:text-red-300 text-xs flex items-center mt-2"
         title="An error occurred. Click to retry."
     >

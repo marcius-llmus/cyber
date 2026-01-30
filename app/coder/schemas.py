@@ -1,8 +1,11 @@
+from collections.abc import AsyncGenerator
+from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, TypeAlias, Union
 
 from pydantic import BaseModel
 
+from app.chat.schemas import Turn
 from app.context.schemas import ContextFileListItem
 
 
@@ -83,3 +86,10 @@ CoderEvent: TypeAlias = Union[  # noqa
     | SingleShotDiffAppliedEvent
     | ContextFilesUpdatedEvent
 ]
+
+
+@dataclass(slots=True)
+class TurnExecution:
+    turn: Turn
+    stream: AsyncGenerator[CoderEvent]
+    handler: Any | None = None

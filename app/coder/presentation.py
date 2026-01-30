@@ -17,6 +17,7 @@ from app.coder.schemas import (
     SingleShotDiffAppliedEvent,
     ToolCallEvent,
     ToolCallResultEvent,
+    TurnExecution,
     UsageMetricsUpdatedEvent,
     WebSocketMessage,
     WorkflowErrorEvent,
@@ -75,9 +76,11 @@ class WebSocketOrchestrator:
 
     async def handle_connection(self):
         logger.info("WebSocket connection established.")
+        execution = None
 
         try:
             while True:
+                execution = None
                 data = await self.ws_manager.receive_json()
                 logger.info("Received JSON data from client.")
 
@@ -88,41 +91,63 @@ class WebSocketOrchestrator:
                     await self._render_error(f"Invalid message format: {e}")
                     continue
 
-                turn, stream = await self.coder_service.handle_user_message(
+                execution = await self.coder_service.handle_user_message(
                     user_message=message.message,
                     session_id=self.session_id,
                     retry_turn_id=message.retry_turn_id,
                 )
 
                 if message.retry_turn_id:
-                    await self._prepare_ui_for_retry_turn(turn.turn_id)
+                    await self._prepare_ui_for_retry_turn(execution.turn.turn_id)
                 else:
-                    await self._prepare_ui_for_new_turn(message.message, turn.turn_id)
+                    await self._prepare_ui_for_new_turn(
+                        message.message, execution.turn.turn_id
+                    )
 
                 try:
-                    async for event in stream:
-                        await self._process_event(event, turn)
+                    async for event in execution.stream:
+                        await self._process_event(event, execution.turn)
+
+                except WebSocketDisconnect:
+                    logger.info("Client disconnected during turn stream.")
+                    await self._cancel_active_run(execution)
+                    return
 
                 except Exception as e:
                     logger.error(
-                        f"An error occurred in WebSocket turn {turn.turn_id}: {e}",
+                        f"An error occurred in WebSocket turn {execution.turn.turn_id}: {e}",
                         exc_info=True,
                     )
+                    await self._cancel_active_run(execution)
                     await self._render_workflow_error(
                         event=WorkflowErrorEvent(
                             message=str(e), original_message=message.message
                         ),
-                        turn=turn,
+                        turn=execution.turn,
                     )
 
         except WebSocketDisconnect:
             logger.info("Client disconnected. Connection handled gracefully.")
+            await self._cancel_active_run(execution)
+            return
+
         except Exception as e:
             # This handler catches connection/parsing errors. Workflow errors are handled above.
             logger.error(
                 f"An error occurred in WebSocket connection handler: {e}", exc_info=True
             )
+            await self._cancel_active_run(execution)
+            # todo: this crap is not working and I am too lazy to fix it now
+            #       errors from inner agents works. this should not be happening at all, so we can see it later
             await self._render_error(str(e))
+
+    @staticmethod
+    async def _cancel_active_run(execution: TurnExecution | None) -> None:
+        if not execution or not execution.handler:
+            return
+
+        logger.info("Cancelling active workflow run...")
+        await execution.handler.cancel_run()
 
     async def _render_user_message(self, message: str, turn_id: str):
         template = templates.get_template("chat/partials/user_message.html").render(
