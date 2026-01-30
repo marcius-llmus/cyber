@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from pytest_mock import MockerFixture
@@ -488,3 +488,20 @@ def repomap_instance(repomap_tmp_project) -> RepoMap:
         token_limit=10_000,
         root=root,
     )
+
+
+@pytest.fixture
+def repomap_mock(mocker: MockerFixture) -> MagicMock:
+    """Patches RepoMap where RepoMapService looks it up and returns an instance mock.
+
+    Use in RepoMapService wiring tests only. Integration tests should use the real
+    RepoMap implementation (see repomap_instance/repomap_tmp_project).
+    """
+
+    repomap_cls = mocker.patch("app.context.services.repomap.RepoMap")
+    instance = MagicMock()
+    instance.generate = AsyncMock(return_value="OUT")
+    instance.format_top_level_structure = MagicMock(return_value="OUT")
+    repomap_cls.return_value = instance
+    instance.mock_class = repomap_cls
+    return instance
