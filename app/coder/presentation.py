@@ -17,11 +17,11 @@ from app.coder.schemas import (
     SingleShotDiffAppliedEvent,
     ToolCallEvent,
     ToolCallResultEvent,
+    TurnExecution,
     UsageMetricsUpdatedEvent,
     WebSocketMessage,
     WorkflowErrorEvent,
     WorkflowLogEvent,
-    TurnExecution,
 )
 from app.coder.services import CoderService
 from app.commons.websockets import WebSocketConnectionManager
