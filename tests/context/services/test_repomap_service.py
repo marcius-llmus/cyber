@@ -22,6 +22,8 @@ async def test_generate_repo_map_no_project(
             session_id=1,
             token_limit=settings_snapshot.ast_token_limit,
         )
+
+
 async def test_generate_repo_map_success(
     repomap_service,
     workspace_service_mock,
