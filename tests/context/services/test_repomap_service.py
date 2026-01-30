@@ -431,7 +431,9 @@ async def test_repomap_service_manual_mode_top_level_is_filtered_by_ignore_patte
     )
 
 
-async def test_repomap_service_parse_ignore_patterns_trims_and_drops_empty_lines(service):
+async def test_repomap_service_parse_ignore_patterns_trims_and_drops_empty_lines(
+    service,
+):
     patterns = service._parse_ignore_patterns("\n  src/  \n\n*.log\n   \n")
     assert patterns == ["src/", "*.log"]
 
@@ -440,7 +442,9 @@ async def test_repomap_service_ignore_patterns_are_passed_to_codebase(service, m
     project = Project(id=1, name="p", path="/tmp/proj")
     service.project_service.get_active_project = AsyncMock(return_value=project)
     service.context_service.get_active_file_paths_abs = AsyncMock(return_value=[])
-    service.codebase_service.resolve_file_patterns = AsyncMock(return_value=["README.md"])
+    service.codebase_service.resolve_file_patterns = AsyncMock(
+        return_value=["README.md"]
+    )
 
     repomap_cls = mocker.patch("app.context.services.repomap.RepoMap")
     repomap_instance = repomap_cls.return_value
@@ -614,7 +618,6 @@ async def test_repomap_service_auto_mode_applies_ignore_patterns_before_building
     )
     _, kwargs = repomap_cls.call_args
     assert kwargs["include_definitions"] is True
-
 
 
 async def test_repomap_generate_omits_ranked_definitions_when_no_defs_or_refs(tmp_path):

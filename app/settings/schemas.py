@@ -2,9 +2,9 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.core.enums import RepoMapMode
 from app.llms.enums import LLMModel, LLMProvider
 from app.patches.enums import PatchProcessorType
-from app.core.enums import RepoMapMode
 
 
 class LLMSettingsBase(BaseModel):

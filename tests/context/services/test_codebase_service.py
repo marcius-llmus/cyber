@@ -270,7 +270,9 @@ async def test_resolve_file_patterns_respects_ignore_patterns(temp_codebase):
     root = temp_codebase.root
 
     # Ignore all python files
-    files = await service.resolve_file_patterns(root, ["src/**"], ignore_patterns=["*.py"])
+    files = await service.resolve_file_patterns(
+        root, ["src/**"], ignore_patterns=["*.py"]
+    )
     assert not any(f.endswith(".py") for f in files)
     assert any(f.endswith(".txt") for f in files)
 
@@ -313,7 +315,9 @@ async def test_resolve_file_patterns_ignore_patterns_exact_file(temp_codebase):
     assert "src/utils.py" in files
 
 
-async def test_resolve_file_patterns_ignore_patterns_ignores_empty_and_whitespace(temp_codebase):
+async def test_resolve_file_patterns_ignore_patterns_ignores_empty_and_whitespace(
+    temp_codebase,
+):
     """Whitespace-only ignore patterns should be ignored (no effect)."""
     service = CodebaseService()
     root = temp_codebase.root
@@ -325,6 +329,7 @@ async def test_resolve_file_patterns_ignore_patterns_ignores_empty_and_whitespac
         ignore_patterns=["\n", "   ", "\t"],
     )
     assert files == baseline
+
 
 async def test_resolve_file_patterns_defaults_to_scan_all_pattern(temp_codebase):
     """If patterns is None or empty, CodebaseService uses SCAN_ALL_PATTERN=['.'].

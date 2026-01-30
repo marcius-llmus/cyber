@@ -85,7 +85,7 @@ class FormattedMessage(BaseModel):
                         for p in representation.patches
                     ]
                 }
-            except Exception: # noqa
+            except Exception:  # noqa
                 # If parsing fails (e.g. malformed patch in history), just skip formatting.
                 # todo: we must find a way to render errors for failed too calls later
                 continue

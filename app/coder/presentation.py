@@ -257,7 +257,10 @@ class WebSocketOrchestrator:
             except Exception as e:
                 logger.warning(f"Failed to parse patch for presentation: {e}")
                 await self._handle_workflow_log(
-                    WorkflowLogEvent(message=f"Error parsing patch for display: {e}", level=LogLevel.ERROR)
+                    WorkflowLogEvent(
+                        message=f"Error parsing patch for display: {e}",
+                        level=LogLevel.ERROR,
+                    )
                 )
 
     async def _render_tool_result(
