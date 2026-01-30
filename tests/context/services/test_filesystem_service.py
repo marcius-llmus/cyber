@@ -66,7 +66,7 @@ async def test_read_files_success(service, project_service_mock, codebase_servic
 async def test_list_files_no_project(service, project_service_mock):
     project_service_mock.get_active_project = AsyncMock(return_value=None)
     with pytest.raises(ActiveProjectRequiredException):
-        await service.list_files()
+        await service.list_files(["."])
 
     project_service_mock.get_active_project.assert_awaited_once_with()
 
@@ -76,10 +76,26 @@ async def test_list_files_success(service, project_service_mock, codebase_servic
     project_service_mock.get_active_project = AsyncMock(return_value=project)
     codebase_service_mock.list_dir = AsyncMock(return_value=["file.txt"])
 
-    result = await service.list_files("subdir")
+    result = await service.list_files(["subdir"])
 
     assert result == ["file.txt"]
     codebase_service_mock.list_dir.assert_awaited_once_with("/tmp/proj", "subdir")
+    project_service_mock.get_active_project.assert_awaited_once_with()
+
+
+async def test_list_files_supports_glob_patterns(
+    service, project_service_mock, codebase_service_mock
+):
+    """FileSystemService should pass glob patterns through to CodebaseService.list_dir."""
+    project = Project(id=1, name="p", path="/tmp/proj")
+    project_service_mock.get_active_project = AsyncMock(return_value=project)
+
+    codebase_service_mock.list_dir = AsyncMock(return_value=["a.py", "b.py"])
+
+    result = await service.list_files(["src/**"])
+
+    assert result == ["a.py", "b.py"]
+    codebase_service_mock.list_dir.assert_awaited_once_with("/tmp/proj", "src/**")
     project_service_mock.get_active_project.assert_awaited_once_with()
 
 
