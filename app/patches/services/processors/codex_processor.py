@@ -34,6 +34,7 @@ class CodexProcessor(BasePatchProcessor):
 
     async def apply_patch(self, diff: str) -> None:
         async with self.db.session() as session:
+            # todo: we really don't need project dep here. diff service already has it
             project_service = await self.project_service_factory(session)
             project = await project_service.get_active_project()
             if not project:
