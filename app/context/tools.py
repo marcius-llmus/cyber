@@ -220,15 +220,18 @@ class FileTools(BaseToolSet):
             async with self.db.session() as session:
                 fs_service = await build_filesystem_service(session)
 
-                items = await fs_service.list_files(dir_patterns)
-                if not items:
+                results = await fs_service.list_files(dir_patterns)
+
+                if not results:
                     return "Directory is empty."
 
-                out: list[str] = []
+                output: list[str] = []
                 for dir_path in dir_patterns:
-                    out.append(f"## Directory: {dir_path}")
-                out.extend(items)
-                return "\n".join(out)
+                    items = results.get(dir_path, [])
+                    content = "\n".join(items) if items else "Directory is empty."
+                    output.append(f"## Directory: {dir_path}\n{content}")
+
+                return "\n\n".join(output)
 
         except Exception as e:
             logger.error(f"FileTools.list_files failed: {e}", exc_info=True)
