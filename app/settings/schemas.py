@@ -1,6 +1,8 @@
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, Field
+from typing import Any, Literal
+
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.core.enums import RepoMapMode
 from app.llms.enums import LLMModel, LLMProvider
@@ -28,6 +30,38 @@ class LLMSettingsRead(LLMSettingsBase):
 class LLMSettingsUpdate(BaseModel):
     context_window: int | None = None
     api_key: str | None = None
+
+    # Helper fields for reasoning config construction
+    reasoning_effort: Literal["minimal", "low", "medium", "high"] | None = Field(
+        default=None, exclude=True
+    )
+    thinking_level: Literal["LOW", "HIGH", "MEDIUM", "MINIMAL"] | None = Field(
+        default=None, exclude=True
+    )
+    budget_tokens: int | None = Field(default=None, exclude=True)
+
+    reasoning_config: dict[str, Any] | None = None
+
+    @model_validator(mode="after")
+    def construct_reasoning_config(self) -> "LLMSettingsUpdate":
+        if self.reasoning_config is not None:
+            return self
+
+        config = {}
+        if self.reasoning_effort is not None:
+            config["reasoning_effort"] = self.reasoning_effort
+
+        if self.thinking_level is not None:
+            config["thinking_level"] = self.thinking_level
+
+        if self.budget_tokens is not None:
+            config["budget_tokens"] = self.budget_tokens
+            config["type"] = "enabled"
+
+        if config:
+            self.reasoning_config = config
+
+        return self
 
 
 class SettingsBase(BaseModel):

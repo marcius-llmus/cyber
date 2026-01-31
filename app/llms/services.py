@@ -160,7 +160,7 @@ class LLMService:
 
         if settings_in.reasoning_config is not None:
             try:
-                self._validate_reasoning_config(
+                settings_in.reasoning_config = self._validate_reasoning_config(
                     provider=db_obj.provider,
                     reasoning_config=settings_in.reasoning_config,
                 )
@@ -174,7 +174,7 @@ class LLMService:
     @staticmethod
     def _validate_reasoning_config(
         provider: LLMProvider, reasoning_config: dict[str, Any]
-    ) -> None:
+    ) -> dict[str, Any]:
         schema: Type[BaseModel] | None = {
             LLMProvider.OPENAI: OpenAIReasoningConfig,
             LLMProvider.ANTHROPIC: AnthropicReasoningConfig,
@@ -182,10 +182,10 @@ class LLMService:
         }.get(provider)
 
         if schema is None:
-            return None
+            return reasoning_config
 
-        schema.model_validate(reasoning_config)
-        return None
+        model = schema.model_validate(reasoning_config)
+        return model.model_dump()
 
     async def update_coding_llm(
         self, llm_id: int, settings_in: LLMSettingsUpdate
