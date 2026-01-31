@@ -53,10 +53,13 @@ class SettingsPageService:
             "llm_options": llm_options,
         }
 
-    async def get_api_key_input_data_by_id(self, llm_id: int) -> dict:
+    async def get_llm_dependent_fields_data_by_id(self, llm_id: int) -> dict:
         llm_settings = await self.llm_service.llm_settings_repo.get(llm_id)
-        provider = llm_settings.provider
         api_key = await self.llm_service.llm_settings_repo.get_api_key_for_provider(
-            provider
+            llm_settings.provider
         )
-        return {"provider": provider.value, "api_key": api_key}
+        return {
+            "provider": llm_settings.provider.value,
+            "api_key": api_key,
+            "current_coder": llm_settings,
+        }
