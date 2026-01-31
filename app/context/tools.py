@@ -127,7 +127,11 @@ GREP_IGNORE_CASE_DESCRIPTION = (
 )
 
 LIST_FILES_PATH_DESCRIPTION = """
-The relative path of the directory to list. Defaults to '.' (root).
+Directory path(s) to list within the active project.
+
+- Accepts a list of strings.
+- Each entry is treated as a project-relative directory.
+- Defaults to '.' (project root).
 """
 
 
@@ -194,10 +198,10 @@ class FileTools(BaseToolSet):
 
     async def list_files(
         self,
-        dir_path: Annotated[
-            str,
+        dir_patterns: Annotated[
+            list[str],
             Field(description=LIST_FILES_PATH_DESCRIPTION),
-        ] = ".",
+        ] = None,
     ) -> str:
         """
         Lists files and directories in the given path.
@@ -210,10 +214,24 @@ class FileTools(BaseToolSet):
             if not self.session_id:
                 return "Error: No active session ID."
 
+            if not dir_patterns:
+                dir_patterns = ["."]
+
             async with self.db.session() as session:
                 fs_service = await build_filesystem_service(session)
-                items = await fs_service.list_files(dir_path)
-                return "\n".join(items) if items else "Directory is empty."
+
+                results = await fs_service.list_files(dir_patterns)
+
+                if not results:
+                    return "Directory is empty."
+
+                output: list[str] = []
+                for dir_path in dir_patterns:
+                    items = results.get(dir_path, [])
+                    content = "\n".join(items) if items else "Directory is empty."
+                    output.append(f"## Directory: {dir_path}\n{content}")
+
+                return "\n\n".join(output)
 
         except Exception as e:
             logger.error(f"FileTools.list_files failed: {e}", exc_info=True)

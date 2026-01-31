@@ -97,6 +97,25 @@ async def test_list_dir(temp_codebase):
     assert "utils.py" in results
 
 
+async def test_list_dir_multiple_calls_for_nested_dirs(temp_codebase):
+    service = CodebaseService()
+    root = temp_codebase.root
+
+    src_results = await service.list_dir(root, "src")
+    assert "main.py" in src_results
+
+    nested_results = await service.list_dir(root, "src/glob_cases")
+    assert "normal.txt" in nested_results
+    assert "weird[name].txt" in nested_results
+
+
+async def test_list_dir_does_not_support_glob_patterns(temp_codebase: Path):
+    service = CodebaseService()
+
+    with pytest.raises(ValueError, match=r"Directory not found"):
+        await service.list_dir(str(temp_codebase), "src/**")
+
+
 async def test_read_file(temp_codebase):
     """Test read_file returns content."""
     service = CodebaseService()

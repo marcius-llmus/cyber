@@ -66,7 +66,7 @@ async def test_read_files_success(service, project_service_mock, codebase_servic
 async def test_list_files_no_project(service, project_service_mock):
     project_service_mock.get_active_project = AsyncMock(return_value=None)
     with pytest.raises(ActiveProjectRequiredException):
-        await service.list_files()
+        await service.list_files(["."])
 
     project_service_mock.get_active_project.assert_awaited_once_with()
 
@@ -76,11 +76,26 @@ async def test_list_files_success(service, project_service_mock, codebase_servic
     project_service_mock.get_active_project = AsyncMock(return_value=project)
     codebase_service_mock.list_dir = AsyncMock(return_value=["file.txt"])
 
-    result = await service.list_files("subdir")
+    result = await service.list_files(["subdir"])
 
-    assert result == ["file.txt"]
+    assert result == {"subdir": ["file.txt"]}
     codebase_service_mock.list_dir.assert_awaited_once_with("/tmp/proj", "subdir")
     project_service_mock.get_active_project.assert_awaited_once_with()
+
+
+async def test_list_files_multiple_dirs(
+    service, project_service_mock, codebase_service_mock
+):
+    project = Project(id=1, name="p", path="/tmp/proj")
+    project_service_mock.get_active_project = AsyncMock(return_value=project)
+    codebase_service_mock.list_dir = AsyncMock(side_effect=[["a.py"], ["b.py"]])
+
+    result = await service.list_files(["src", "src/glob_cases"])
+
+    assert result == {"src": ["a.py"], "src/glob_cases": ["b.py"]}
+    assert codebase_service_mock.list_dir.await_count == 2
+    codebase_service_mock.list_dir.assert_any_await("/tmp/proj", "src")
+    codebase_service_mock.list_dir.assert_any_await("/tmp/proj", "src/glob_cases")
 
 
 async def test_write_file_no_project(service, project_service_mock):

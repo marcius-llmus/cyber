@@ -44,17 +44,20 @@ class FileSystemService:
 
         return await self.codebase_service.read_files(project.path, files)
 
-    async def list_files(self, dir_path: str = ".") -> list[str]:
-        """
-        Lists files and directories in the given path within the active project.
-        """
+    async def list_files(self, dir_paths: list[str]) -> dict[str, list[str]]:
+        """Lists files/dirs for one or more directory paths within the active project."""
         project = await self.project_service.get_active_project()
         if not project:
             raise ActiveProjectRequiredException(
                 "Active project required to list files."
             )
 
-        return await self.codebase_service.list_dir(project.path, dir_path)
+        results: dict[str, list[str]] = {}
+        for dir_path in dir_paths:
+            results[dir_path] = await self.codebase_service.list_dir(
+                project.path, dir_path
+            )
+        return results
 
     async def write_file(self, file_path: str, content: str) -> None:
         """
