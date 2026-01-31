@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import HTMLResponse, Response
 
 from app.core.templating import templates
+from app.llms.exceptions import InvalidLLMReasoningConfigException
 from app.settings.dependencies import get_settings_page_service, get_settings_service
 from app.settings.exceptions import (
     ContextWindowExceededException,
@@ -59,4 +60,6 @@ async def update_settings(
     except (SettingsNotFoundException, LLMSettingsNotFoundException) as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except ContextWindowExceededException as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except InvalidLLMReasoningConfigException as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
