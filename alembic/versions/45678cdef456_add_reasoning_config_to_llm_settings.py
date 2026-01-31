@@ -21,10 +21,14 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     """Upgrade schema."""
     with op.batch_alter_table('llm_settings', schema=None) as batch_op:
+        batch_op.add_column(sa.Column('visual_name', sa.String(), nullable=False, server_default=''))
         batch_op.add_column(sa.Column('reasoning_config', sa.JSON(), nullable=True))
+
+    
 
 
 def downgrade() -> None:
     """Downgrade schema."""
     with op.batch_alter_table('llm_settings', schema=None) as batch_op:
         batch_op.drop_column('reasoning_config')
+        batch_op.drop_column('visual_name')
