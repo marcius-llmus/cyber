@@ -31,6 +31,7 @@ async def initialize_application_settings(db: AsyncSession) -> None:
                 LLMSettingsCreate(
                     model_name=llm.model_name,
                     provider=llm.provider,
+                    visual_name=llm.visual_name,
                     context_window=llm.default_context_window,
                     api_key=None,
                 )
