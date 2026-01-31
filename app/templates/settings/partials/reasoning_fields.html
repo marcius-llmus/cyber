@@ -1,0 +1,27 @@
+{% if provider == 'OPENAI' %}
+    <div class="col-span-2">
+        <label class="block text-sm font-medium text-gray-300 mb-2">Reasoning Effort (OpenAI)</label>
+        <select name="coding_llm_settings.reasoning_effort" class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm">
+            <option value="" {% if not current_coder.reasoning_config or not current_coder.reasoning_config.get('reasoning_effort') %}selected{% endif %}>Default</option>
+            <option value="low" {% if current_coder.reasoning_config and current_coder.reasoning_config.get('reasoning_effort') == 'low' %}selected{% endif %}>Low</option>
+            <option value="medium" {% if current_coder.reasoning_config and current_coder.reasoning_config.get('reasoning_effort') == 'medium' %}selected{% endif %}>Medium</option>
+            <option value="high" {% if current_coder.reasoning_config and current_coder.reasoning_config.get('reasoning_effort') == 'high' %}selected{% endif %}>High</option>
+        </select>
+    </div>
+{% elif provider == 'GOOGLE' %}
+    <div class="col-span-2">
+        <label class="block text-sm font-medium text-gray-300 mb-2">Thinking Level (Gemini)</label>
+        <select name="coding_llm_settings.thinking_level" class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm">
+            <option value="" {% if not current_coder.reasoning_config or not current_coder.reasoning_config.get('thinking_level') %}selected{% endif %}>Default</option>
+            <option value="MINIMAL" {% if current_coder.reasoning_config and current_coder.reasoning_config.get('thinking_level') == 'MINIMAL' %}selected{% endif %}>Minimal</option>
+            <option value="LOW" {% if current_coder.reasoning_config and current_coder.reasoning_config.get('thinking_level') == 'LOW' %}selected{% endif %}>Low</option>
+            <option value="MEDIUM" {% if current_coder.reasoning_config and current_coder.reasoning_config.get('thinking_level') == 'MEDIUM' %}selected{% endif %}>Medium</option>
+            <option value="HIGH" {% if current_coder.reasoning_config and current_coder.reasoning_config.get('thinking_level') == 'HIGH' %}selected{% endif %}>High</option>
+        </select>
+    </div>
+{% elif provider == 'ANTHROPIC' %}
+    <div class="col-span-2">
+        <label class="block text-sm font-medium text-gray-300 mb-2">Reasoning Budget (Claude)</label>
+        <input type="number" name="coding_llm_settings.reasoning_budget_tokens" value="{{ (current_coder.reasoning_config and current_coder.reasoning_config.get('budget_tokens')) or '' }}" placeholder="e.g. 1024" class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm">
+    </div>
+{% endif %}
