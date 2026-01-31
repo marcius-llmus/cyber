@@ -31,15 +31,15 @@ async def get_settings_form(
     )
 
 
-@router.get("/api-key-input", response_class=HTMLResponse)
-async def get_api_key_input(
+@router.get("/llm-dependent-fields", response_class=HTMLResponse)
+async def get_llm_dependent_fields(
     request: Request,
     coding_llm_settings_id: int = Query(...),
     service: SettingsPageService = Depends(get_settings_page_service),
 ):
-    context = await service.get_api_key_input_data_by_id(coding_llm_settings_id)
+    context = await service.get_llm_dependent_fields_data_by_id(coding_llm_settings_id)
     return templates.TemplateResponse(
-        "settings/partials/api_key_input.html",
+        "settings/partials/llm_dependent_fields.html",
         {"request": request, **context},
     )
 
