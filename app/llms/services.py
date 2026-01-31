@@ -216,9 +216,21 @@ class LLMService:
                 f"Missing API key for provider {llm_metadata.provider}. Please configure it in settings."
             )
 
+        # note: small hack. we freeze the dict so the alru_cache keeps working
+        # even with the addition of more variables like reasoning params, it still worth caching
+        reasoning_config = self._freeze_reasoning_config(reasoning_config)
+
         return await self._get_client_instance(
             model_name, temperature, api_key, reasoning_config
         )
+
+    @staticmethod
+    def _freeze_reasoning_config(
+        reasoning_config: dict[str, Any] | None,
+    ) -> tuple[tuple[str, Any], ...]:
+        if not reasoning_config:
+            return tuple()
+        return tuple(sorted(reasoning_config.items()))
 
     @alru_cache
     async def _get_client_instance(
@@ -226,11 +238,15 @@ class LLMService:
         model_name: LLMModel,
         temperature: float,
         api_key: str,
-        reasoning_config: dict | None = None,
+        reasoning_config: tuple[tuple[str, Any], ...] | None = None,
     ):
         llm_metadata = await self.llm_factory.get_llm(model_name)
         provider = llm_metadata.provider
-        effective_reasoning = reasoning_config or llm_metadata.reasoning or {}
+        effective_reasoning = (
+            dict(reasoning_config)
+            if reasoning_config
+            else llm_metadata.reasoning
+        )
 
         if provider == LLMProvider.OPENAI:
             additional_kwargs = {"stream_options": {"include_usage": True}}
