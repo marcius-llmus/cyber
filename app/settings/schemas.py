@@ -12,6 +12,7 @@ class LLMSettingsBase(BaseModel):
     context_window: int
     provider: LLMProvider
     api_key: str | None = None
+    reasoning_config: dict | None = None
 
 
 class LLMSettingsCreate(LLMSettingsBase):
