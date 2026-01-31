@@ -54,3 +54,7 @@ update: init
 	@$(COMPOSE) down
 	@$(CLEAN_CMD)
 	@$(COMPOSE) build --no-cache
+
+external-clear: init
+	@$(COMPOSE) down
+	@buildah rm --all
