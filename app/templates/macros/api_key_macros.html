@@ -6,7 +6,7 @@
     } %}
     <div id="api-key-container">
         <label class="block text-sm font-medium text-gray-300 mb-2">{{ provider }} API Key</label>
-        <input type="password" name="coding_llm_settings.api_key" value="{{ api_key or '' }}"
+        <input type="password" name="coding_llm_settings.api_key" value="{{ api_key or '' }}" autocomplete="off"
                class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm"
                placeholder="{{ placeholders.get(provider|string|title, '...') }}">
     </div>

@@ -30,6 +30,7 @@ from app.settings.exceptions import (
     LLMSettingsNotFoundException,
 )
 from app.settings.schemas import LLMSettingsUpdate
+from app.settings.constants import API_KEY_MASK
 
 logger = logging.getLogger(__name__)
 
@@ -153,7 +154,7 @@ class LLMService:
                     f"Context window cannot exceed {model_meta.default_context_window} tokens."
                 )
 
-        if settings_in.api_key is not None:
+        if settings_in.api_key is not None and not self._is_api_key_mask(settings_in.api_key):
             await self.llm_settings_repo.update_api_key_for_provider(
                 provider=db_obj.provider, api_key=settings_in.api_key
             )
@@ -170,6 +171,10 @@ class LLMService:
                 ) from e
 
         return await self.llm_settings_repo.update(db_obj=db_obj, obj_in=settings_in)
+
+    @staticmethod
+    def _is_api_key_mask(value: str) -> bool:
+        return value == API_KEY_MASK
 
     @staticmethod
     def _validate_reasoning_config(
