@@ -76,7 +76,9 @@ class UDiffProcessor(BasePatchProcessor):
                 )
 
             llm_client = await llm_service.get_client(
-                model_name=LLMModel.GPT_4_1_MINI, temperature=Decimal("0")
+                model_name=LLMModel.GPT_4_1_MINI,
+                temperature=Decimal("0"),
+                reasoning_config={}, # this is indeed empty as it is for patching
             )
 
         patched_content = await self._apply_via_llm(
