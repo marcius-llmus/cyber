@@ -13,11 +13,11 @@ class LLM(BaseModel):
 
 
 class OpenAIReasoningConfig(BaseModel):
-    reasoning_effort: Literal["low", "medium", "high"] = "medium"
+    reasoning_effort: Literal["minimal", "low", "medium", "high"] = "medium"
 
 
 class AnthropicReasoningConfig(BaseModel):
-    budget_tokens: int = Field(default=1024, ge=1024)
+    budget_tokens: int = Field(ge=1, lt=16000, default=8000)
     type: Literal["enabled"] = "enabled"
 
 
