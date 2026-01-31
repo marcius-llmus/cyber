@@ -127,10 +127,10 @@ GREP_IGNORE_CASE_DESCRIPTION = (
 )
 
 LIST_FILES_PATH_DESCRIPTION = """
-Directory path(s) or glob pattern(s) to list within the active project.
+Directory path(s) to list within the active project.
 
 - Accepts a list of strings.
-- Each entry is treated as a project-relative directory (globs allowed).
+- Each entry is treated as a project-relative directory.
 - Defaults to '.' (project root).
 """
 

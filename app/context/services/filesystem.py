@@ -45,7 +45,7 @@ class FileSystemService:
         return await self.codebase_service.read_files(project.path, files)
 
     async def list_files(self, dir_paths: list[str]) -> list[str]:
-        """Lists files/dirs for one or more directory paths (or glob patterns) within the active project."""
+        """Lists files/dirs for one or more directory paths within the active project."""
         project = await self.project_service.get_active_project()
         if not project:
             raise ActiveProjectRequiredException(

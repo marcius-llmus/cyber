@@ -97,6 +97,13 @@ async def test_list_dir(temp_codebase):
     assert "utils.py" in results
 
 
+async def test_list_dir_does_not_support_glob_patterns(temp_codebase: Path):
+    service = CodebaseService()
+
+    with pytest.raises(ValueError, match=r"Directory not found"):
+        await service.list_dir(str(temp_codebase), "src/**")
+
+
 async def test_read_file(temp_codebase):
     """Test read_file returns content."""
     service = CodebaseService()
