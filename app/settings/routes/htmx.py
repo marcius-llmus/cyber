@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import HTMLResponse, Response
 
 from app.core.templating import templates
+from app.llms.exceptions import InvalidLLMReasoningConfigException
 from app.settings.dependencies import get_settings_page_service, get_settings_service
 from app.settings.exceptions import (
     ContextWindowExceededException,
@@ -31,15 +32,15 @@ async def get_settings_form(
     )
 
 
-@router.get("/api-key-input", response_class=HTMLResponse)
-async def get_api_key_input(
+@router.get("/llm-dependent-fields", response_class=HTMLResponse)
+async def get_llm_dependent_fields(
     request: Request,
     coding_llm_settings_id: int = Query(...),
     service: SettingsPageService = Depends(get_settings_page_service),
 ):
-    context = await service.get_api_key_input_data_by_id(coding_llm_settings_id)
+    context = await service.get_llm_dependent_fields_data_by_id(coding_llm_settings_id)
     return templates.TemplateResponse(
-        "settings/partials/api_key_input.html",
+        "settings/partials/llm_dependent_fields.html",
         {"request": request, **context},
     )
 
@@ -59,4 +60,6 @@ async def update_settings(
     except (SettingsNotFoundException, LLMSettingsNotFoundException) as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except ContextWindowExceededException as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except InvalidLLMReasoningConfigException as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Enum, Integer, String, UniqueConstraint
+from sqlalchemy import JSON, Column, Enum, Integer, String, UniqueConstraint
 
 from app.core.db import Base
 from app.llms.enums import LLMProvider, LLMRole
@@ -13,6 +13,8 @@ class LLMSettings(Base):
     # todo: we should move this to provider later so we don't need to mass update keys
     api_key = Column(String, nullable=True)
     context_window = Column(Integer, nullable=False)
+    visual_name = Column(String, nullable=False)
     active_role = Column(Enum(LLMRole), nullable=True, unique=True)
+    reasoning_config = Column(JSON, nullable=True)
 
     __table_args__ = (UniqueConstraint("model_name", name="_model_name_uc"),)

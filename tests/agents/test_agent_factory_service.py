@@ -48,6 +48,7 @@ class TestAgentFactoryService:
         llm_service_mock.get_client.assert_awaited_once_with(
             model_name=LLMModel(llm_settings_coder_mock.model_name),
             temperature=settings_snapshot.coding_llm_temperature,
+            reasoning_config=llm_settings_coder_mock.reasoning_config,
         )
         session_service_mock.get_operational_mode.assert_awaited_once_with(123)
         agent_context_service_mock.build_system_prompt.assert_awaited_once_with(

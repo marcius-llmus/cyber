@@ -1,4 +1,5 @@
 from decimal import Decimal
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -11,7 +12,9 @@ class LLMSettingsBase(BaseModel):
     model_name: LLMModel
     context_window: int
     provider: LLMProvider
+    visual_name: str
     api_key: str | None = None
+    reasoning_config: dict | None = None
 
 
 class LLMSettingsCreate(LLMSettingsBase):
@@ -26,6 +29,7 @@ class LLMSettingsRead(LLMSettingsBase):
 class LLMSettingsUpdate(BaseModel):
     context_window: int | None = None
     api_key: str | None = None
+    reasoning_config: dict[str, Any] | None = None
 
 
 class SettingsBase(BaseModel):

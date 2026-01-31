@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.enums import RepoMapMode
 from app.llms.enums import LLMModel, LLMRole
 from app.llms.factories import build_llm_service
 from app.patches.enums import PatchProcessorType
@@ -30,6 +31,7 @@ async def initialize_application_settings(db: AsyncSession) -> None:
                 LLMSettingsCreate(
                     model_name=llm.model_name,
                     provider=llm.provider,
+                    visual_name=llm.visual_name,
                     context_window=llm.default_context_window,
                     api_key=None,
                 )
@@ -66,6 +68,7 @@ async def initialize_application_settings(db: AsyncSession) -> None:
             diff_patches_auto_open=True,
             diff_patches_auto_apply=True,
             diff_patch_processor_type=PatchProcessorType.CODEX_APPLY,
+            repomap_mode=RepoMapMode.TREE,
         )
     )
     await db.commit()

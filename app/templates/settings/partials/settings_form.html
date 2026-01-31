@@ -8,20 +8,22 @@
                     <select
                         name="coding_llm_settings_id"
                         class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm"
-                        hx-get="/settings/api-key-input"
+                        hx-get="/settings/llm-dependent-fields"
                         hx-trigger="change"
-                        hx-target="#api-key-container"
+                        hx-target="#llm-dependent-fields"
                         hx-swap="outerHTML">
                         {% for option in llm_options %}
                             <option value="{{ option.id }}" {% if current_coder.id == option.id %}selected{% endif %}>
-                                {{ option.model_name }} - {{ option.provider }}
+                                {{ option.visual_name }} - {{ option.provider }}
                             </option>
                         {% endfor %}
                     </select>
                 </div>
-                {% with provider=current_coder.provider, api_key=current_coder.api_key %}
-                    {% include "settings/partials/api_key_input.html" %}
-                {% endwith %}
+                <div id="llm-dependent-fields">
+                    {% with provider=current_coder.provider.value, api_key=current_coder.api_key, current_coder=current_coder %}
+                        {% include "settings/partials/llm_dependent_fields.html" %}
+                    {% endwith %}
+                </div>
             </div>
         </div>
 
@@ -40,6 +42,7 @@
                     <label class="block text-sm font-medium text-gray-300 mb-2">Context Window</label>
                     <input type="number" name="coding_llm_settings.context_window" value="{{ current_coder.context_window }}" class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm">
                 </div>
+
                 <div>
                     <label class="block text-sm font-medium text-gray-300 mb-2">AST Token Limit</label>
                     <input type="number" name="ast_token_limit" value="{{ settings.ast_token_limit }}" class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm">

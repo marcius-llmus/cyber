@@ -1,0 +1,40 @@
+{% set rc = current_coder.reasoning_config or {} %}
+
+{% if provider == 'OPENAI' %}
+    <div class="col-span-2">
+        <label class="block text-sm font-medium text-gray-300 mb-2">Reasoning Effort (OpenAI)</label>
+        <select name="coding_llm_settings.reasoning_config.reasoning_effort" class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm">
+            <option value="low" {% if rc.get('reasoning_effort') == 'low' %}selected{% endif %}>Low</option>
+            <option value="medium" {% if rc.get('reasoning_effort') == 'medium' %}selected{% endif %}>Medium</option>
+            <option value="high" {% if rc.get('reasoning_effort') == 'high' %}selected{% endif %}>High</option>
+            <option value="minimal" {% if rc.get('reasoning_effort') == 'minimal' %}selected{% endif %}>Minimal</option>
+        </select>
+    </div>
+{% elif provider == 'GOOGLE' %}
+    <div class="col-span-2">
+        <label class="block text-sm font-medium text-gray-300 mb-2">Thinking Level (Gemini)</label>
+        <select name="coding_llm_settings.reasoning_config.thinking_level" class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm">
+            <option value="MINIMAL" {% if rc.get('thinking_level') == 'MINIMAL' %}selected{% endif %}>Minimal</option>
+            <option value="LOW" {% if rc.get('thinking_level') == 'LOW' %}selected{% endif %}>Low</option>
+            <option value="MEDIUM" {% if rc.get('thinking_level') == 'MEDIUM' %}selected{% endif %}>Medium</option>
+            <option value="HIGH" {% if rc.get('thinking_level') == 'HIGH' %}selected{% endif %}>High</option>
+        </select>
+    </div>
+{% elif provider == 'ANTHROPIC' %}
+    <div class="col-span-2">
+        <label class="block text-sm font-medium text-gray-300 mb-2">Reasoning (Claude)</label>
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block text-xs font-medium text-gray-400 mb-2">Mode</label>
+                <select name="coding_llm_settings.reasoning_config.type" class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm">
+                    <option value="enabled" {% if rc.get('type') == 'enabled' %}selected{% endif %}>Enabled</option>
+                    <option value="disabled" {% if rc.get('type') == 'disabled' %}selected{% endif %}>Disabled</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-400 mb-2">Budget Tokens</label>
+                <input type="number" name="coding_llm_settings.reasoning_config.budget_tokens" value="{{ rc.get('budget_tokens') }}" min="1" max="16000" class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm">
+            </div>
+        </div>
+    </div>
+{% endif %}

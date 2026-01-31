@@ -39,6 +39,7 @@ class AgentFactoryService:
         llm = await self.llm_service.get_client(
             model_name=LLMModel(coder_settings.model_name),
             temperature=settings_snapshot.coding_llm_temperature,
+            reasoning_config=coder_settings.reasoning_config,
         )
 
         # todo: we shall refact to have per session project or what ever configs, which means that we must centralize

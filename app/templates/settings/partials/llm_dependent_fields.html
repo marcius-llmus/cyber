@@ -1,0 +1,11 @@
+<div id="llm-dependent-fields">
+    {% with provider=provider, api_key=api_key %}
+        {% include "settings/partials/api_key_input.html" %}
+    {% endwith %}
+
+    <div id="reasoning-fields" class="grid grid-cols-2 gap-4 mt-4">
+        {% with provider=provider, current_coder=current_coder %}
+            {% include "settings/partials/reasoning_fields.html" %}
+        {% endwith %}
+    </div>
+</div>

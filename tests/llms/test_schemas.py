@@ -13,12 +13,14 @@ def test_llm_schema__accepts_valid_payload():
         - fields are accessible
     """
     model = LLM(
-        model_name=LLMModel.GPT_4O,
+        model_name=LLMModel.GPT_4_1,
         provider=LLMProvider.OPENAI,
         default_context_window=128_000,
+        visual_name="GPT-4.1",
+        reasoning={"reasoning_effort": "medium"},
     )
 
-    assert model.model_name == LLMModel.GPT_4O
+    assert model.model_name == LLMModel.GPT_4_1
     assert model.provider == LLMProvider.OPENAI
     assert model.default_context_window == 128_000
 
@@ -38,9 +40,11 @@ def test_llm_schema__rejects_invalid_field_types_or_values(field_name: str, bad_
         - pydantic raises validation error
     """
     payload = {
-        "model_name": LLMModel.GPT_4O,
+        "model_name": LLMModel.GPT_4_1,
         "provider": LLMProvider.OPENAI,
         "default_context_window": 128_000,
+        "visual_name": "GPT-4.1",
+        "reasoning": {"reasoning_effort": "medium"},
         field_name: bad_value,
     }
 
@@ -63,7 +67,9 @@ def test_llm_schema__default_context_window__rejects_non_positive(value: int):
     """
     with pytest.raises(ValidationError):
         LLM(
-            model_name=LLMModel.GPT_4O,
+            model_name=LLMModel.GPT_4_1,
             provider=LLMProvider.OPENAI,
             default_context_window=value,
+            visual_name="GPT-4.1",
+            reasoning={"reasoning_effort": "medium"},
         )
