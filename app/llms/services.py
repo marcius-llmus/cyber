@@ -1,20 +1,30 @@
 import functools
 import logging
 from decimal import Decimal
+from typing import Any, Type
 
 from async_lru import alru_cache
 from llama_index.llms.anthropic import Anthropic
 from llama_index.llms.google_genai import GoogleGenAI
 from llama_index.llms.openai import OpenAI
 from llama_index_instrumentation.dispatcher import instrument_tags
+from pydantic import BaseModel, ValidationError
 
 from app.core.config import settings
 from app.llms.enums import LLMModel, LLMProvider, LLMRole
-from app.llms.exceptions import MissingLLMApiKeyException
+from app.llms.exceptions import (
+    InvalidLLMReasoningConfigException,
+    MissingLLMApiKeyException,
+)
 from app.llms.models import LLMSettings
 from app.llms.registry import LLMFactory
 from app.llms.repositories import LLMSettingsRepository
-from app.llms.schemas import LLM
+from app.llms.schemas import (
+    AnthropicReasoningConfig,
+    GoogleReasoningConfig,
+    LLM,
+    OpenAIReasoningConfig,
+)
 from app.settings.exceptions import (
     ContextWindowExceededException,
     LLMSettingsNotFoundException,
@@ -148,7 +158,34 @@ class LLMService:
                 provider=db_obj.provider, api_key=settings_in.api_key
             )
 
+        if settings_in.reasoning_config is not None:
+            try:
+                self._validate_reasoning_config(
+                    provider=db_obj.provider,
+                    reasoning_config=settings_in.reasoning_config,
+                )
+            except ValidationError as e:
+                raise InvalidLLMReasoningConfigException(
+                    f"Invalid reasoning_config for provider={db_obj.provider}: {e}"
+                ) from e
+
         return await self.llm_settings_repo.update(db_obj=db_obj, obj_in=settings_in)
+
+    @staticmethod
+    def _validate_reasoning_config(
+        provider: LLMProvider, reasoning_config: dict[str, Any]
+    ) -> None:
+        schema: Type[BaseModel] | None = {
+            LLMProvider.OPENAI: OpenAIReasoningConfig,
+            LLMProvider.ANTHROPIC: AnthropicReasoningConfig,
+            LLMProvider.GOOGLE: GoogleReasoningConfig,
+        }.get(provider)
+
+        if schema is None:
+            return None
+
+        schema.model_validate(reasoning_config)
+        return None
 
     async def update_coding_llm(
         self, llm_id: int, settings_in: LLMSettingsUpdate
@@ -160,7 +197,7 @@ class LLMService:
         return await self.update_settings(llm_id=llm_id, settings_in=settings_in)
 
     async def get_client(
-        self, model_name: LLMModel, temperature: Decimal
+        self, model_name: LLMModel, temperature: Decimal, reasoning_config: dict[str, Any]
     ) -> OpenAI | Anthropic | GoogleGenAI:
         """
         Hydrates a client using internal configuration.
@@ -176,22 +213,34 @@ class LLMService:
                 f"Missing API key for provider {llm_metadata.provider}. Please configure it in settings."
             )
 
-        return await self._get_client_instance(model_name, temperature, api_key)
+        return await self._get_client_instance(
+            model_name, 
+            temperature, 
+            api_key,
+            reasoning_config
+        )
 
     @alru_cache
     async def _get_client_instance(
-        self, model_name: LLMModel, temperature: float, api_key: str
+        self, 
+        model_name: LLMModel, 
+        temperature: float, 
+        api_key: str,
+        reasoning_config: dict | None = None,
     ):
         llm_metadata = await self.llm_factory.get_llm(model_name)
         provider = llm_metadata.provider
+        effective_reasoning = reasoning_config or llm_metadata.reasoning or {}
 
         if provider == LLMProvider.OPENAI:
+            additional_kwargs = {"stream_options": {"include_usage": True}}
             return InstrumentedOpenAI(
                 model=model_name,
                 temperature=temperature,
                 api_key=api_key,
                 timeout=settings.LLM_TIMEOUT,
-                additional_kwargs={"stream_options": {"include_usage": True}},
+                **effective_reasoning,
+                additional_kwargs=additional_kwargs,
             )
         elif provider == LLMProvider.ANTHROPIC:
             return InstrumentedAnthropic(
@@ -199,6 +248,7 @@ class LLMService:
                 temperature=temperature,
                 api_key=api_key,
                 timeout=settings.LLM_TIMEOUT,
+                **effective_reasoning,
             )
         elif provider == LLMProvider.GOOGLE:
             return InstrumentedGoogleGenAI(
@@ -206,6 +256,7 @@ class LLMService:
                 temperature=temperature,
                 api_key=api_key,
                 timeout=settings.LLM_TIMEOUT,
+                **effective_reasoning,
             )
         else:
             raise ValueError(f"Unsupported LLM provider: {provider}")
