@@ -3,7 +3,10 @@ from unittest.mock import AsyncMock
 import pytest
 
 from app.llms.enums import LLMModel, LLMProvider, LLMRole
-from app.llms.exceptions import MissingLLMApiKeyException
+from app.llms.exceptions import (
+    InvalidLLMReasoningConfigException,
+    MissingLLMApiKeyException,
+)
 from app.llms.models import LLMSettings
 from app.llms.schemas import LLM
 from app.settings.exceptions import (
@@ -20,8 +23,8 @@ async def test_llm_service__get_model_metadata__returns_llm_schema(llm_service):
         - returns an LLM schema
         - provider/default_context_window match the registry
     """
-    llm = await llm_service.get_model_metadata(LLMModel.GPT_4O)
-    assert llm.model_name == LLMModel.GPT_4O
+    llm = await llm_service.get_model_metadata(LLMModel.GPT_4_1)
+    assert llm.model_name == LLMModel.GPT_4_1
     assert llm.provider == LLMProvider.OPENAI
     assert llm.default_context_window > 0
 
@@ -271,7 +274,7 @@ async def test_llm_service__update_settings__api_key_enforced_one_key_per_provid
     "provider,model_name",
     [
         (LLMProvider.OPENAI, LLMModel.GPT_4_1_MINI),
-        (LLMProvider.ANTHROPIC, LLMModel.CLAUDE_OPUS_4_1),
+        (LLMProvider.ANTHROPIC, LLMModel.CLAUDE_OPUS_4_5),
         (LLMProvider.GOOGLE, LLMModel.GEMINI_2_5_FLASH),
     ],
 )
@@ -292,18 +295,24 @@ async def test_llm_service__get_client__hydrates_provider_specific_client(
     llm_service.llm_settings_repo.get_api_key_for_provider.return_value = "sk-test"
 
     fake_llm = LLM(
-        model_name=model_name, provider=provider, default_context_window=128000
+        model_name=model_name,
+        provider=provider,
+        default_context_window=128000,
+        visual_name="Test",
+        reasoning={},
     )
     mocker.patch.object(llm_service.llm_factory, "get_llm", return_value=fake_llm)
 
     # We override _get_client_instance to return our fake object,
     # but we want to ensure the service logic calls it with correct params.
     llm_service._get_client_instance = AsyncMock(return_value=fake_llm_client)
-    client = await llm_service.get_client(model_name, temperature=0.5)
+    client = await llm_service.get_client(
+        model_name, temperature=0.5, reasoning_config={}
+    )
 
     assert client == fake_llm_client
     llm_service._get_client_instance.assert_awaited_once_with(
-        model_name, 0.5, "sk-test"
+        model_name, 0.5, "sk-test", None
     )
 
 
@@ -322,6 +331,8 @@ async def test_llm_service__get_client__uses_provider_api_key_from_repo(
         model_name=LLMModel(llm_settings_openai_no_role_mock.model_name),
         provider=llm_settings_openai_no_role_mock.provider,
         default_context_window=128000,
+        visual_name="Test",
+        reasoning={},
     )
     mocker.patch.object(llm_service.llm_factory, "get_llm", return_value=fake_llm)
     # Configure mock repo
@@ -332,7 +343,9 @@ async def test_llm_service__get_client__uses_provider_api_key_from_repo(
     llm_service._get_client_instance = AsyncMock(return_value=fake_llm_client)  # type: ignore[method-assign]
 
     await llm_service.get_client(
-        LLMModel(llm_settings_openai_no_role_mock.model_name), temperature=0.2
+        LLMModel(llm_settings_openai_no_role_mock.model_name),
+        temperature=0.2,
+        reasoning_config={},
     )
 
     assert llm_service._get_client_instance.await_count == 1
@@ -351,6 +364,8 @@ async def test_llm_service__get_client__raises_when_api_key_missing(
         model_name=LLMModel.GPT_4_1_MINI,
         provider=LLMProvider.OPENAI,
         default_context_window=128000,
+        visual_name="Test",
+        reasoning={},
     )
     mocker.patch.object(llm_service.llm_factory, "get_llm", return_value=fake_llm)
 
@@ -360,7 +375,9 @@ async def test_llm_service__get_client__raises_when_api_key_missing(
     llm_service.llm_settings_repo.get_api_key_for_provider = _missing_key  # type: ignore[method-assign]
 
     with pytest.raises(MissingLLMApiKeyException):
-        await llm_service.get_client(LLMModel.GPT_4_1_MINI, temperature=0.2)
+        await llm_service.get_client(
+            LLMModel.GPT_4_1_MINI, temperature=0.2, reasoning_config={}
+        )
 
 
 async def test_llm_service__get_client__raises_on_unsupported_provider(
@@ -380,8 +397,10 @@ async def test_llm_service__get_client__raises_on_unsupported_provider(
         (),
         {
             "provider": _FakeProvider("FAKE"),
-            "model_name": LLMModel.GPT_4O,
+            "model_name": LLMModel.GPT_4_1,
             "default_context_window": 1,
+            "visual_name": "Fake",
+            "reasoning": {},
         },
     )
     mocker.patch.object(llm_service.llm_factory, "get_llm", return_value=fake_llm)
@@ -391,5 +410,188 @@ async def test_llm_service__get_client__raises_on_unsupported_provider(
 
     with pytest.raises(ValueError):
         await llm_service._get_client_instance(
-            LLMModel.GPT_4O, temperature=0.2, api_key="sk-test"
+            LLMModel.GPT_4_1, temperature=0.2, api_key="sk-test"
         )
+
+
+async def test_llm_service__get_client__freezes_reasoning_config_before_cached_call(
+    llm_service,
+    mocker,
+):
+    """Scenario: get_client is called with a reasoning_config dict.
+
+    Asserts:
+        - LLMService passes a tuple of items (hashable) to _get_client_instance
+        - avoids dicts reaching the cached method
+    """
+    fake_llm = LLM(
+        model_name=LLMModel.GPT_4_1_MINI,
+        provider=LLMProvider.OPENAI,
+        default_context_window=128000,
+        visual_name="Test",
+        reasoning={},
+    )
+    mocker.patch.object(llm_service.llm_factory, "get_llm", return_value=fake_llm)
+    llm_service.llm_settings_repo.get_api_key_for_provider = AsyncMock(
+        return_value="sk-test"
+    )
+    llm_service._get_client_instance = AsyncMock(return_value=object())  # type: ignore[method-assign]
+
+    reasoning_config = {"reasoning_effort": "high"}
+    await llm_service.get_client(
+        model_name=LLMModel.GPT_4_1_MINI,
+        temperature=0.2,
+        reasoning_config=reasoning_config,
+    )
+
+    call_args = llm_service._get_client_instance.call_args.args
+    assert call_args[0] == LLMModel.GPT_4_1_MINI
+    assert call_args[1] == 0.2
+    assert call_args[2] == "sk-test"
+    assert isinstance(call_args[3], tuple)
+    assert call_args[3] == (("reasoning_effort", "high"),)
+
+
+async def test_llm_service__get_client__freezing_is_sorted_and_order_independent(
+    llm_service,
+    mocker,
+):
+    """Scenario: dict insertion order differs.
+
+    Asserts:
+        - frozen tuple passed to _get_client_instance is sorted and stable
+    """
+    fake_llm = LLM(
+        model_name=LLMModel.GPT_4_1_MINI,
+        provider=LLMProvider.OPENAI,
+        default_context_window=128000,
+        visual_name="Test",
+        reasoning={},
+    )
+    mocker.patch.object(llm_service.llm_factory, "get_llm", return_value=fake_llm)
+    llm_service.llm_settings_repo.get_api_key_for_provider = AsyncMock(
+        return_value="sk-test"
+    )
+    llm_service._get_client_instance = AsyncMock(return_value=object())  # type: ignore[method-assign]
+
+    await llm_service.get_client(
+        model_name=LLMModel.GPT_4_1_MINI,
+        temperature=0.2,
+        reasoning_config={"b": 2, "a": 1},
+    )
+    first_key = llm_service._get_client_instance.call_args.args[3]
+
+    llm_service._get_client_instance.reset_mock()
+    await llm_service.get_client(
+        model_name=LLMModel.GPT_4_1_MINI,
+        temperature=0.2,
+        reasoning_config={"a": 1, "b": 2},
+    )
+    second_key = llm_service._get_client_instance.call_args.args[3]
+
+    assert first_key == (("a", 1), ("b", 2))
+    assert second_key == (("a", 1), ("b", 2))
+
+
+@pytest.mark.parametrize(
+    "provider,valid_payload,expected",
+    [
+        (
+            LLMProvider.OPENAI,
+            {"reasoning_effort": "high"},
+            {"reasoning_effort": "high"},
+        ),
+        (
+            LLMProvider.OPENAI,
+            {},
+            {"reasoning_effort": "medium"},
+        ),
+        (
+            LLMProvider.ANTHROPIC,
+            {"type": "enabled", "budget_tokens": 1},
+            {"type": "enabled", "budget_tokens": 1},
+        ),
+        (
+            LLMProvider.ANTHROPIC,
+            {"type": "enabled"}, # the default I spoke about in PR ...
+            {"type": "enabled", "budget_tokens": 8000},
+        ),
+        (
+            LLMProvider.ANTHROPIC,
+            {"type": "enabled", "budget_tokens": 16000},
+            {"type": "enabled", "budget_tokens": 16000},
+        ),
+        (
+            LLMProvider.GOOGLE,
+            {"thinking_level": "LOW"},
+            {"thinking_level": "LOW"},
+        ),
+        (
+            LLMProvider.GOOGLE,
+            {},
+            {"thinking_level": "LOW"},
+        ),
+    ],
+)
+async def test_llm_service__update_settings__valid_reasoning_config_is_validated_and_normalized(
+    provider: LLMProvider,
+    valid_payload: dict,
+    expected: dict,
+    llm_service,
+    llm_settings_mock,
+):
+    """Scenario: update_settings called with valid reasoning_config.
+
+    Asserts:
+        - service validates according to provider schema
+        - repo.update receives normalized dict
+    """
+    llm_settings_mock.provider = provider
+    llm_settings_mock.model_name = str(LLMModel.GPT_4_1_MINI)
+    llm_service.llm_settings_repo.get = AsyncMock(return_value=llm_settings_mock)
+    llm_service.llm_settings_repo.update = AsyncMock(return_value=llm_settings_mock)
+
+    await llm_service.update_settings(
+        llm_id=llm_settings_mock.id,
+        settings_in=LLMSettingsUpdate(reasoning_config=valid_payload),
+    )
+
+    update_kwargs = llm_service.llm_settings_repo.update.call_args.kwargs
+    assert update_kwargs["db_obj"] is llm_settings_mock
+    assert update_kwargs["obj_in"].reasoning_config == expected
+
+
+@pytest.mark.parametrize(
+    "provider,invalid_payload",
+    [
+        (LLMProvider.OPENAI, {"reasoning_effort": "nope"}),
+        (LLMProvider.ANTHROPIC, {"type": "enabled", "budget_tokens": 0}),
+        (LLMProvider.ANTHROPIC, {"type": "enabled", "budget_tokens": 16001}),
+        (LLMProvider.ANTHROPIC, {"type": "irineuvcnsabenemeu", "budget_tokens": 16000}),
+        (LLMProvider.GOOGLE, {"thinking_level": "NOPE"}),
+    ],
+)
+async def test_llm_service__update_settings__invalid_reasoning_config_raises_invalid_llm_reasoning_config_exception(
+    provider: LLMProvider,
+    invalid_payload: dict,
+    llm_service,
+    llm_settings_mock,
+):
+    """Scenario: update_settings called with invalid reasoning_config.
+
+    Asserts:
+        - raises InvalidLLMReasoningConfigException
+        - repo.update is not called
+    """
+    llm_settings_mock.provider = provider
+    llm_settings_mock.model_name = str(LLMModel.GPT_4_1_MINI)
+    llm_service.llm_settings_repo.get = AsyncMock(return_value=llm_settings_mock)
+    llm_service.llm_settings_repo.update = AsyncMock(return_value=llm_settings_mock)
+
+    with pytest.raises(InvalidLLMReasoningConfigException):
+        await llm_service.update_settings(
+            llm_id=llm_settings_mock.id,
+            settings_in=LLMSettingsUpdate(reasoning_config=invalid_payload),
+        )
+
+    llm_service.llm_settings_repo.update.assert_not_awaited()
