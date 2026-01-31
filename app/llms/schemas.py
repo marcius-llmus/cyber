@@ -17,8 +17,8 @@ class OpenAIReasoningConfig(BaseModel):
 
 
 class AnthropicReasoningConfig(BaseModel):
-    budget_tokens: int = Field(ge=1, lt=16000, default=8000)
-    type: Literal["enabled"] = "enabled"
+    type: Literal["enabled", "disabled"] = "enabled"
+    budget_tokens: int = Field(ge=1, le=16000, default=8000)
 
 
 class GoogleReasoningConfig(BaseModel):
