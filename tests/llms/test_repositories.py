@@ -51,7 +51,7 @@ async def test_llm_settings_repository__get_all__returns_all_rows(
     "provider,model_name",
     [
         (LLMProvider.OPENAI, LLMModel.GPT_4_1_MINI),
-        (LLMProvider.ANTHROPIC, LLMModel.CLAUDE_OPUS_4_1),
+        (LLMProvider.ANTHROPIC, LLMModel.CLAUDE_OPUS_4_5),
         (LLMProvider.GOOGLE, LLMModel.GEMINI_2_5_FLASH),
     ],
 )
@@ -74,6 +74,7 @@ async def test_llm_settings_repository__update_api_key_for_provider__updates_all
             provider=provider,
             api_key="old-key",
             context_window=1000,
+            visual_name=str(model_name),
             active_role=None,
         )
     )
@@ -91,7 +92,7 @@ async def test_llm_settings_repository__update_api_key_for_provider__updates_all
     "provider,model_name",
     [
         (LLMProvider.OPENAI, LLMModel.GPT_4_1_MINI),
-        (LLMProvider.ANTHROPIC, LLMModel.CLAUDE_OPUS_4_1),
+        (LLMProvider.ANTHROPIC, LLMModel.CLAUDE_OPUS_4_5),
         (LLMProvider.GOOGLE, LLMModel.GEMINI_2_5_FLASH),
     ],
 )
@@ -114,6 +115,7 @@ async def test_llm_settings_repository__update_api_key_for_provider__can_clear_k
             provider=provider,
             api_key="sk-existing",
             context_window=1000,
+            visual_name=str(model_name),
             active_role=None,
         )
     )
@@ -127,7 +129,7 @@ async def test_llm_settings_repository__update_api_key_for_provider__can_clear_k
     "provider,model_name",
     [
         (LLMProvider.OPENAI, LLMModel.GPT_4_1_MINI),
-        (LLMProvider.ANTHROPIC, LLMModel.CLAUDE_OPUS_4_1),
+        (LLMProvider.ANTHROPIC, LLMModel.CLAUDE_OPUS_4_5),
         (LLMProvider.GOOGLE, LLMModel.GEMINI_2_5_FLASH),
     ],
 )
@@ -149,6 +151,7 @@ async def test_llm_settings_repository__get_api_key_for_provider__returns_first_
             provider=provider,
             api_key=api_key,
             context_window=1000,
+            visual_name=str(model_name),
             active_role=None,
         )
     )
@@ -173,10 +176,11 @@ async def test_llm_settings_repository__get_api_key_for_provider__returns_none_w
 
     db_session.add(
         LLMSettings(
-            model_name=LLMModel.GPT_4O,
+            model_name=LLMModel.GPT_4_1,
             provider=LLMProvider.OPENAI,
             api_key=None,
             context_window=128000,
+            visual_name="GPT-4.1",
             active_role=None,
         )
     )
@@ -263,3 +267,30 @@ async def test_llm_settings_repository__set_active_role__no_commit_side_effects(
     fresh_row = await llm_settings_repository.get_by_model_name(target_model_name)
     assert fresh_row is not None
     assert fresh_row.active_role is None
+
+
+async def test_llm_settings_repository__reasoning_config_round_trip_persists_json(
+    llm_settings_repository: LLMSettingsRepository,
+    db_session,
+):
+    """Scenario: persist reasoning_config on an LLMSettings row.
+
+    Asserts:
+        - reasoning_config round-trips through the DB JSON column
+    """
+    obj = LLMSettings(
+        model_name=LLMModel.GPT_4_1_MINI,
+        provider=LLMProvider.OPENAI,
+        api_key="sk-test",
+        context_window=128000,
+        visual_name="GPT-4.1 Mini",
+        active_role=None,
+        reasoning_config={"reasoning_effort": "high"},
+    )
+    db_session.add(obj)
+    await db_session.flush()
+    await db_session.refresh(obj)
+
+    fetched = await llm_settings_repository.get_by_model_name(obj.model_name)
+    assert fetched is not None
+    assert fetched.reasoning_config == {"reasoning_effort": "high"}
