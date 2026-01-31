@@ -13,6 +13,7 @@ class LLMSettings(Base):
     # todo: we should move this to provider later so we don't need to mass update keys
     api_key = Column(String, nullable=True)
     context_window = Column(Integer, nullable=False)
+    visual_name = Column(String, nullable=False)
     active_role = Column(Enum(LLMRole), nullable=True, unique=True)
     reasoning_config = Column(JSON, nullable=True)
 
