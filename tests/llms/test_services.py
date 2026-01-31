@@ -513,7 +513,7 @@ async def test_llm_service__get_client__freezing_is_sorted_and_order_independent
         ),
         (
             LLMProvider.ANTHROPIC,
-            {"type": "enabled"}, # the default I spoke about in PR ...
+            {"type": "enabled"},  # the default I spoke about in PR ...
             {"type": "enabled", "budget_tokens": 8000},
         ),
         (
@@ -588,7 +588,10 @@ async def test_llm_service__update_settings__invalid_reasoning_config_raises_inv
     llm_service.llm_settings_repo.get = AsyncMock(return_value=llm_settings_mock)
     llm_service.llm_settings_repo.update = AsyncMock(return_value=llm_settings_mock)
 
-    with pytest.raises(InvalidLLMReasoningConfigException):
+    with pytest.raises(
+        InvalidLLMReasoningConfigException,
+        match=r"Invalid reasoning_config for provider=",
+    ):
         await llm_service.update_settings(
             llm_id=llm_settings_mock.id,
             settings_in=LLMSettingsUpdate(reasoning_config=invalid_payload),

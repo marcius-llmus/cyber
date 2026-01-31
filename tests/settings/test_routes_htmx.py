@@ -1,16 +1,17 @@
 from unittest.mock import AsyncMock
 
+import pytest
+
 from app.llms.exceptions import InvalidLLMReasoningConfigException
-from app.settings.dependencies import get_settings_service
 from app.settings.schemas import SettingsUpdate
 
 
 class TestSettingsHtmxRoutes:
+    @pytest.mark.usefixtures("override_get_settings_service")
     def test_update_settings__accepts_reasoning_config_payload_and_calls_settings_service(
         self,
         client,
         settings_service_mock,
-        mocker,
     ):
         """POST /settings/ should accept coding_llm_settings.reasoning_config and delegate to SettingsService.
 
@@ -21,9 +22,6 @@ class TestSettingsHtmxRoutes:
         """
 
         settings_service_mock.update_settings = AsyncMock()
-        client.app.dependency_overrides[get_settings_service] = (
-            lambda: settings_service_mock
-        )
 
         payload = {
             "coding_llm_temperature": "0.70",
@@ -31,7 +29,11 @@ class TestSettingsHtmxRoutes:
             "coding_llm_settings": {"reasoning_config": {"reasoning_effort": "high"}},
         }
 
-        response = client.post("/settings/", json=payload)
+        response = client.post(
+            "/settings/",
+            json=payload,
+            headers={"HX-Request": "true"},
+        )
 
         assert response.status_code == 204
         assert response.headers.get("HX-Trigger") == "settingsSaved"
@@ -45,6 +47,7 @@ class TestSettingsHtmxRoutes:
             "reasoning_effort": "high"
         }
 
+    @pytest.mark.usefixtures("override_get_settings_service")
     def test_update_settings__returns_400_when_invalid_llm_reasoning_config_exception(
         self,
         client,
@@ -55,9 +58,6 @@ class TestSettingsHtmxRoutes:
         settings_service_mock.update_settings = AsyncMock(
             side_effect=InvalidLLMReasoningConfigException("Boom")
         )
-        client.app.dependency_overrides[get_settings_service] = (
-            lambda: settings_service_mock
-        )
 
         payload = {
             "coding_llm_temperature": "0.70",
@@ -67,7 +67,11 @@ class TestSettingsHtmxRoutes:
             },
         }
 
-        response = client.post("/settings/", json=payload)
+        response = client.post(
+            "/settings/",
+            json=payload,
+            headers={"HX-Request": "true"},
+        )
 
         assert response.status_code == 400
         assert response.json()["detail"] == "Boom"
