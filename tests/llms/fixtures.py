@@ -14,9 +14,9 @@ from app.llms.services import LLMService
 
 def _fake_llm_model_name_for_provider(provider: LLMProvider) -> LLMModel:
     if provider == LLMProvider.OPENAI:
-        return LLMModel.GPT_4O
+        return LLMModel.GPT_4_1
     if provider == LLMProvider.ANTHROPIC:
-        return LLMModel.CLAUDE_OPUS_4_1
+        return LLMModel.CLAUDE_OPUS_4_5
     if provider == LLMProvider.GOOGLE:
         return LLMModel.GEMINI_2_5_FLASH
     raise ValueError(f"Unsupported provider in test fixture: {provider}")
@@ -25,10 +25,11 @@ def _fake_llm_model_name_for_provider(provider: LLMProvider) -> LLMModel:
 @pytest.fixture
 async def llm_settings(db_session):
     obj = LLMSettings(
-        model_name=LLMModel.GPT_4O,
+        model_name=LLMModel.GPT_4_1,
         provider=LLMProvider.OPENAI,
         api_key="sk-openai",
         context_window=128000,
+        visual_name="GPT-4.1",
         active_role=None,
     )
     db_session.add(obj)
@@ -43,6 +44,7 @@ async def llm_settings_openai_no_role(db_session):
         provider=LLMProvider.OPENAI,
         api_key="sk-openai",
         context_window=128000,
+        visual_name="GPT-4.1 Mini",
         active_role=None,
     )
     db_session.add(obj)
@@ -53,10 +55,11 @@ async def llm_settings_openai_no_role(db_session):
 @pytest.fixture
 async def llm_settings_anthropic(db_session):
     obj = LLMSettings(
-        model_name=LLMModel.CLAUDE_OPUS_4_1,
+        model_name=LLMModel.CLAUDE_OPUS_4_5,
         provider=LLMProvider.ANTHROPIC,
         api_key="sk-anthropic",
         context_window=200000,
+        visual_name="Claude 4.5 Opus",
         active_role=None,
     )
     db_session.add(obj)
@@ -71,6 +74,7 @@ async def llm_settings_google(db_session):
         provider=LLMProvider.GOOGLE,
         api_key="sk-google",
         context_window=1000000,
+        visual_name="Gemini 2.5 Flash",
         active_role=None,
     )
     db_session.add(obj)
@@ -81,10 +85,11 @@ async def llm_settings_google(db_session):
 @pytest.fixture
 async def llm_settings_openai_coder(db_session):
     obj = LLMSettings(
-        model_name=LLMModel.GPT_4O,
+        model_name=LLMModel.GPT_4_1,
         provider=LLMProvider.OPENAI,
         api_key="sk-openai",
         context_window=128000,
+        visual_name="GPT-4.1",
         active_role=LLMRole.CODER,
     )
     db_session.add(obj)
@@ -142,10 +147,11 @@ def override_get_llm_service(client, llm_service_mock: MagicMock):
 def llm_settings_coder_mock() -> LLMSettings:
     return LLMSettings(
         id=100,
-        model_name=LLMModel.GPT_4O,
+        model_name=LLMModel.GPT_4_1,
         provider=LLMProvider.OPENAI,
         api_key="sk-openai",
         context_window=128000,
+        visual_name="GPT-4.1",
         active_role=LLMRole.CODER,
     )
 
@@ -158,13 +164,15 @@ async def llm_settings_seed_many(db_session) -> list[LLMSettings]:
             provider=LLMProvider.OPENAI,
             api_key="sk-openai",
             context_window=128000,
+            visual_name="GPT-4.1 Mini",
             active_role=LLMRole.CODER,
         ),
         LLMSettings(
-            model_name=LLMModel.CLAUDE_OPUS_4_1,
+            model_name=LLMModel.CLAUDE_OPUS_4_5,
             provider=LLMProvider.ANTHROPIC,
             api_key="sk-anthropic",
             context_window=200000,
+            visual_name="Claude 4.5 Opus",
             active_role=None,
         ),
         LLMSettings(
@@ -172,6 +180,7 @@ async def llm_settings_seed_many(db_session) -> list[LLMSettings]:
             provider=LLMProvider.GOOGLE,
             api_key="sk-google",
             context_window=1000000,
+            visual_name="Gemini 2.5 Flash",
             active_role=None,
         ),
     ]
@@ -184,10 +193,11 @@ async def llm_settings_seed_many(db_session) -> list[LLMSettings]:
 def llm_settings_mock() -> LLMSettings:
     return LLMSettings(
         id=1,
-        model_name=LLMModel.GPT_4O,
+        model_name=LLMModel.GPT_4_1,
         provider=LLMProvider.OPENAI,
         api_key="sk-openai",
         context_window=128000,
+        visual_name="GPT-4.1",
         active_role=None,
     )
 
@@ -200,6 +210,7 @@ def llm_settings_openai_no_role_mock() -> LLMSettings:
         provider=LLMProvider.OPENAI,
         api_key="sk-openai",
         context_window=128000,
+        visual_name="GPT-4.1 Mini",
         active_role=None,
     )
 
@@ -208,10 +219,11 @@ def llm_settings_openai_no_role_mock() -> LLMSettings:
 def llm_settings_anthropic_mock() -> LLMSettings:
     return LLMSettings(
         id=3,
-        model_name=LLMModel.CLAUDE_OPUS_4_1,
+        model_name=LLMModel.CLAUDE_OPUS_4_5,
         provider=LLMProvider.ANTHROPIC,
         api_key="sk-anthropic",
         context_window=200000,
+        visual_name="Claude 4.5 Opus",
         active_role=None,
     )
 
@@ -220,10 +232,11 @@ def llm_settings_anthropic_mock() -> LLMSettings:
 def llm_settings_openai_coder_mock() -> LLMSettings:
     return LLMSettings(
         id=4,
-        model_name=LLMModel.GPT_4O,
+        model_name=LLMModel.GPT_4_1,
         provider=LLMProvider.OPENAI,
         api_key="sk-openai",
         context_window=128000,
+        visual_name="GPT-4.1",
         active_role=LLMRole.CODER,
     )
 
@@ -237,14 +250,16 @@ def llm_settings_seed_many_mock() -> list[LLMSettings]:
             provider=LLMProvider.OPENAI,
             api_key="sk-openai",
             context_window=128000,
+            visual_name="GPT-4.1 Mini",
             active_role=LLMRole.CODER,
         ),
         LLMSettings(
             id=11,
-            model_name=LLMModel.CLAUDE_OPUS_4_1,
+            model_name=LLMModel.CLAUDE_OPUS_4_5,
             provider=LLMProvider.ANTHROPIC,
             api_key="sk-anthropic",
             context_window=200000,
+            visual_name="Claude 4.5 Opus",
             active_role=None,
         ),
         LLMSettings(
@@ -253,6 +268,7 @@ def llm_settings_seed_many_mock() -> list[LLMSettings]:
             provider=LLMProvider.GOOGLE,
             api_key="sk-google",
             context_window=1000000,
+            visual_name="Gemini 2.5 Flash",
             active_role=None,
         ),
     ]
