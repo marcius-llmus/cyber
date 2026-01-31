@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Enum, Integer, String, UniqueConstraint, JSON
+from sqlalchemy import JSON, Column, Enum, Integer, String, UniqueConstraint
 
 from app.core.db import Base
 from app.llms.enums import LLMProvider, LLMRole

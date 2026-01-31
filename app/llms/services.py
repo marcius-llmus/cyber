@@ -1,7 +1,7 @@
 import functools
 import logging
 from decimal import Decimal
-from typing import Any, Type
+from typing import Any
 
 from async_lru import alru_cache
 from llama_index.llms.anthropic import Anthropic
@@ -20,9 +20,9 @@ from app.llms.models import LLMSettings
 from app.llms.registry import LLMFactory
 from app.llms.repositories import LLMSettingsRepository
 from app.llms.schemas import (
+    LLM,
     AnthropicReasoningConfig,
     GoogleReasoningConfig,
-    LLM,
     OpenAIReasoningConfig,
 )
 from app.settings.exceptions import (
@@ -175,7 +175,7 @@ class LLMService:
     def _validate_reasoning_config(
         provider: LLMProvider, reasoning_config: dict[str, Any]
     ) -> dict[str, Any]:
-        schema: Type[BaseModel] | None = {
+        schema: type[BaseModel] | None = {
             LLMProvider.OPENAI: OpenAIReasoningConfig,
             LLMProvider.ANTHROPIC: AnthropicReasoningConfig,
             LLMProvider.GOOGLE: GoogleReasoningConfig,
@@ -197,7 +197,10 @@ class LLMService:
         return await self.update_settings(llm_id=llm_id, settings_in=settings_in)
 
     async def get_client(
-        self, model_name: LLMModel, temperature: Decimal, reasoning_config: dict[str, Any]
+        self,
+        model_name: LLMModel,
+        temperature: Decimal,
+        reasoning_config: dict[str, Any],
     ) -> OpenAI | Anthropic | GoogleGenAI:
         """
         Hydrates a client using internal configuration.
@@ -214,17 +217,14 @@ class LLMService:
             )
 
         return await self._get_client_instance(
-            model_name, 
-            temperature, 
-            api_key,
-            reasoning_config
+            model_name, temperature, api_key, reasoning_config
         )
 
     @alru_cache
     async def _get_client_instance(
-        self, 
-        model_name: LLMModel, 
-        temperature: float, 
+        self,
+        model_name: LLMModel,
+        temperature: float,
         api_key: str,
         reasoning_config: dict | None = None,
     ):
