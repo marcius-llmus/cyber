@@ -218,19 +218,19 @@ class LLMService:
 
         # note: small hack. we freeze the dict so the alru_cache keeps working
         # even with the addition of more variables like reasoning params, it still worth caching
-        reasoning_config = self._freeze_reasoning_config(reasoning_config)
+        frozen_reasoning_config = self._freeze_reasoning_config(reasoning_config)
 
         return await self._get_client_instance(
-            model_name, temperature, api_key, reasoning_config
+            model_name, temperature, api_key, frozen_reasoning_config
         )
 
     @staticmethod
     def _freeze_reasoning_config(
         reasoning_config: dict[str, Any] | None,
-    ) -> tuple[tuple[str, Any], ...]:
-        if not reasoning_config:
-            return tuple()
-        return tuple(sorted(reasoning_config.items()))
+    ) -> tuple[tuple[str, Any], ...] | None:
+        if to_freeze_reasoning_config := reasoning_config:
+            return tuple(sorted(to_freeze_reasoning_config.items()))
+        return None
 
     @alru_cache
     async def _get_client_instance(
