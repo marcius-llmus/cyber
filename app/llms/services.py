@@ -164,7 +164,7 @@ class LLMService:
                     provider=db_obj.provider,
                     reasoning_config=settings_in.reasoning_config,
                 )
-            except ValidationError as e:
+            except (ValidationError, InvalidLLMReasoningConfigException) as e:
                 raise InvalidLLMReasoningConfigException(
                     f"Invalid reasoning_config for provider={db_obj.provider}: {e}"
                 ) from e
@@ -182,7 +182,9 @@ class LLMService:
         }.get(provider)
 
         if schema is None:
-            return reasoning_config
+            raise InvalidLLMReasoningConfigException(
+                f"Invalid reasoning_config for provider={provider}: unsupported provider"
+            )
 
         model = schema.model_validate(reasoning_config)
         return model.model_dump()

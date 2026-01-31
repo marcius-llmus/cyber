@@ -598,3 +598,34 @@ async def test_llm_service__update_settings__invalid_reasoning_config_raises_inv
         )
 
     llm_service.llm_settings_repo.update.assert_not_awaited()
+
+
+async def test_llm_service__update_settings__unsupported_provider_raises_invalid_llm_reasoning_config_exception(
+    llm_service,
+    llm_settings_mock,
+):
+    """Scenario: LLMSettings.provider is not one of the supported providers.
+
+    Asserts:
+        - raises InvalidLLMReasoningConfigException
+        - repo.update is not called
+    """
+
+    class _FakeProvider(str):
+        pass
+
+    llm_settings_mock.provider = _FakeProvider("FAKE")
+    llm_settings_mock.model_name = str(LLMModel.GPT_4_1_MINI)
+    llm_service.llm_settings_repo.get = AsyncMock(return_value=llm_settings_mock)
+    llm_service.llm_settings_repo.update = AsyncMock(return_value=llm_settings_mock)
+
+    with pytest.raises(
+        InvalidLLMReasoningConfigException,
+        match=r"Invalid reasoning_config for provider=",
+    ):
+        await llm_service.update_settings(
+            llm_id=llm_settings_mock.id,
+            settings_in=LLMSettingsUpdate(reasoning_config={"any": "value"}),
+        )
+
+    llm_service.llm_settings_repo.update.assert_not_awaited()
