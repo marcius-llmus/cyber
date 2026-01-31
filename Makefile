@@ -22,7 +22,6 @@ init:
 	@# Check for prerequisites
 	@command -v git >/dev/null 2>&1 || { echo >&2 "Error: git is not installed."; exit 1; }
 	@command -v $(ENGINE) >/dev/null 2>&1 || { echo >&2 "Error: $(ENGINE) is not installed."; exit 1; }
-	@command -v uv >/dev/null 2>&1 || { echo >&2 "Error: uv is not installed."; exit 1; }
 
 format:
 	@$(PYTHON) ruff check . --fix
@@ -47,10 +46,11 @@ logs: init
 	@$(COMPOSE) logs -f
 
 build: init
-	@-$(CLEAN_CMD)
+	@$(CLEAN_CMD)
 	@$(COMPOSE) build
 
 update: init
 	@git pull origin master
 	@$(COMPOSE) down
+	@$(CLEAN_CMD)
 	@$(COMPOSE) build --no-cache
