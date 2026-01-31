@@ -58,8 +58,10 @@ class SettingsPageService:
         api_key = await self.llm_service.llm_settings_repo.get_api_key_for_provider(
             llm_settings.provider
         )
+
+        masked_api_key = "######################" if api_key else ""
         return {
             "provider": llm_settings.provider.value,
-            "api_key": api_key,
+            "api_key": masked_api_key,
             "current_coder": llm_settings,
         }

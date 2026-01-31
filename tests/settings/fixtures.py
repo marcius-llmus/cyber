@@ -6,6 +6,7 @@ from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.llms.registry import LLMFactory
+from app.llms.services import LLMService
 from app.settings.dependencies import get_settings_service
 from app.settings.models import Settings
 from app.settings.repositories import SettingsRepository
@@ -64,6 +65,17 @@ def settings_page_service_mock(mocker: MockerFixture) -> MagicMock:
 @pytest.fixture
 def llm_factory_instance_mock(mocker: MockerFixture) -> MagicMock:
     return mocker.create_autospec(LLMFactory, instance=True)
+
+
+@pytest.fixture
+def settings_page_service(
+    settings_service_mock: MagicMock,
+    llm_service: LLMService,
+) -> SettingsPageService:
+    return SettingsPageService(
+        settings_service=settings_service_mock,
+        llm_service=llm_service,
+    )
 
 
 @pytest.fixture
