@@ -89,10 +89,13 @@ async def test_build_llm_service__factory_is_cached_between_calls(
 @pytest.mark.parametrize(
     "model_name",
     [
-        LLMModel.GPT_4O,
+        LLMModel.GPT_4_1,
         LLMModel.GPT_4_1_MINI,
+        LLMModel.GPT_4_1_NANO,
         LLMModel.CLAUDE_SONNET_4_5,
+        LLMModel.CLAUDE_OPUS_4_5,
         LLMModel.GEMINI_2_5_FLASH_LITE,
+        LLMModel.GEMINI_2_5_PRO,
     ],
 )
 async def test_llm_factory__get_llm__returns_registry_entry(model_name: LLMModel):

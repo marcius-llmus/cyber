@@ -13,10 +13,11 @@ async def test_llm_settings__can_be_persisted(db_session):
         - required fields are stored
     """
     obj = LLMSettings(
-        model_name=LLMModel.GPT_4O,
+        model_name=LLMModel.GPT_4_1,
         provider=LLMProvider.OPENAI,
         api_key="sk-test",
         context_window=128000,
+        visual_name="GPT-4.1",
         active_role=None,
     )
     db_session.add(obj)
@@ -41,9 +42,10 @@ async def test_llm_settings__required_fields__enforced_by_db(
         - DB raises integrity error for nullable=False columns
     """
     valid_data = {
-        "model_name": LLMModel.GPT_4O,
+        "model_name": LLMModel.GPT_4_1,
         "provider": LLMProvider.OPENAI,
         "context_window": 128000,
+        "visual_name": "GPT-4.1",
     }
     valid_data.pop(field_name)
     llm = LLMSettings(**valid_data)
@@ -60,17 +62,19 @@ async def test_llm_settings__model_name_unique(db_session):
         - DB unique constraint rejects duplicates
     """
     first = LLMSettings(
-        model_name=LLMModel.GPT_4O,
+        model_name=LLMModel.GPT_4_1,
         provider=LLMProvider.OPENAI,
         context_window=128000,
+        visual_name="GPT-4.1",
     )
     db_session.add(first)
     await db_session.flush()
 
     second = LLMSettings(
-        model_name=LLMModel.GPT_4O,
+        model_name=LLMModel.GPT_4_1,
         provider=LLMProvider.OPENAI,
         context_window=128000,
+        visual_name="GPT-4.1",
     )
     db_session.add(second)
     with pytest.raises(IntegrityError):
@@ -84,18 +88,20 @@ async def test_llm_settings__active_role_unique(db_session):
         - DB unique constraint rejects duplicates
     """
     first = LLMSettings(
-        model_name=LLMModel.GPT_4O,
+        model_name=LLMModel.GPT_4_1,
         provider=LLMProvider.OPENAI,
         context_window=128000,
+        visual_name="GPT-4.1",
         active_role=LLMRole.CODER,
     )
     db_session.add(first)
     await db_session.flush()
 
     second = LLMSettings(
-        model_name=LLMModel.GPT_4_TURBO,
+        model_name=LLMModel.GPT_4_1_MINI,
         provider=LLMProvider.OPENAI,
         context_window=128000,
+        visual_name="GPT-4.1 Mini",
         active_role=LLMRole.CODER,
     )
     db_session.add(second)
@@ -110,10 +116,11 @@ async def test_llm_settings__api_key_nullable(db_session):
         - row persists successfully
     """
     llm = LLMSettings(
-        model_name=LLMModel.GPT_4O,
+        model_name=LLMModel.GPT_4_1,
         provider=LLMProvider.OPENAI,
         api_key=None,
         context_window=128000,
+        visual_name="GPT-4.1",
     )
     db_session.add(llm)
     await db_session.flush()

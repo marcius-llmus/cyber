@@ -189,6 +189,7 @@ class TestUDiffProcessor:
         llm_service_mock.get_client.assert_awaited_once_with(
             model_name=LLMModel.GPT_4_1_MINI,
             temperature=Decimal("0"),
+            reasoning_config={},
         )
 
     async def test_apply_file_diff_writes_patched_content(
