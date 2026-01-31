@@ -243,9 +243,7 @@ class LLMService:
         llm_metadata = await self.llm_factory.get_llm(model_name)
         provider = llm_metadata.provider
         effective_reasoning = (
-            dict(reasoning_config)
-            if reasoning_config
-            else llm_metadata.reasoning
+            dict(reasoning_config) if reasoning_config else llm_metadata.reasoning
         )
 
         if provider == LLMProvider.OPENAI:
