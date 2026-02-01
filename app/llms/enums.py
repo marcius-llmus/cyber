@@ -11,7 +11,7 @@ class LLMModel(StrEnum):
     # Anthropic
     CLAUDE_SONNET_4_5 = "claude-sonnet-4-5-20250929"
     CLAUDE_OPUS_4_5 = "claude-opus-4-5-20251101"
-    CLAUDE_HAIKU_4_5 = "claude-opus-4-5-20251101"
+    CLAUDE_HAIKU_4_5 = "claude-haiku-4-5-20251001"
 
     # Google
     GEMINI_3_PRO = "gemini-3-pro-preview"

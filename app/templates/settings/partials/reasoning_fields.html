@@ -28,13 +28,13 @@
             <div>
                 <label class="block text-xs font-medium text-gray-400 mb-2">Mode</label>
                 <select name="coding_llm_settings.reasoning_config.type" class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm">
-                    <option value="enabled" {% if rc.get('type') == 'enabled' %}selected{% endif %}>Enabled</option>
+                    <option value="enabled" {% if rc.get('type', 'enabled') == 'enabled' %}selected{% endif %}>Enabled</option>
                     <option value="disabled" {% if rc.get('type') == 'disabled' %}selected{% endif %}>Disabled</option>
                 </select>
             </div>
             <div>
                 <label class="block text-xs font-medium text-gray-400 mb-2">Budget Tokens</label>
-                <input type="number" name="coding_llm_settings.reasoning_config.budget_tokens" value="{{ rc.get('budget_tokens') }}" min="1" max="16000" class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm">
+                <input type="number" name="coding_llm_settings.reasoning_config.budget_tokens" value="{{ rc.get('budget_tokens') or 8000 }}" min="1" max="200000" class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm">
             </div>
         </div>
     </div>
