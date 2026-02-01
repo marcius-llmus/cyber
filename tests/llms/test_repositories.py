@@ -3,6 +3,7 @@ import pytest
 from app.llms.enums import LLMModel, LLMProvider, LLMRole
 from app.llms.models import LLMSettings
 from app.llms.repositories import LLMSettingsRepository
+from app.settings.schemas import LLMSettingsUpdate
 
 
 async def test_llm_settings_repository__get_by_model_name__returns_none_when_missing(
@@ -294,3 +295,42 @@ async def test_llm_settings_repository__reasoning_config_round_trip_persists_jso
     fetched = await llm_settings_repository.get_by_model_name(obj.model_name)
     assert fetched is not None
     assert fetched.reasoning_config == {"reasoning_effort": "high"}
+
+
+async def test_llm_settings_repository__update__excludes_api_key_and_reasoning_config_even_when_set(
+    llm_settings_repository: LLMSettingsRepository,
+    db_session,
+):
+    """Scenario: update() called with an LLMSettingsUpdate that includes excluded fields.
+
+    Asserts:
+        - api_key is not updated by BaseRepository.update (Field(exclude=True))
+        - reasoning_config is not updated by BaseRepository.update (Field(exclude=True))
+        - non-excluded fields (e.g., context_window) are updated
+    """
+
+    obj = LLMSettings(
+        model_name=LLMModel.GPT_4_1_MINI,
+        provider=LLMProvider.OPENAI,
+        api_key="sk-old",
+        context_window=128000,
+        visual_name="GPT-4.1 Mini",
+        active_role=None,
+        reasoning_config={"reasoning_effort": "high"},
+    )
+    db_session.add(obj)
+    await db_session.flush()
+    await db_session.refresh(obj)
+
+    updated = await llm_settings_repository.update(
+        db_obj=obj,
+        obj_in=LLMSettingsUpdate(
+            context_window=64000,
+            api_key="sk-new",
+            reasoning_config={"reasoning_effort": "low"},
+        ),
+    )
+
+    assert updated.context_window == 64000
+    assert updated.api_key == "sk-old"
+    assert updated.reasoning_config == {"reasoning_effort": "high"}
