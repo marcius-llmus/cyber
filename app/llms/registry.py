@@ -19,6 +19,13 @@ class LLMFactory:
             visual_name="Claude 4.5 Opus",
             reasoning={"type": "enabled", "budget_tokens": 8000},
         ),
+        LLMModel.CLAUDE_HAIKU_4_5: LLM(
+            model_name=LLMModel.CLAUDE_HAIKU_4_5,
+            provider=LLMProvider.ANTHROPIC,
+            default_context_window=200000,
+            visual_name="Claude 4.5 Haiku",
+            reasoning={"type": "enabled", "budget_tokens": 8000},
+        ),
         # Google
         LLMModel.GEMINI_3_PRO: LLM(
             model_name=LLMModel.GEMINI_3_PRO,

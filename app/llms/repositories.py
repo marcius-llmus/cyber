@@ -28,6 +28,16 @@ class LLMSettingsRepository(BaseRepository[LLMSettings]):
         )
         await self.db.flush()
 
+    async def update_reasoning_config_for_provider(
+        self, provider: LLMProvider, reasoning_config: dict | None
+    ) -> None:
+        await self.db.execute(
+            update(self.model)
+            .where(self.model.provider == provider)
+            .values(reasoning_config=reasoning_config)
+        )
+        await self.db.flush()
+
     async def get_api_key_for_provider(self, provider: LLMProvider) -> str | None:
         llm_setting_with_key = await self.db.execute(
             select(LLMSettings)

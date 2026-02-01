@@ -14,7 +14,7 @@ class LLM(BaseModel):
 
 
 class OpenAIReasoningConfig(BaseModel):
-    reasoning_effort: Literal["minimal", "low", "medium", "high"] = "medium"
+    reasoning_effort: Literal["none", "low", "medium", "high", "xhigh"] = "medium"
 
 
 class AnthropicReasoningConfig(BaseModel):
@@ -23,4 +23,4 @@ class AnthropicReasoningConfig(BaseModel):
 
 
 class GoogleReasoningConfig(BaseModel):
-    thinking_level: Literal["LOW", "HIGH", "MEDIUM", "MINIMAL"] = "LOW"
+    thinking_level: Literal["LOW", "MEDIUM", "HIGH"] = "LOW"

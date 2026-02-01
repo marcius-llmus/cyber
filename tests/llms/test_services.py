@@ -9,6 +9,7 @@ from app.llms.exceptions import (
 )
 from app.llms.models import LLMSettings
 from app.llms.schemas import LLM
+from app.settings.constants import API_KEY_MASK
 from app.settings.exceptions import (
     ContextWindowExceededException,
     LLMSettingsNotFoundException,
@@ -220,6 +221,26 @@ async def test_llm_service__update_settings__updates_api_key_for_provider_when_a
     llm_service.llm_settings_repo.update_api_key_for_provider.assert_awaited_once()
 
 
+async def test_llm_service__update_settings__does_not_overwrite_when_mask_placeholder_sent(
+    llm_settings_openai_no_role_mock,
+    llm_service,
+):
+    llm_service.llm_settings_repo.get = AsyncMock(
+        return_value=llm_settings_openai_no_role_mock
+    )
+    llm_service.llm_settings_repo.update = AsyncMock(
+        return_value=llm_settings_openai_no_role_mock
+    )
+    llm_service.llm_settings_repo.update_api_key_for_provider = AsyncMock()
+
+    await llm_service.update_settings(
+        llm_settings_openai_no_role_mock.id,
+        LLMSettingsUpdate(api_key=API_KEY_MASK),
+    )
+
+    llm_service.llm_settings_repo.update_api_key_for_provider.assert_not_awaited()
+
+
 async def test_llm_service__update_coding_llm__sets_role_then_updates_settings(
     llm_settings_openai_no_role_mock,
     llm_settings_anthropic_mock,
@@ -266,7 +287,8 @@ async def test_llm_service__update_settings__api_key_enforced_one_key_per_provid
     )
 
     llm_service.llm_settings_repo.update_api_key_for_provider.assert_awaited_once_with(
-        llm_settings_openai_no_role_mock.provider, "sk-openai-canonical"
+        provider=llm_settings_openai_no_role_mock.provider,
+        api_key="sk-openai-canonical",
     )
 
 
@@ -550,15 +572,24 @@ async def test_llm_service__update_settings__valid_reasoning_config_is_validated
     llm_settings_mock.model_name = str(LLMModel.GPT_4_1_MINI)
     llm_service.llm_settings_repo.get = AsyncMock(return_value=llm_settings_mock)
     llm_service.llm_settings_repo.update = AsyncMock(return_value=llm_settings_mock)
+    llm_service.llm_settings_repo.update_reasoning_config_for_provider = AsyncMock()
 
     await llm_service.update_settings(
         llm_id=llm_settings_mock.id,
         settings_in=LLMSettingsUpdate(reasoning_config=valid_payload),
     )
 
+    llm_service.llm_settings_repo.update_reasoning_config_for_provider.assert_awaited_once_with(
+        provider=provider,
+        reasoning_config=expected,
+    )
+
     update_kwargs = llm_service.llm_settings_repo.update.call_args.kwargs
     assert update_kwargs["db_obj"] is llm_settings_mock
-    assert update_kwargs["obj_in"].reasoning_config == expected
+
+    # we are sending the unvalidated reasoning to the model repo, then it would fail
+    # but repo itself won't save it as we use exclude on api and reasoning fields
+    # assert update_kwargs["obj_in"].reasoning_config == expected
 
 
 @pytest.mark.parametrize(
@@ -587,6 +618,7 @@ async def test_llm_service__update_settings__invalid_reasoning_config_raises_inv
     llm_settings_mock.model_name = str(LLMModel.GPT_4_1_MINI)
     llm_service.llm_settings_repo.get = AsyncMock(return_value=llm_settings_mock)
     llm_service.llm_settings_repo.update = AsyncMock(return_value=llm_settings_mock)
+    llm_service.llm_settings_repo.update_reasoning_config_for_provider = AsyncMock()
 
     with pytest.raises(
         InvalidLLMReasoningConfigException,
@@ -598,6 +630,7 @@ async def test_llm_service__update_settings__invalid_reasoning_config_raises_inv
         )
 
     llm_service.llm_settings_repo.update.assert_not_awaited()
+    llm_service.llm_settings_repo.update_reasoning_config_for_provider.assert_not_awaited()
 
 
 async def test_llm_service__update_settings__unsupported_provider_raises_invalid_llm_reasoning_config_exception(
@@ -618,6 +651,7 @@ async def test_llm_service__update_settings__unsupported_provider_raises_invalid
     llm_settings_mock.model_name = str(LLMModel.GPT_4_1_MINI)
     llm_service.llm_settings_repo.get = AsyncMock(return_value=llm_settings_mock)
     llm_service.llm_settings_repo.update = AsyncMock(return_value=llm_settings_mock)
+    llm_service.llm_settings_repo.update_reasoning_config_for_provider = AsyncMock()
 
     with pytest.raises(
         InvalidLLMReasoningConfigException,
@@ -629,3 +663,4 @@ async def test_llm_service__update_settings__unsupported_provider_raises_invalid
         )
 
     llm_service.llm_settings_repo.update.assert_not_awaited()
+    llm_service.llm_settings_repo.update_reasoning_config_for_provider.assert_not_awaited()

@@ -26,10 +26,13 @@ class LLMSettingsRead(LLMSettingsBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+# schemas are part of the business logic. if exclude was removed from reasoning for example
+# it would save an invalid data (see the save for provider logics)
 class LLMSettingsUpdate(BaseModel):
     context_window: int | None = None
-    api_key: str | None = None
-    reasoning_config: dict[str, Any] | None = None
+    # api_key and reasoning are updated for all providers. that's why we exclude (see service logic)
+    api_key: str | None = Field(default=None, exclude=True)
+    reasoning_config: dict[str, Any] | None = Field(default=None, exclude=True)
 
 
 class SettingsBase(BaseModel):

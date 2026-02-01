@@ -1,14 +1,15 @@
 import functools
 import logging
 from decimal import Decimal
-from typing import Any
+from typing import Any, Literal
 
 from async_lru import alru_cache
+from google.genai import types
 from llama_index.llms.anthropic import Anthropic
 from llama_index.llms.google_genai import GoogleGenAI
 from llama_index.llms.openai import OpenAI
 from llama_index_instrumentation.dispatcher import instrument_tags
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, Field, ValidationError
 
 from app.core.config import settings
 from app.llms.enums import LLMModel, LLMProvider, LLMRole
@@ -25,6 +26,7 @@ from app.llms.schemas import (
     GoogleReasoningConfig,
     OpenAIReasoningConfig,
 )
+from app.settings.constants import API_KEY_MASK
 from app.settings.exceptions import (
     ContextWindowExceededException,
     LLMSettingsNotFoundException,
@@ -75,6 +77,10 @@ class InstrumentedLLMMixin:
 
 
 class InstrumentedOpenAI(InstrumentedLLMMixin, OpenAI):
+    reasoning_effort: Literal["none", "low", "medium", "high", "xhigh"] | None = Field(
+        default=None,
+        description="The effort to use for reasoning models.",
+    )
     _provider_id: str = "openai"
     _api_flavor: str = "chat"
 
@@ -153,14 +159,16 @@ class LLMService:
                     f"Context window cannot exceed {model_meta.default_context_window} tokens."
                 )
 
-        if settings_in.api_key is not None:
+        if settings_in.api_key is not None and not self._is_api_key_mask(
+            settings_in.api_key
+        ):
             await self.llm_settings_repo.update_api_key_for_provider(
                 provider=db_obj.provider, api_key=settings_in.api_key
             )
 
         if settings_in.reasoning_config is not None:
             try:
-                settings_in.reasoning_config = self._validate_reasoning_config(
+                reasoning_config = self._validate_reasoning_config(
                     provider=db_obj.provider,
                     reasoning_config=settings_in.reasoning_config,
                 )
@@ -169,7 +177,16 @@ class LLMService:
                     f"Invalid reasoning_config for provider={db_obj.provider}: {e}"
                 ) from e
 
+            await self.llm_settings_repo.update_reasoning_config_for_provider(
+                provider=db_obj.provider,
+                reasoning_config=reasoning_config,
+            )
+
         return await self.llm_settings_repo.update(db_obj=db_obj, obj_in=settings_in)
+
+    @staticmethod
+    def _is_api_key_mask(value: str) -> bool:
+        return value == API_KEY_MASK
 
     @staticmethod
     def _validate_reasoning_config(
@@ -264,15 +281,27 @@ class LLMService:
                 temperature=temperature,
                 api_key=api_key,
                 timeout=settings.LLM_TIMEOUT,
-                **effective_reasoning,
+                thinking_dict=effective_reasoning,
             )
         elif provider == LLMProvider.GOOGLE:
+            # Gemini 2.x models do not support thinking_level so we skip
+            gemini_2_5_models = (
+                LLMModel.GEMINI_2_5_PRO,
+                LLMModel.GEMINI_2_5_FLASH,
+                LLMModel.GEMINI_2_5_FLASH_LITE,
+            )
+
+            gen_config_params = {"temperature": temperature}
+            if model_name not in gemini_2_5_models:
+                gen_config_params["thinking_config"] = types.ThinkingConfig(  # noqa
+                    **effective_reasoning
+                )
+
             return InstrumentedGoogleGenAI(
                 model=model_name,
-                temperature=temperature,
                 api_key=api_key,
                 timeout=settings.LLM_TIMEOUT,
-                **effective_reasoning,
+                generation_config=types.GenerateContentConfig(**gen_config_params),
             )
         else:
             raise ValueError(f"Unsupported LLM provider: {provider}")
