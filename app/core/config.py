@@ -19,8 +19,8 @@ class Settings(BaseSettings):
     BLUEPRINTS_ROOT_DIR: str = "workspace/blueprints"
     LOG_LEVEL: LogLevel = LogLevel.INFO
     OBSERVABILITY_ENABLED: bool = False
-    AGENT_MAX_ITERATIONS: int = 21  # todo: safety until stable enough (change later)
-    LLM_TIMEOUT: float = 600.0
+    AGENT_MAX_ITERATIONS: int = 50  # todo: safety until stable enough (change later)
+    LLM_TIMEOUT: float = 1200.0
 
     @property
     def queries_dir(self) -> str:
