@@ -1,14 +1,14 @@
 import functools
 import logging
 from decimal import Decimal
-from typing import Any
+from typing import Any, Optional, Literal
 
 from async_lru import alru_cache
 from llama_index.llms.anthropic import Anthropic
 from llama_index.llms.google_genai import GoogleGenAI
 from llama_index.llms.openai import OpenAI
 from llama_index_instrumentation.dispatcher import instrument_tags
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError, Field
 
 from app.core.config import settings
 from app.llms.enums import LLMModel, LLMProvider, LLMRole
@@ -76,6 +76,10 @@ class InstrumentedLLMMixin:
 
 
 class InstrumentedOpenAI(InstrumentedLLMMixin, OpenAI):
+    reasoning_effort: Optional[Literal["none", "low", "medium", "high", "xhigh"]] = Field(
+        default=None,
+        description="The effort to use for reasoning models.",
+    )
     _provider_id: str = "openai"
     _api_flavor: str = "chat"
 
