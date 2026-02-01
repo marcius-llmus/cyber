@@ -14,7 +14,7 @@ class LLM(BaseModel):
 
 
 class OpenAIReasoningConfig(BaseModel):
-    reasoning_effort: Literal["minimal", "low", "medium", "high"] = "medium"
+    reasoning_effort: Literal["none", "low", "medium", "high", "xhigh"] = "medium"
 
 
 class AnthropicReasoningConfig(BaseModel):
