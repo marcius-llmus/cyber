@@ -4,6 +4,7 @@ from decimal import Decimal
 from typing import Any, Optional, Literal
 
 from async_lru import alru_cache
+from google.genai import types
 from llama_index.llms.anthropic import Anthropic
 from llama_index.llms.google_genai import GoogleGenAI
 from llama_index.llms.openai import OpenAI
@@ -280,15 +281,18 @@ class LLMService:
                 temperature=temperature,
                 api_key=api_key,
                 timeout=settings.LLM_TIMEOUT,
-                **effective_reasoning,
+                thinking_dict=effective_reasoning,
             )
         elif provider == LLMProvider.GOOGLE:
+            generation_config = types.GenerateContentConfig(
+                temperature=temperature,
+                thinking_config=types.ThinkingConfig(**effective_reasoning),
+            )
             return InstrumentedGoogleGenAI(
                 model=model_name,
-                temperature=temperature,
                 api_key=api_key,
                 timeout=settings.LLM_TIMEOUT,
-                **effective_reasoning,
+                generation_config=generation_config,
             )
         else:
             raise ValueError(f"Unsupported LLM provider: {provider}")

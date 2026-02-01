@@ -2,6 +2,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
+from google.genai.types import ThinkingLevel
 from app.llms.enums import LLMModel, LLMProvider
 
 
@@ -23,4 +24,7 @@ class AnthropicReasoningConfig(BaseModel):
 
 
 class GoogleReasoningConfig(BaseModel):
-    thinking_level: Literal["LOW", "HIGH", "MEDIUM", "MINIMAL"] = "LOW"
+    thinking_level: ThinkingLevel = Field(
+        default=ThinkingLevel.MEDIUM,
+        description="Optional. The number of thoughts tokens that the model should generate.",
+    )
