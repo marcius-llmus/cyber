@@ -27,6 +27,9 @@ class SettingsService:
     async def update_settings(self, *, settings_in: SettingsUpdate) -> Settings:
         db_obj = await self.get_settings()
 
+        # we save everytime, even if it didn't really change, for simplicity
+        # if that was not the case, others params like reasoning would not be saved if llm didn't change
+        # I will keep this if check only for pattern, but it msut always be saved
         if settings_in.coding_llm_settings:
             # We treat the ID passed in the schema as the one to promote to CODER
             await self.llm_service.update_coding_llm(
