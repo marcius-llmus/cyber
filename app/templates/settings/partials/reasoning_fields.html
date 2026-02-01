@@ -4,10 +4,11 @@
     <div class="col-span-2">
         <label class="block text-sm font-medium text-gray-300 mb-2">Reasoning Effort (OpenAI)</label>
         <select name="coding_llm_settings.reasoning_config.reasoning_effort" class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm">
+            <option value="none" {% if rc.get('reasoning_effort') == 'none' %}selected{% endif %}>None</option>
             <option value="low" {% if rc.get('reasoning_effort') == 'low' %}selected{% endif %}>Low</option>
             <option value="medium" {% if rc.get('reasoning_effort') == 'medium' %}selected{% endif %}>Medium</option>
             <option value="high" {% if rc.get('reasoning_effort') == 'high' %}selected{% endif %}>High</option>
-            <option value="minimal" {% if rc.get('reasoning_effort') == 'minimal' %}selected{% endif %}>Minimal</option>
+            <option value="xhigh" {% if rc.get('reasoning_effort') == 'xhigh' %}selected{% endif %}>X-High</option>
         </select>
     </div>
 {% elif provider == 'GOOGLE' %}
