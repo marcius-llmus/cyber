@@ -9,12 +9,12 @@ from app.llms.exceptions import (
 )
 from app.llms.models import LLMSettings
 from app.llms.schemas import LLM
+from app.settings.constants import API_KEY_MASK
 from app.settings.exceptions import (
     ContextWindowExceededException,
     LLMSettingsNotFoundException,
 )
 from app.settings.schemas import LLMSettingsUpdate
-from app.settings.constants import API_KEY_MASK
 
 
 async def test_llm_service__get_model_metadata__returns_llm_schema(llm_service):
@@ -572,10 +572,16 @@ async def test_llm_service__update_settings__valid_reasoning_config_is_validated
     llm_settings_mock.model_name = str(LLMModel.GPT_4_1_MINI)
     llm_service.llm_settings_repo.get = AsyncMock(return_value=llm_settings_mock)
     llm_service.llm_settings_repo.update = AsyncMock(return_value=llm_settings_mock)
+    llm_service.llm_settings_repo.update_reasoning_config_for_provider = AsyncMock()
 
     await llm_service.update_settings(
         llm_id=llm_settings_mock.id,
         settings_in=LLMSettingsUpdate(reasoning_config=valid_payload),
+    )
+
+    llm_service.llm_settings_repo.update_reasoning_config_for_provider.assert_awaited_once_with(
+        provider=provider,
+        reasoning_config=expected,
     )
 
     update_kwargs = llm_service.llm_settings_repo.update.call_args.kwargs
@@ -609,6 +615,7 @@ async def test_llm_service__update_settings__invalid_reasoning_config_raises_inv
     llm_settings_mock.model_name = str(LLMModel.GPT_4_1_MINI)
     llm_service.llm_settings_repo.get = AsyncMock(return_value=llm_settings_mock)
     llm_service.llm_settings_repo.update = AsyncMock(return_value=llm_settings_mock)
+    llm_service.llm_settings_repo.update_reasoning_config_for_provider = AsyncMock()
 
     with pytest.raises(
         InvalidLLMReasoningConfigException,
@@ -620,6 +627,7 @@ async def test_llm_service__update_settings__invalid_reasoning_config_raises_inv
         )
 
     llm_service.llm_settings_repo.update.assert_not_awaited()
+    llm_service.llm_settings_repo.update_reasoning_config_for_provider.assert_not_awaited()
 
 
 async def test_llm_service__update_settings__unsupported_provider_raises_invalid_llm_reasoning_config_exception(
@@ -640,6 +648,7 @@ async def test_llm_service__update_settings__unsupported_provider_raises_invalid
     llm_settings_mock.model_name = str(LLMModel.GPT_4_1_MINI)
     llm_service.llm_settings_repo.get = AsyncMock(return_value=llm_settings_mock)
     llm_service.llm_settings_repo.update = AsyncMock(return_value=llm_settings_mock)
+    llm_service.llm_settings_repo.update_reasoning_config_for_provider = AsyncMock()
 
     with pytest.raises(
         InvalidLLMReasoningConfigException,
@@ -651,3 +660,4 @@ async def test_llm_service__update_settings__unsupported_provider_raises_invalid
         )
 
     llm_service.llm_settings_repo.update.assert_not_awaited()
+    llm_service.llm_settings_repo.update_reasoning_config_for_provider.assert_not_awaited()

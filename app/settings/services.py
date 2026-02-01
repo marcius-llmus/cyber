@@ -47,8 +47,9 @@ class SettingsPageService:
         # Fetch actual DB records to get IDs
         current_coder = await self.llm_service.get_coding_llm()
         llm_options = await self.llm_service.get_all_llm_settings()
-        coding_llm_masked_api_key = await self._get_masked_key_or_empty(current_coder.provider)
-
+        coding_llm_masked_api_key = await self._get_masked_key_or_empty(
+            current_coder.provider
+        )
 
         return {
             "settings": settings,
@@ -67,8 +68,8 @@ class SettingsPageService:
         }
 
     async def _get_masked_key_or_empty(self, provider):
-        coder_api_key = await self.llm_service.llm_settings_repo.get_api_key_for_provider(
-            provider
+        coder_api_key = (
+            await self.llm_service.llm_settings_repo.get_api_key_for_provider(provider)
         )
         masked_coder_api_key = API_KEY_MASK if coder_api_key else ""
         return masked_coder_api_key

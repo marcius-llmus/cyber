@@ -43,6 +43,5 @@ async def test_llm_service__update_settings__clears_api_key_when_empty_string_se
 
     llm_service.llm_settings_repo.update_api_key_for_provider.assert_awaited_once_with(
         provider=llm_settings_openai_no_role_mock.provider,
-        api_key='',
+        api_key="",
     )
-
