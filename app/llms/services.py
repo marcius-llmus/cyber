@@ -1,7 +1,7 @@
 import functools
 import logging
 from decimal import Decimal
-from typing import Any, Optional, Literal
+from typing import Any, Literal
 
 from async_lru import alru_cache
 from google.genai import types
@@ -9,7 +9,7 @@ from llama_index.llms.anthropic import Anthropic
 from llama_index.llms.google_genai import GoogleGenAI
 from llama_index.llms.openai import OpenAI
 from llama_index_instrumentation.dispatcher import instrument_tags
-from pydantic import BaseModel, ValidationError, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from app.core.config import settings
 from app.llms.enums import LLMModel, LLMProvider, LLMRole
@@ -77,7 +77,7 @@ class InstrumentedLLMMixin:
 
 
 class InstrumentedOpenAI(InstrumentedLLMMixin, OpenAI):
-    reasoning_effort: Optional[Literal["none", "low", "medium", "high", "xhigh"]] = Field(
+    reasoning_effort: Literal["none", "low", "medium", "high", "xhigh"] | None = Field(
         default=None,
         description="The effort to use for reasoning models.",
     )
@@ -284,15 +284,24 @@ class LLMService:
                 thinking_dict=effective_reasoning,
             )
         elif provider == LLMProvider.GOOGLE:
-            generation_config = types.GenerateContentConfig(
-                temperature=temperature,
-                thinking_config=types.ThinkingConfig(**effective_reasoning),
+            # Gemini 2.x models do not support thinking_level so we skip
+            gemini_2_5_models = (
+                LLMModel.GEMINI_2_5_PRO,
+                LLMModel.GEMINI_2_5_FLASH,
+                LLMModel.GEMINI_2_5_FLASH_LITE,
             )
+
+            gen_config_params = {"temperature": temperature}
+            if model_name not in gemini_2_5_models:
+                gen_config_params["thinking_config"] = types.ThinkingConfig(  # noqa
+                    **effective_reasoning
+                )
+
             return InstrumentedGoogleGenAI(
                 model=model_name,
                 api_key=api_key,
                 timeout=settings.LLM_TIMEOUT,
-                generation_config=generation_config,
+                generation_config=types.GenerateContentConfig(**gen_config_params),
             )
         else:
             raise ValueError(f"Unsupported LLM provider: {provider}")

@@ -13,7 +13,7 @@
     </div>
 {% elif provider == 'GOOGLE' %}
     <div class="col-span-2">
-        <label class="block text-sm font-medium text-gray-300 mb-2">Thinking Level (Google)</label>
+        <label class="block text-sm font-medium text-gray-300 mb-2">Thinking Level (Google - Only works for 3.x models)</label>
         <select name="coding_llm_settings.reasoning_config.thinking_level" class="w-full bg-dark-lighter border border-dark-light rounded-lg px-3 py-2 text-sm">
             <option value="LOW" {% if rc.get('thinking_level') == 'LOW' %}selected{% endif %}>Low</option>
             <option value="MEDIUM" {% if rc.get('thinking_level') == 'MEDIUM' %}selected{% endif %}>Medium</option>
