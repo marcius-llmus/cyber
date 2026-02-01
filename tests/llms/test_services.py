@@ -287,7 +287,8 @@ async def test_llm_service__update_settings__api_key_enforced_one_key_per_provid
     )
 
     llm_service.llm_settings_repo.update_api_key_for_provider.assert_awaited_once_with(
-        llm_settings_openai_no_role_mock.provider, "sk-openai-canonical"
+        provider=llm_settings_openai_no_role_mock.provider,
+        api_key="sk-openai-canonical",
     )
 
 
