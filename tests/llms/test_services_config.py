@@ -136,7 +136,7 @@ async def test_get_client_instance__anthropic__passes_thinking_dict(
     Expected: thinking_dict is passed directly to the constructor.
     """
     # Arrange
-    model_name = LLMModel.CLAUDE_3_5_SONNET
+    model_name = LLMModel.CLAUDE_SONNET_4_5
     provider = LLMProvider.ANTHROPIC
     temperature = 1.0
     api_key = "fake-key"

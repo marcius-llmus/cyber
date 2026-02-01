@@ -24,7 +24,4 @@ class AnthropicReasoningConfig(BaseModel):
 
 
 class GoogleReasoningConfig(BaseModel):
-    thinking_level: ThinkingLevel = Field(
-        default=ThinkingLevel.MEDIUM,
-        description="Optional. The number of thoughts tokens that the model should generate.",
-    )
+    thinking_level: Literal["LOW", "MEDIUM", "HIGH"] = "LOW"
