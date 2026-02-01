@@ -1,6 +1,5 @@
 from typing import Any, Literal
 
-from google.genai.types import ThinkingLevel
 from pydantic import BaseModel, Field
 
 from app.llms.enums import LLMModel, LLMProvider
