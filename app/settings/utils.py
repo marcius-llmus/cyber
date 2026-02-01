@@ -34,6 +34,7 @@ async def initialize_application_settings(db: AsyncSession) -> None:
                     visual_name=llm.visual_name,
                     context_window=llm.default_context_window,
                     api_key=None,
+                    reasoning_config=llm.reasoning,
                 )
             )
 
