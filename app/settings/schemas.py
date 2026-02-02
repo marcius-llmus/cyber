@@ -1,11 +1,12 @@
 from decimal import Decimal
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator
 
 from app.core.enums import RepoMapMode
 from app.llms.enums import LLMModel, LLMProvider
 from app.patches.enums import PatchProcessorType
+from app.settings.constants import API_KEY_MASK
 
 
 class LLMSettingsBase(BaseModel):
@@ -13,7 +14,6 @@ class LLMSettingsBase(BaseModel):
     context_window: int
     provider: LLMProvider
     visual_name: str
-    api_key: str | None = None
     reasoning_config: dict | None = None
 
 
@@ -33,6 +33,43 @@ class LLMSettingsUpdate(BaseModel):
     # api_key and reasoning are updated for all providers. that's why we exclude (see service logic)
     api_key: str | None = Field(default=None, exclude=True)
     reasoning_config: dict[str, Any] | None = Field(default=None, exclude=True)
+
+    @field_validator("api_key") # noqa
+    @classmethod
+    def normalize_api_key(cls, value: str | None) -> str | None:
+        """Setter behavior:
+
+        - If the frontend sends the mask, treat it as "unset" (None) so repository update ignores it.
+        - If the frontend sends any other value (including ""), pass it through.
+          This allows users to clear the key by sending an empty string.
+        """
+        if value == API_KEY_MASK:
+            return None
+        return value
+
+
+class LLMSettingsReadPublic(LLMSettingsRead):
+    """Sanitized settings for rendering/pages.
+
+    Notes:
+        - api_key is always a computed display value (mask or empty string)
+        - it is never the real provider api key
+    """
+
+    # Internal-only. Used to compute the display value.
+    api_key_present: bool = Field(default=False, exclude=True)
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def api_key(self) -> str:
+        """Computed getter for pages/templates.
+
+        Never exposes the real provider API key.
+        - If an API key exists for the provider: returns the mask
+        - Otherwise: returns an empty string
+        """
+
+        return API_KEY_MASK if self.api_key_present else ""
 
 
 class SettingsBase(BaseModel):
