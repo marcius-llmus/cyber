@@ -1,9 +1,8 @@
 from app.llms.services import LLMService
-from app.settings.constants import API_KEY_MASK
 from app.settings.exceptions import SettingsNotFoundException
 from app.settings.models import Settings
 from app.settings.repositories import SettingsRepository
-from app.settings.schemas import SettingsUpdate
+from app.settings.schemas import LLMSettingsReadPublic, SettingsUpdate
 
 
 class SettingsService:
@@ -45,34 +44,48 @@ class SettingsPageService:
         self.settings_service = settings_service
         self.llm_service = llm_service
 
+    # todo: usually, we return the db obj. here, we are transforming to pydantic
+    #       in json requests, we declare the schema obj in the model and return the db to router
+    #       the router will get the db obj and serialize automatically with the from orm
+    #       we are mostly using htmx. htmx is using the db obj directly and there should be a pattern
+    #       pages services should return pydantic? should the htmx view convert? but the api key must not
+    #       be returned. then it is a business logic, but business logic doesn't live in routes, so whta?
+    #       currently, it is ok it is considered a service, even that it is a 'page' service, for formatting.
+    #       but we must make sure that things like changing or requesting api key is resolved at a true service
+    async def _to_public_llm_settings(self, llm_settings) -> LLMSettingsReadPublic:
+        api_key = await self.llm_service.llm_settings_repo.get_api_key_for_provider(
+            llm_settings.provider
+        )
+        return LLMSettingsReadPublic(
+            id=llm_settings.id,
+            model_name=llm_settings.model_name,
+            context_window=llm_settings.context_window,
+            provider=llm_settings.provider,
+            visual_name=llm_settings.visual_name,
+            reasoning_config=llm_settings.reasoning_config,
+            api_key_present=bool(api_key),
+        )
+
     async def get_settings_page_data(self) -> dict:
         settings = await self.settings_service.get_settings()
         # Fetch actual DB records to get IDs
-        current_coder = await self.llm_service.get_coding_llm()
-        llm_options = await self.llm_service.get_all_llm_settings()
-        coding_llm_masked_api_key = await self._get_masked_key_or_empty(
-            current_coder.provider
-        )
+        current_coder_db = await self.llm_service.get_coding_llm()
+        llm_options_db = await self.llm_service.get_all_llm_settings()
+
+        current_coder = await self._to_public_llm_settings(current_coder_db)
+        llm_options = [await self._to_public_llm_settings(x) for x in llm_options_db]
 
         return {
             "settings": settings,
             "current_coder": current_coder,
             "llm_options": llm_options,
-            "coding_llm_masked_api_key": coding_llm_masked_api_key,
         }
 
     async def get_llm_dependent_fields_data_by_id(self, llm_id: int) -> dict:
-        llm_settings = await self.llm_service.llm_settings_repo.get(llm_id)
-        masked_api_key = await self._get_masked_key_or_empty(llm_settings.provider)
+        llm_settings_db = await self.llm_service.llm_settings_repo.get(llm_id)
+        llm_settings = await self._to_public_llm_settings(llm_settings_db)
         return {
-            "provider": llm_settings.provider.value,
-            "api_key": masked_api_key,
+            "provider": llm_settings.provider,
+            "api_key": llm_settings.api_key,
             "current_coder": llm_settings,
         }
-
-    async def _get_masked_key_or_empty(self, provider):
-        coder_api_key = (
-            await self.llm_service.llm_settings_repo.get_api_key_for_provider(provider)
-        )
-        masked_coder_api_key = API_KEY_MASK if coder_api_key else ""
-        return masked_coder_api_key
