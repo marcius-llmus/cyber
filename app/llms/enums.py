@@ -24,7 +24,7 @@ class LLMModel(StrEnum):
     GPT_5_2_CODEX = "gpt-5.2-codex"
     GPT_5_2 = "gpt-5.2-2025-12-11"
     GPT_5_MINI = "gpt-5-mini-2025-08-07"
-    GPT_5_NANO = "gpt-5-nano-2025-04-14"
+    GPT_5_NANO = "gpt-5-nano-2025-08-07"
     GPT_4_1 = "gpt-4.1-2025-04-14"
     GPT_4_1_MINI = "gpt-4.1-mini-2025-04-14"
     GPT_4_1_NANO = "gpt-4.1-nano-2025-04-14"

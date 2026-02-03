@@ -19,11 +19,9 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div id="llm-dependent-fields">
-                    {% with provider=current_coder.provider.value, api_key=coding_llm_masked_api_key, current_coder=current_coder %}
-                        {% include "settings/partials/llm_dependent_fields.html" %}
-                    {% endwith %}
-                </div>
+                {% with provider=current_coder.provider, api_key=current_coder.api_key, current_coder=current_coder %}
+                    {% include "settings/partials/llm_dependent_fields.html" %}
+                {% endwith %}
             </div>
         </div>
 
