@@ -1,6 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
+from app.settings.constants import API_KEY_MASK
 from app.settings.schemas import LLMSettingsUpdate, SettingsUpdate
 
 
@@ -41,3 +42,11 @@ class TestSettingsSchemas:
                     reasoning_config={"reasoning_effort": "high"}
                 ),
             )
+
+    def test_llm_settings_update__api_key_setter__mask_becomes_none(self):
+        obj = LLMSettingsUpdate(api_key=API_KEY_MASK)
+        assert obj.api_key is None
+
+    def test_llm_settings_update__api_key_setter__empty_string_is_preserved(self):
+        obj = LLMSettingsUpdate(api_key="")
+        assert obj.api_key == ""

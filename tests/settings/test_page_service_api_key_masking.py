@@ -19,7 +19,12 @@ class TestSettingsPageServiceApiKeyMasking:
             - provider is returned as provider.value
         """
         llm_settings = mocker.MagicMock()
+        llm_settings.id = 1
+        llm_settings.model_name = "gpt-4.1-2025-04-14"
+        llm_settings.context_window = 128000
         llm_settings.provider = LLMProvider.OPENAI
+        llm_settings.visual_name = "GPT-4.1"
+        llm_settings.reasoning_config = None
 
         llm_settings_repository_mock.get = AsyncMock(return_value=llm_settings)
         llm_settings_repository_mock.get_api_key_for_provider = AsyncMock(
@@ -44,7 +49,12 @@ class TestSettingsPageServiceApiKeyMasking:
             - returned context contains blank string
         """
         llm_settings = mocker.MagicMock()
+        llm_settings.id = 1
+        llm_settings.model_name = "gpt-4.1-2025-04-14"
+        llm_settings.context_window = 128000
         llm_settings.provider = LLMProvider.OPENAI
+        llm_settings.visual_name = "GPT-4.1"
+        llm_settings.reasoning_config = None
 
         llm_settings_repository_mock.get = AsyncMock(return_value=llm_settings)
         llm_settings_repository_mock.get_api_key_for_provider = AsyncMock(
@@ -61,7 +71,12 @@ class TestSettingsPageServiceApiKeyMasking:
         mocker,
     ):
         llm_settings = mocker.MagicMock()
+        llm_settings.id = 1
+        llm_settings.model_name = "gpt-4.1-2025-04-14"
+        llm_settings.context_window = 128000
         llm_settings.provider = LLMProvider.OPENAI
+        llm_settings.visual_name = "GPT-4.1"
+        llm_settings.reasoning_config = None
 
         llm_settings_repository_mock.get = AsyncMock(return_value=llm_settings)
         llm_settings_repository_mock.get_api_key_for_provider = AsyncMock(

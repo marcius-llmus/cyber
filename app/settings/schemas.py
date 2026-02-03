@@ -34,7 +34,7 @@ class LLMSettingsUpdate(BaseModel):
     api_key: str | None = Field(default=None, exclude=True)
     reasoning_config: dict[str, Any] | None = Field(default=None, exclude=True)
 
-    @field_validator("api_key") # noqa
+    @field_validator("api_key")  # noqa
     @classmethod
     def normalize_api_key(cls, value: str | None) -> str | None:
         """Setter behavior:

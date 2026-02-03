@@ -52,6 +52,7 @@ class SettingsPageService:
     #       be returned. then it is a business logic, but business logic doesn't live in routes, so whta?
     #       currently, it is ok it is considered a service, even that it is a 'page' service, for formatting.
     #       but we must make sure that things like changing or requesting api key is resolved at a true service
+    #       !! let's remember that it is a read only. consider it when thinking about business logic
     async def _to_public_llm_settings(self, llm_settings) -> LLMSettingsReadPublic:
         api_key = await self.llm_service.llm_settings_repo.get_api_key_for_provider(
             llm_settings.provider
@@ -85,7 +86,7 @@ class SettingsPageService:
         llm_settings_db = await self.llm_service.llm_settings_repo.get(llm_id)
         llm_settings = await self._to_public_llm_settings(llm_settings_db)
         return {
-            "provider": llm_settings.provider,
+            "provider": llm_settings.provider.value,
             "api_key": llm_settings.api_key,
             "current_coder": llm_settings,
         }

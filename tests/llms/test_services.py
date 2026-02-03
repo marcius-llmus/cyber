@@ -220,7 +220,6 @@ async def test_llm_service__update_settings__updates_api_key_for_provider_when_a
     llm_service.llm_settings_repo.update_api_key_for_provider.assert_awaited_once()
 
 
-
 async def test_llm_service__update_coding_llm__sets_role_then_updates_settings(
     llm_settings_openai_no_role_mock,
     llm_settings_anthropic_mock,
