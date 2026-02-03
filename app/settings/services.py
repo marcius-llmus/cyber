@@ -68,6 +68,8 @@ class SettingsPageService:
         )
 
     async def get_settings_page_data(self) -> dict:
+        # todo: maybe, we should do everything to pydantic like LLMSettingsReadPublic
+        #       manually, add all necessary data to the schema for multiple service calls
         settings = await self.settings_service.get_settings()
         # Fetch actual DB records to get IDs
         current_coder_db = await self.llm_service.get_coding_llm()
@@ -76,6 +78,7 @@ class SettingsPageService:
         current_coder = await self._to_public_llm_settings(current_coder_db)
         llm_options = [await self._to_public_llm_settings(x) for x in llm_options_db]
 
+        # todo: currently, settings is a sqlmodel, others are pydantic schemas.. weird.
         return {
             "settings": settings,
             "current_coder": current_coder,
@@ -83,6 +86,7 @@ class SettingsPageService:
         }
 
     async def get_llm_dependent_fields_data_by_id(self, llm_id: int) -> dict:
+        # todo: we can simplify everything here: we shall pass coding llm data in one schema
         llm_settings_db = await self.llm_service.llm_settings_repo.get(llm_id)
         llm_settings = await self._to_public_llm_settings(llm_settings_db)
         return {
