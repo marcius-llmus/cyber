@@ -1,5 +1,7 @@
 from enum import StrEnum
 
+DEFAULT_ANTHROPIC_MAX_TOKENS = 10_000
+
 
 class LLMProvider(StrEnum):
     ANTHROPIC = "ANTHROPIC"

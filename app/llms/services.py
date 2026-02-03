@@ -12,7 +12,7 @@ from llama_index_instrumentation.dispatcher import instrument_tags
 from pydantic import BaseModel, Field, ValidationError
 
 from app.core.config import settings
-from app.llms.enums import LLMModel, LLMProvider, LLMRole
+from app.llms.enums import DEFAULT_ANTHROPIC_MAX_TOKENS, LLMModel, LLMProvider, LLMRole
 from app.llms.exceptions import (
     InvalidLLMReasoningConfigException,
     MissingLLMApiKeyException,
@@ -275,6 +275,7 @@ class LLMService:
                 api_key=api_key,
                 timeout=settings.LLM_TIMEOUT,
                 thinking_dict=effective_reasoning,
+                max_tokens=DEFAULT_ANTHROPIC_MAX_TOKENS,
             )
         elif provider == LLMProvider.GOOGLE:
             # Gemini 2.x models do not support thinking_level so we skip
