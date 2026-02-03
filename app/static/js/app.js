@@ -19,9 +19,10 @@ class ChatApp {
         
         // Initial scan for existing markdown content
         document.addEventListener('DOMContentLoaded', () => {
-            this.setupScrollHandler();
             this.scanAndRenderMarkdown();
             this.highlightExistingCodeBlocks();
+            this.scrollToBottom();
+            this.setupScrollHandler();
         });
     }
 
