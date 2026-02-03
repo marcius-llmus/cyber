@@ -56,14 +56,16 @@ class InstrumentedLLMMixin:
     """Helper to generate instrumentation tags."""
 
     _provider_id: str
-    _api_flavor: str
+    _usage_flavor: str
+    _usage_case: str
     model: str
 
     def _get_instrumentation_tags(self) -> dict:
         return {
             "__provider_id__": self._provider_id,
             "__model_name__": self.model,
-            "__api_flavor__": self._api_flavor,
+            "__usage_flavor__": self._usage_flavor,
+            "__usage_case__": self._usage_case,
         }
 
     async def achat(self, *args, **kwargs):
@@ -81,17 +83,20 @@ class InstrumentedOpenAI(InstrumentedLLMMixin, OpenAI):
         description="The effort to use for reasoning models.",
     )
     _provider_id: str = "openai"
-    _api_flavor: str = "chat"
+    _usage_flavor: str = "chat"
+    _usage_case: str = "snake"
 
 
 class InstrumentedAnthropic(InstrumentedLLMMixin, Anthropic):
     _provider_id: str = "anthropic"
-    _api_flavor: str = "default"
+    _usage_flavor: str = "default"
+    _usage_case: str = "snake"
 
 
 class InstrumentedGoogleGenAI(InstrumentedLLMMixin, GoogleGenAI):
     _provider_id: str = "google"
-    _api_flavor: str = "default"
+    _usage_flavor: str = "default"
+    _usage_case: str = "camel"
 
 
 class LLMService:
