@@ -12,7 +12,7 @@ from llama_index_instrumentation.dispatcher import instrument_tags
 from pydantic import BaseModel, Field, ValidationError
 
 from app.core.config import settings
-from app.llms.enums import LLMModel, LLMProvider, LLMRole
+from app.llms.enums import DEFAULT_ANTHROPIC_MAX_TOKENS, LLMModel, LLMProvider, LLMRole
 from app.llms.exceptions import (
     InvalidLLMReasoningConfigException,
     MissingLLMApiKeyException,
@@ -56,14 +56,16 @@ class InstrumentedLLMMixin:
     """Helper to generate instrumentation tags."""
 
     _provider_id: str
-    _api_flavor: str
+    _usage_flavor: str
+    _usage_case: str
     model: str
 
     def _get_instrumentation_tags(self) -> dict:
         return {
             "__provider_id__": self._provider_id,
             "__model_name__": self.model,
-            "__api_flavor__": self._api_flavor,
+            "__usage_flavor__": self._usage_flavor,
+            "__usage_case__": self._usage_case,
         }
 
     async def achat(self, *args, **kwargs):
@@ -81,17 +83,20 @@ class InstrumentedOpenAI(InstrumentedLLMMixin, OpenAI):
         description="The effort to use for reasoning models.",
     )
     _provider_id: str = "openai"
-    _api_flavor: str = "chat"
+    _usage_flavor: str = "chat"
+    _usage_case: str = "snake"
 
 
 class InstrumentedAnthropic(InstrumentedLLMMixin, Anthropic):
     _provider_id: str = "anthropic"
-    _api_flavor: str = "default"
+    _usage_flavor: str = "default"
+    _usage_case: str = "snake"
 
 
 class InstrumentedGoogleGenAI(InstrumentedLLMMixin, GoogleGenAI):
     _provider_id: str = "google"
-    _api_flavor: str = "default"
+    _usage_flavor: str = "default"
+    _usage_case: str = "camel"
 
 
 class LLMService:
@@ -275,6 +280,7 @@ class LLMService:
                 api_key=api_key,
                 timeout=settings.LLM_TIMEOUT,
                 thinking_dict=effective_reasoning,
+                max_tokens=DEFAULT_ANTHROPIC_MAX_TOKENS,
             )
         elif provider == LLMProvider.GOOGLE:
             # Gemini 2.x models do not support thinking_level so we skip

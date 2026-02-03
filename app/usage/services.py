@@ -40,7 +40,8 @@ class UsageService:
 
             provider_id = tags["__provider_id__"]
             model_name = tags["__model_name__"]
-            flavor = tags["__api_flavor__"]
+            usage_case = tags["__usage_case__"]
+            usage_flavor = tags["__usage_flavor__"]
 
             if not provider_id or not model_name:
                 raise ValueError(
@@ -48,7 +49,7 @@ class UsageService:
                 )
 
             cost, input_t, output_t, cached_t = await self._calculate_event_usage(
-                event, provider_id, model_name, flavor
+                event, provider_id, model_name, usage_flavor, usage_case
             )
 
             await self._update_usage_repositories(
@@ -126,16 +127,21 @@ class UsageService:
         )
 
     async def _calculate_event_usage(
-        self, event, provider_id: str, model_ref: str, flavor: str
+        self,
+        event,
+        provider_id: str,
+        model_ref: str,
+        usage_flavor: str,
+        usage_case: str,
     ) -> tuple[Decimal, int, int, int]:
         """
         Helper to extract usage from a single response object using existing logic.
         Returns (cost, input_tokens, output_tokens, cached_tokens).
         """
-        raw_data = self._normalize_raw_data(event.response.raw, flavor)
+        raw_data = self._normalize_raw_data(event.response.raw, usage_case)
         # Use genai-prices to extract usage and calculate price
         extraction_data = extract_usage(
-            raw_data, provider_id=provider_id, api_flavor=flavor
+            raw_data, provider_id=provider_id, api_flavor=usage_flavor
         )
         usage_data = extraction_data.usage
         # btw, the example at https://github.com/pydantic/genai-prices/blob/main/packages/python/README.md
@@ -153,7 +159,7 @@ class UsageService:
         return cost, input_tokens, output_tokens, cached_tokens
 
     @staticmethod
-    def _normalize_raw_data(data: dict | BaseModel, flavor) -> Any:
+    def _normalize_raw_data(data: dict | BaseModel, usage_case: str) -> Any:
         """
         Converts the raw response object into a dictionary with camelCase keys.
         This is necessary because the `genai_prices` library expects the raw API response format (camelCase),
@@ -161,21 +167,20 @@ class UsageService:
         but Python SDKs (and Pydantic models) often use snake_case.
         """
 
-        if isinstance(data, BaseModel):
-            data = data.model_dump()
+        should_camel = usage_case != "snake"
 
-        # bruh, different flavors have different cases :c
-        if flavor != "default":
-            return data
-
-        def _recursive_to_camel(obj: Any) -> Any:
+        def _process(obj: Any) -> Any:
+            if isinstance(obj, BaseModel):
+                return _process(obj.model_dump())
             if isinstance(obj, dict):
-                return {to_camel(k): _recursive_to_camel(v) for k, v in obj.items()}
+                if should_camel:
+                    return {to_camel(k): _process(v) for k, v in obj.items()}
+                return {k: _process(v) for k, v in obj.items()}
             if isinstance(obj, list):
-                return [_recursive_to_camel(i) for i in obj]
+                return [_process(i) for i in obj]
             return obj
 
-        return _recursive_to_camel(data)
+        return _process(data)
 
 
 class UsagePageService:
