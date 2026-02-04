@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from collections.abc import Callable, Coroutine
 from datetime import datetime
@@ -113,6 +114,13 @@ class WebSocketOrchestrator:
                 except WebSocketDisconnect:
                     logger.info("Client disconnected during turn stream.")
                     await self._cancel_active_run(execution)
+                    return
+
+                # cancelled by user, we ignore as it was already cancelled
+                # CancelledError means that by some other reason, it was cancelled already
+                # so we don't really need to call handler.cancel() again
+                except asyncio.CancelledError:
+                    logger.info("Turn cancelled.")
                     return
 
                 except Exception as e:
