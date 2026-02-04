@@ -7,7 +7,7 @@ import aiofiles
 import networkx as nx
 from grep_ast import TreeContext, filename_to_lang
 from grep_ast.tsl import get_language, get_parser
-from tree_sitter import QueryCursor, Query
+from tree_sitter import Query, QueryCursor
 
 from app.context.exceptions import RepoMapExtractionException
 from app.context.schemas import Tag

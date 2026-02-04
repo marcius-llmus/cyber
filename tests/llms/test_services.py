@@ -143,6 +143,7 @@ async def test_llm_service__get_coding_llm__when_no_coder_role__assigns_default_
     )
     llm_service.llm_settings_repo.update = AsyncMock(return_value=expected_return)
 
+
 async def test_llm_service__update_settings__raises_when_missing(llm_service):
     """Scenario: update settings for non-existent llm_id.
 

@@ -83,7 +83,6 @@ class TestCoderService:
         assert "t1" not in coder_service.execution_registry._runs
         mock_chat_service.save_messages_for_turn.assert_awaited()
 
-
     async def test_handle_user_message_unregisters_execution_on_error(
         self, coder_service, make_workflow_handler
     ):
@@ -230,7 +229,9 @@ class TestCoderService:
         session_service.get_operational_mode.return_value = OperationalMode.SINGLE_SHOT
 
         # Make single-shot patch service yield one event, proving it ran.
-        single_shot_service = coder_service.single_shot_patch_service_factory.return_value
+        single_shot_service = (
+            coder_service.single_shot_patch_service_factory.return_value
+        )
 
         async def _yield_one(*_args, **_kwargs):  # noqa: ANN001
             yield SingleShotDiffAppliedEvent(file_path="a.py", output="ok")

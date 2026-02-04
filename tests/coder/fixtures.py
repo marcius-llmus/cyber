@@ -7,15 +7,15 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from pytest_mock import MockerFixture
 
+from app.agents.services import WorkflowService
+from app.chat.services import ChatService, ChatTurnService
 from app.coder.presentation import WebSocketOrchestrator
 from app.coder.services.coder import CoderService
 from app.coder.services.execution_registry import TurnExecution, TurnExecutionRegistry
 from app.coder.services.messaging import MessagingTurnEventHandler
 from app.coder.services.single_shot_patching import SingleShotPatchService
-from app.chat.services import ChatService, ChatTurnService
-from app.sessions.services import SessionService
-from app.agents.services import WorkflowService
 from app.context.services import WorkspaceService
+from app.sessions.services import SessionService
 
 
 @pytest.fixture
@@ -230,6 +230,7 @@ def messaging_handler(turn_mock: MagicMock) -> MessagingTurnEventHandler:
 def handler(messaging_handler: MessagingTurnEventHandler) -> MessagingTurnEventHandler:
     """Alias fixture to match historical test parameter name."""
     return messaging_handler
+
 
 # the megazord fixtures (because it centralizes the CODER websocket)
 @pytest.fixture

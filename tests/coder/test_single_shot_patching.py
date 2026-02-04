@@ -16,10 +16,13 @@ class TestSingleShotPatchService:
         mock_diff_service = MagicMock()
         mock_diff_service.extract_diffs_from_blocks.return_value = []
         mock_diff_service.process_diff = AsyncMock()
+
         async def _diff_patch_service_factory():
             return mock_diff_service
 
-        single_shot_patch_service.diff_patch_service_factory = _diff_patch_service_factory
+        single_shot_patch_service.diff_patch_service_factory = (
+            _diff_patch_service_factory
+        )
 
         blocks = [{"type": "tool"}]
         async for _ in single_shot_patch_service.apply_from_blocks(
@@ -48,14 +51,18 @@ class TestSingleShotPatchService:
 
         mock_diff_service.extract_diffs_from_blocks.return_value = ["diff1"]
         mock_diff_service.process_diff = AsyncMock(return_value=mock_result)
+
         async def _diff_patch_service_factory():
             return mock_diff_service
 
-        single_shot_patch_service.diff_patch_service_factory = _diff_patch_service_factory
+        single_shot_patch_service.diff_patch_service_factory = (
+            _diff_patch_service_factory
+        )
 
         # Mock context service to avoid failure later
         context_service = AsyncMock()
         context_service.get_active_context = AsyncMock(return_value=[])
+
         async def _context_service_factory(_session):  # noqa: ANN001
             return context_service
 
@@ -80,10 +87,13 @@ class TestSingleShotPatchService:
         mock_result.status = DiffPatchStatus.FAILED
         mock_diff_service.extract_diffs_from_blocks.return_value = ["diff1"]
         mock_diff_service.process_diff = AsyncMock(return_value=mock_result)
+
         async def _diff_patch_service_factory():
             return mock_diff_service
 
-        single_shot_patch_service.diff_patch_service_factory = _diff_patch_service_factory
+        single_shot_patch_service.diff_patch_service_factory = (
+            _diff_patch_service_factory
+        )
 
         events = [
             e
@@ -104,10 +114,13 @@ class TestSingleShotPatchService:
         mock_result.representation = None  # Empty
         mock_diff_service.extract_diffs_from_blocks.return_value = ["diff1"]
         mock_diff_service.process_diff = AsyncMock(return_value=mock_result)
+
         async def _diff_patch_service_factory():
             return mock_diff_service
 
-        single_shot_patch_service.diff_patch_service_factory = _diff_patch_service_factory
+        single_shot_patch_service.diff_patch_service_factory = (
+            _diff_patch_service_factory
+        )
 
         events = [
             e
@@ -150,7 +163,9 @@ class TestSingleShotPatchService:
         async def _diff_patch_service_factory():
             return mock_diff_service
 
-        single_shot_patch_service.diff_patch_service_factory = _diff_patch_service_factory
+        single_shot_patch_service.diff_patch_service_factory = (
+            _diff_patch_service_factory
+        )
 
         context_service = AsyncMock()
         context_service.sync_context_for_diff = AsyncMock(return_value=None)
@@ -196,7 +211,9 @@ class TestSingleShotPatchService:
         async def _diff_patch_service_factory():
             return mock_diff_service
 
-        single_shot_patch_service.diff_patch_service_factory = _diff_patch_service_factory
+        single_shot_patch_service.diff_patch_service_factory = (
+            _diff_patch_service_factory
+        )
 
         context_service = AsyncMock()
         context_service.sync_context_for_diff = AsyncMock(side_effect=Exception("nope"))
@@ -246,7 +263,9 @@ class TestSingleShotPatchService:
         async def _diff_patch_service_factory():
             return mock_diff_service
 
-        single_shot_patch_service.diff_patch_service_factory = _diff_patch_service_factory
+        single_shot_patch_service.diff_patch_service_factory = (
+            _diff_patch_service_factory
+        )
 
         # Active context list (service expects ORM-ish objects with id + file_path)
         file_obj = MagicMock()
@@ -280,10 +299,13 @@ class TestSingleShotPatchService:
         mock_diff_service = MagicMock()
         mock_diff_service.extract_diffs_from_blocks.return_value = []  # No diffs
         mock_diff_service.process_diff = AsyncMock()
+
         async def _diff_patch_service_factory():
             return mock_diff_service
 
-        single_shot_patch_service.diff_patch_service_factory = _diff_patch_service_factory
+        single_shot_patch_service.diff_patch_service_factory = (
+            _diff_patch_service_factory
+        )
 
         events = [
             e
