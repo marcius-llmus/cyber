@@ -64,10 +64,13 @@ async def cancel_turn(
     turn_id: str,
     registry: TurnExecutionRegistry = Depends(get_turn_execution_registry),
 ):
-    run = await registry.cancel(turn_id=turn_id)
+    user_message = ""
+
+    if run := await registry.cancel(turn_id=turn_id):
+        user_message = run.user_message
 
     return {
-        "content": run.user_message,
+        "content": user_message,
         "turn_id": turn_id,
     }
 
