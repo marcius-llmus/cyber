@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from collections.abc import (
     AsyncGenerator,
@@ -8,6 +9,7 @@ from collections.abc import (
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
+from workflows.errors import WorkflowCancelledByUser
 
 from app.agents.services import WorkflowService
 from app.chat.schemas import Turn
@@ -16,13 +18,13 @@ from app.coder.schemas import (
     AgentStateEvent,
     CoderEvent,
     LogLevel,
-    TurnExecution,
     UsageMetricsUpdatedEvent,
     WorkflowErrorEvent,
     WorkflowLogEvent,
 )
-from app.coder.services.messaging import MessagingTurnEventHandler
-from app.coder.services.single_shot_patching import SingleShotPatchService
+from app.coder.services import TurnExecution, TurnExecutionRegistry
+from app.coder.services import MessagingTurnEventHandler
+from app.coder.services import SingleShotPatchService
 from app.context.services import WorkspaceService
 from app.core.config import settings
 from app.core.db import DatabaseSessionManager
@@ -50,6 +52,7 @@ class CoderService:
         single_shot_patch_service_factory: Callable[
             [], Awaitable[SingleShotPatchService]
         ],
+        execution_registry: TurnExecutionRegistry,
     ):
         self.db = db
         self.chat_service_factory = chat_service_factory
@@ -62,6 +65,7 @@ class CoderService:
         self.diff_patch_service_factory = diff_patch_service_factory
         self.context_service_factory = context_service_factory
         self.single_shot_patch_service_factory = single_shot_patch_service_factory
+        self.execution_registry = execution_registry
 
     async def handle_user_message(
         self, *, user_message: str, session_id: int, retry_turn_id: str | None = None
@@ -98,6 +102,8 @@ class CoderService:
                     )
 
                     execution.handler = handler
+
+                    await self.execution_registry.register(execution)
 
                     async for event in handler.stream_events():
                         async for coder_event in messaging_turn_handler.handle(event):
@@ -157,11 +163,17 @@ class CoderService:
                     ):
                         yield usage_event
 
+                except (asyncio.CancelledError, WorkflowCancelledByUser):
+                    logger.info(f"Turn {turn.turn_id} was cancelled.")
+                    raise asyncio.CancelledError()
+
                 except Exception as e:
                     yield await self._handle_workflow_exception(
                         e, original_message=user_message
                     )
                 finally:
+                    await self.execution_registry.unregister(turn_id=turn.turn_id)
+
                     # Safety check: Log if any events were left behind (e.g., due to a crash before final save)
                     unprocessed_count = event_collector.unprocessed_count
                     if unprocessed_count > 0:
@@ -170,7 +182,7 @@ class CoderService:
                         )
 
         stream = _stream()
-        execution = TurnExecution(turn=turn, stream=stream)
+        execution = TurnExecution(turn=turn, stream=stream, user_message=user_message)
         return execution
 
     async def _build_workflow(
