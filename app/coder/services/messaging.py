@@ -8,6 +8,7 @@ from llama_index.core.agent.workflow.workflow_events import (
     AgentOutput,
     AgentStream,
 )
+from workflows.events import StopEvent, WorkflowCancelledEvent
 
 from app.agents.workflows.workflow_events import ToolCall, ToolCallResult
 from app.chat.schemas import Turn
@@ -110,6 +111,9 @@ class MessagingTurnEventHandler:
             ToolCallResult: self._handle_tool_call_result_event,
             AgentInput: self._handle_agent_input_event,
             AgentOutput: self._handle_agent_output_event,
+            # Workflow lifecycle events that may appear on the stream.
+            StopEvent: self._handle_stop_event,
+            WorkflowCancelledEvent: self._handle_workflow_cancelled_event,
         }
 
     def get_blocks(self) -> list[dict[str, Any]]:
@@ -182,7 +186,23 @@ class MessagingTurnEventHandler:
         yield WorkflowLogEvent(
             message=f"Agent step completed.{content}", level=LogLevel.INFO
         )
+
+    async def _handle_stop_event(self, event: StopEvent) -> AsyncGenerator[CoderEvent]:
+        """Workflow finished successfully.
+
+        We don't need to render anything special here because the orchestrator
+        already switches the composer to idle after the stream ends.
+        """
         yield AgentStateEvent(status="")
+
+    async def _handle_workflow_cancelled_event(
+        self, event: WorkflowCancelledEvent
+    ) -> AsyncGenerator[CoderEvent]:
+        """Workflow was cancelled.
+
+        Keep this quiet (no warning) and clear the status line.
+        """
+        yield WorkflowLogEvent(message="Turn cancelled.", level=LogLevel.INFO)
 
     async def _build_tool_call_event(self, event: ToolCall) -> ToolCallEvent:
         internal_tool_call_id = event.internal_tool_call_id
