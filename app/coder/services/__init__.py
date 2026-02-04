@@ -5,6 +5,7 @@ from .single_shot_patching import SingleShotPatchService
 from .execution_registry import TurnExecutionRegistry
 from .execution_registry import initialize_global_registry
 from .execution_registry import get_global_registry
+from .execution_registry import TurnExecution
 
 __all__ = [
     "CoderService",
@@ -14,4 +15,5 @@ __all__ = [
     "TurnExecutionRegistry",
     "initialize_global_registry",
     "get_global_registry",
+    "TurnExecution",
 ]
