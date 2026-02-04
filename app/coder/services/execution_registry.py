@@ -1,9 +1,28 @@
 import asyncio
 import logging
+from collections.abc import AsyncGenerator
+from dataclasses import dataclass
+from typing import Any
 
-from app.coder.schemas import TurnExecution
+from app.chat.schemas import Turn
+from app.coder.schemas import CoderEvent
 
 logger = logging.getLogger(__name__)
+
+
+# note: maybe we are mixing things, but for now, let's keep "Turn" schema here
+@dataclass(slots=True)
+class TurnExecution:
+    turn: Turn
+    stream: AsyncGenerator[CoderEvent, None]
+    user_message: str
+    handler: Any | None = None
+
+    async def cancel(self) -> None:
+        """Centralized cancellation logic"""
+        if self.handler:
+            logger.info(f"Cancelling run for turn {self.turn.turn_id}")
+            await self.handler.cancel_run()
 
 
 class TurnExecutionRegistry:
@@ -21,9 +40,9 @@ class TurnExecutionRegistry:
             self._runs[execution.turn.turn_id] = execution
             logger.debug(f"Registered active run for turn {execution.turn.turn_id}")
 
-    async def cancel(self, *, turn_id: str) -> str | None:
+    async def cancel(self, *, turn_id: str) -> TurnExecution | None:
         """
-        Cancels the run and returns the original message (for UI restore).
+        Cancels the run and returns the execution object (for UI restore).
         Returns None if run not found.
         """
         async with self._lock:
@@ -35,7 +54,7 @@ class TurnExecutionRegistry:
 
         await run.cancel()
 
-        return run.user_message
+        return run
 
     async def unregister(self, *, turn_id: str) -> None:
         async with self._lock:
