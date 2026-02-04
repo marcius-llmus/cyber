@@ -4,7 +4,6 @@ from pathlib import Path
 import aiofiles
 import aiofiles.os
 from pathspec import PathSpec
-from pathspec.patterns import GitWildMatchPattern
 
 from app.context.schemas import FileReadResult, FileStatus, FileTreeNode
 
@@ -57,7 +56,7 @@ class _IgnoreMatcher:
         if extra_patterns:
             lines.extend(p for p in extra_patterns if p.strip())
 
-        return PathSpec.from_lines(GitWildMatchPattern, lines)
+        return PathSpec.from_lines("gitignore", lines)
 
 
 class CodebaseService:
