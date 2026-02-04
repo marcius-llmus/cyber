@@ -10,6 +10,10 @@ from app.coder.schemas import CoderEvent
 logger = logging.getLogger(__name__)
 
 
+# todo: let's make sure to compare it with turn itself. what does this frankenstein does??
+#       is it turn related, is it workflow related? is it both?? let's fix it later.
+#       MAYBE, we will migrate fully for workflow server and run it separately for long running background agents
+
 # note: maybe we are mixing things, but for now, let's keep "Turn" schema here
 @dataclass(slots=True)
 class TurnExecution:
