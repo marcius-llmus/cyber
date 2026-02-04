@@ -5,15 +5,15 @@ from app.chat.dependencies import get_chat_service
 from app.chat.services import ChatService
 from app.coder.dependencies import (
     CoderPageService,
-    get_turn_execution_registry,
     get_coder_page_service,
     get_coder_service,
+    get_turn_execution_registry,
 )
 from app.coder.presentation import WebSocketOrchestrator
-from app.coder.services import CoderService, TurnExecutionRegistry
-
-from app.commons.websockets import WebSocketConnectionManager
+from app.coder.services.coder import CoderService
+from app.coder.services.execution_registry import TurnExecutionRegistry
 from app.commons.fastapi_htmx import htmx
+from app.commons.websockets import WebSocketConnectionManager
 from app.core.templating import templates
 from app.projects.exceptions import ActiveProjectRequiredException
 from app.sessions.dependencies import get_session_service

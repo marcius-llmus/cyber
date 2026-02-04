@@ -22,9 +22,9 @@ from app.coder.schemas import (
     WorkflowErrorEvent,
     WorkflowLogEvent,
 )
-from app.coder.services import TurnExecution, TurnExecutionRegistry
-from app.coder.services import MessagingTurnEventHandler
-from app.coder.services import SingleShotPatchService
+from app.coder.services.execution_registry import TurnExecution, TurnExecutionRegistry
+from app.coder.services.messaging import MessagingTurnEventHandler
+from app.coder.services.single_shot_patching import SingleShotPatchService
 from app.context.services import WorkspaceService
 from app.core.config import settings
 from app.core.db import DatabaseSessionManager

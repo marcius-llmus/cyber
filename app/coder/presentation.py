@@ -23,7 +23,8 @@ from app.coder.schemas import (
     WorkflowErrorEvent,
     WorkflowLogEvent,
 )
-from app.coder.services import CoderService, TurnExecution
+from app.coder.services.coder import CoderService
+from app.coder.services.execution_registry import TurnExecution
 from app.commons.websockets import WebSocketConnectionManager
 from app.core.templating import templates
 from app.patches.schemas.commons import PatchRepresentation
@@ -101,14 +102,12 @@ class WebSocketOrchestrator:
                 if message.retry_turn_id:
                     await self._prepare_ui_for_retry_turn(execution.turn)
                 else:
-                    await self._prepare_ui_for_new_turn(
-                        message.message, execution.turn
-                    )
+                    await self._prepare_ui_for_new_turn(message.message, execution.turn)
 
                 try:
                     async for event in execution.stream:
                         await self._process_event(event, execution.turn)
-                    
+
                     await self._render_composer_idle()
 
                 except WebSocketDisconnect:
@@ -316,14 +315,16 @@ class WebSocketOrchestrator:
         )
 
     async def _render_composer_running(self, turn_id: str):
-        template = templates.get_template("chat/partials/message_form_running.html").render(
-            {"turn_id": turn_id}
-        )
+        template = templates.get_template(
+            "chat/partials/message_form_running.html"
+        ).render({"turn_id": turn_id})
         await self.ws_manager.send_html(template)
 
     async def _render_composer_idle(self, content: str = ""):
         context = {"content": content}
-        template = templates.get_template("chat/partials/message_form.html").render(context)
+        template = templates.get_template("chat/partials/message_form.html").render(
+            context
+        )
         await self.ws_manager.send_html(template)
 
     async def _render_context_files_updated(

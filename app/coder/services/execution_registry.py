@@ -14,11 +14,12 @@ logger = logging.getLogger(__name__)
 #       is it turn related, is it workflow related? is it both?? let's fix it later.
 #       MAYBE, we will migrate fully for workflow server and run it separately for long running background agents
 
+
 # note: maybe we are mixing things, but for now, let's keep "Turn" schema here
 @dataclass(slots=True)
 class TurnExecution:
     turn: Turn
-    stream: AsyncGenerator[CoderEvent, None]
+    stream: AsyncGenerator[CoderEvent]
     user_message: str
     handler: Any | None = None
 
@@ -66,13 +67,18 @@ class TurnExecutionRegistry:
                 del self._runs[turn_id]
                 logger.debug(f"Unregistered run for turn {turn_id}")
 
+
 _registry: TurnExecutionRegistry | None = None
+
 
 def initialize_global_registry(registry: TurnExecutionRegistry) -> None:
     global _registry
     _registry = registry
 
+
 def get_global_registry() -> TurnExecutionRegistry:
     if _registry is None:
-        raise RuntimeError("TurnExecutionRegistry is not initialized. Call initialize_global_registry() first.")
+        raise RuntimeError(
+            "TurnExecutionRegistry is not initialized. Call initialize_global_registry() first."
+        )
     return _registry
