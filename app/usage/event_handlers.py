@@ -1,5 +1,5 @@
-from contextvars import ContextVar
 import logging
+from contextvars import ContextVar
 from typing import Any
 
 from llama_index.core.instrumentation import get_dispatcher
@@ -66,7 +66,9 @@ class UsageCollector:
         # During forced shutdown (GeneratorExit), the context is dying and
         # resetting the token is pointless (and will raise ValueError).
         if exc_type is GeneratorExit:
-            logger.info("Skipping UsageCollector context reset due to GeneratorExit (shutdown/close).")
+            logger.info(
+                "Skipping UsageCollector context reset due to GeneratorExit (shutdown/close)."
+            )
             return
 
         if self._token is not None:
