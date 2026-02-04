@@ -158,7 +158,6 @@ class CoderService:
                             settings_snapshot=turn.settings_snapshot,
                         ):
                             yield event
-                        yield AgentStateEvent(status="")
 
                     async for usage_event in self._process_new_usage(
                         session_id, event_collector
@@ -177,6 +176,7 @@ class CoderService:
                     await self.execution_registry.unregister(turn_id=turn.turn_id)
 
                     # Safety check: Log if any events were left behind (e.g., due to a crash before final save)
+                    # we cannot really consume on cancelled events too because then we would need to track usage per delta
                     unprocessed_count = event_collector.unprocessed_count
                     if unprocessed_count > 0:
                         logger.warning(
