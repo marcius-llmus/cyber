@@ -17,13 +17,12 @@ from app.coder.schemas import (
     SingleShotDiffAppliedEvent,
     ToolCallEvent,
     ToolCallResultEvent,
-    TurnExecution,
     UsageMetricsUpdatedEvent,
     WebSocketMessage,
     WorkflowErrorEvent,
     WorkflowLogEvent,
 )
-from app.coder.services import CoderService
+from app.coder.services import CoderService, TurnExecution
 from app.commons.websockets import WebSocketConnectionManager
 from app.core.templating import templates
 from app.patches.schemas.commons import PatchRepresentation
@@ -147,11 +146,10 @@ class WebSocketOrchestrator:
 
     @staticmethod
     async def _cancel_active_run(execution: TurnExecution | None) -> None:
-        if not execution or not execution.handler:
+        if not execution:
             return
 
-        logger.info("Cancelling active workflow run...")
-        await execution.handler.cancel_run()
+        await execution.cancel()
 
     async def _render_user_message(self, message: str, turn_id: str):
         template = templates.get_template("chat/partials/user_message.html").render(
