@@ -26,6 +26,7 @@ pytest_plugins = [
     "tests.chat.fixtures",
     "tests.context.fixtures",
     "tests.patches.fixtures",
+    "tests.coder.fixtures",
 ]
 
 
