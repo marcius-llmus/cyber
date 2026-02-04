@@ -13,9 +13,11 @@ from app.coder.services.execution_registry import TurnExecution, TurnExecutionRe
 from app.coder.services.messaging import MessagingTurnEventHandler
 from app.coder.services.single_shot_patching import SingleShotPatchService
 
+
 @pytest.fixture
 def turn_execution_registry() -> TurnExecutionRegistry:
     return TurnExecutionRegistry()
+
 
 @pytest.fixture
 def mock_coder_service(mocker: MockerFixture) -> MagicMock:
@@ -67,6 +69,7 @@ class FakeWorkflowHandler:
     def __await__(self):  # noqa: D401
         return self._wait().__await__()
 
+
 @pytest.fixture
 def mock_websocket_manager() -> FakeWebSocketManager:
     return FakeWebSocketManager(incoming=asyncio.Queue(), sent_html=[])
@@ -86,18 +89,27 @@ def make_stream():  # noqa: ANN001
 
 @pytest.fixture
 def make_turn_execution(mocker: MockerFixture, make_stream):  # noqa: ANN001
-    def _factory(*, turn_id: str = "test-turn-id", items: list | None = None, user_message: str = "hi") -> TurnExecution:
+    def _factory(
+        *,
+        turn_id: str = "test-turn-id",
+        items: list | None = None,
+        user_message: str = "hi",
+    ) -> TurnExecution:
         turn = mocker.MagicMock()
         turn.turn_id = turn_id
         turn.settings_snapshot = mocker.MagicMock()
-        return TurnExecution(turn=turn, stream=make_stream(items or []), user_message=user_message)
+        return TurnExecution(
+            turn=turn, stream=make_stream(items or []), user_message=user_message
+        )
 
     return _factory
 
 
 @pytest.fixture
 def make_workflow_handler():  # noqa: ANN001
-    def _factory(*, events: list | None = None, await_raises: BaseException | None = None) -> FakeWorkflowHandler:
+    def _factory(
+        *, events: list | None = None, await_raises: BaseException | None = None
+    ) -> FakeWorkflowHandler:
         return FakeWorkflowHandler(events=events, await_raises=await_raises)
 
     return _factory
@@ -121,24 +133,27 @@ def fake_agent_stream_event():  # noqa: ANN001
 
     return _factory
 
+
 @pytest.fixture
 def mock_messaging_handler(mocker: MockerFixture) -> MagicMock:
     return mocker.create_autospec(MessagingTurnEventHandler, instance=True)
 
+
 @pytest.fixture
 def websocket_orchestrator(
-    mock_websocket_manager, 
-    mock_coder_service
+    mock_websocket_manager, mock_coder_service
 ) -> WebSocketOrchestrator:
     return WebSocketOrchestrator(
         ws_manager=mock_websocket_manager,
         session_id=1,
-        coder_service=mock_coder_service
+        coder_service=mock_coder_service,
     )
 
 
 @pytest.fixture
-def orchestrator(websocket_orchestrator: WebSocketOrchestrator) -> WebSocketOrchestrator:
+def orchestrator(
+    websocket_orchestrator: WebSocketOrchestrator,
+) -> WebSocketOrchestrator:
     """Alias fixture to match test parameter names."""
     return websocket_orchestrator
 
@@ -183,7 +198,9 @@ def coder_service(mocker: MockerFixture, db_sessionmanager_mock) -> CoderService
 
 
 @pytest.fixture
-def single_shot_patch_service(mocker: MockerFixture, db_sessionmanager_mock) -> SingleShotPatchService:
+def single_shot_patch_service(
+    mocker: MockerFixture, db_sessionmanager_mock
+) -> SingleShotPatchService:
     return SingleShotPatchService(
         db=db_sessionmanager_mock,
         diff_patch_service_factory=AsyncMock(),

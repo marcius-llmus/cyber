@@ -11,18 +11,20 @@ with a minimal object exposing the `delta` attribute.
 """
 
 from unittest.mock import AsyncMock
+
 from llama_index.core.tools import ToolOutput
 from workflows.events import StopEvent, WorkflowCancelledEvent
 
 from app.agents.workflows.workflow_events import ToolCall, ToolCallResult
 from app.coder.schemas import (
+    AgentStateEvent,
     AIMessageBlockStartEvent,
     AIMessageChunkEvent,
-    AgentStateEvent,
     ToolCallEvent,
     ToolCallResultEvent,
     WorkflowLogEvent,
 )
+
 
 class TestMessagingTurnEventHandlerAgentStream:
     async def test_first_delta_yields_block_start_then_chunk(
@@ -35,7 +37,7 @@ class TestMessagingTurnEventHandlerAgentStream:
                 fake_agent_stream_event("Hello")
             )
         ]
-        
+
         assert len(events) == 2
         assert isinstance(events[0], AIMessageBlockStartEvent)
         assert isinstance(events[1], AIMessageChunkEvent)
@@ -53,7 +55,7 @@ class TestMessagingTurnEventHandlerAgentStream:
                 fake_agent_stream_event("Hello")
             )
         ]
-        
+
         # Second call
         events = [
             e
@@ -61,7 +63,7 @@ class TestMessagingTurnEventHandlerAgentStream:
                 fake_agent_stream_event(" World")
             )
         ]
-        
+
         assert len(events) == 1
         assert isinstance(events[0], AIMessageChunkEvent)
         assert events[0].delta == " World"
@@ -77,12 +79,17 @@ class TestMessagingTurnEventHandlerToolCall:
             internal_tool_call_id="int_id1",
         )
         # Mock internal helper since it generates IDs
-        handler._build_tool_call_event = AsyncMock(return_value=ToolCallEvent(
-            tool_name="test_tool", tool_kwargs={}, tool_id="id1", internal_tool_call_id="int_id1"
-        ))
-        
+        handler._build_tool_call_event = AsyncMock(
+            return_value=ToolCallEvent(
+                tool_name="test_tool",
+                tool_kwargs={},
+                tool_id="id1",
+                internal_tool_call_id="int_id1",
+            )
+        )
+
         events = [e async for e in handler.handle(event)]
-        
+
         assert len(events) == 2
         assert isinstance(events[0], AgentStateEvent)
         assert isinstance(events[1], ToolCallEvent)
@@ -99,7 +106,7 @@ class TestMessagingTurnEventHandlerToolCall:
             )
         ]
         initial_block_id = handler._accumulator.current_text_block_id
-        
+
         # 2. Tool Call
         tc_event = ToolCall(
             tool_name="t",
@@ -107,10 +114,13 @@ class TestMessagingTurnEventHandlerToolCall:
             tool_id="1",
             internal_tool_call_id="i1",
         )
-        handler._build_tool_call_event = AsyncMock(return_value=ToolCallEvent(
-             tool_name="t", tool_kwargs={}, tool_id="1", internal_tool_call_id="i1"
-        ))
-        async for _ in handler.handle(tc_event): pass
+        handler._build_tool_call_event = AsyncMock(
+            return_value=ToolCallEvent(
+                tool_name="t", tool_kwargs={}, tool_id="1", internal_tool_call_id="i1"
+            )
+        )
+        async for _ in handler.handle(tc_event):
+            pass
 
         # 3. Next text
         events = [
@@ -119,7 +129,7 @@ class TestMessagingTurnEventHandlerToolCall:
                 fake_agent_stream_event("Next")
             )
         ]
-        
+
         assert isinstance(events[0], AIMessageBlockStartEvent)
         assert events[0].block_id != initial_block_id
 
@@ -128,12 +138,14 @@ class TestMessagingTurnEventHandlerToolCallResult:
     async def test_tool_call_result_updates_existing_tool_block_output(self, handler):
         """ToolCallResult should update tool_call_data.output for matching internal_tool_call_id."""
         # Setup accumulator with a tool call block
-        handler._accumulator.blocks = [{
-            "type": "tool",
-            "internal_tool_call_id": "int_id1",
-            "tool_call_data": {"output": None}
-        }]
-        
+        handler._accumulator.blocks = [
+            {
+                "type": "tool",
+                "internal_tool_call_id": "int_id1",
+                "tool_call_data": {"output": None},
+            }
+        ]
+
         tool_output = ToolOutput(
             content="Output",
             tool_name="t",
@@ -149,9 +161,9 @@ class TestMessagingTurnEventHandlerToolCallResult:
             tool_output=tool_output,
             return_direct=False,
         )
-        
+
         events = [e async for e in handler.handle(event)]
-        
+
         assert isinstance(events[0], ToolCallResultEvent)
         assert handler._accumulator.blocks[0]["tool_call_data"]["output"] == "Output"
 
@@ -159,7 +171,10 @@ class TestMessagingTurnEventHandlerToolCallResult:
 class TestMessagingTurnEventHandlerUnknownEvents:
     async def test_unknown_event_type_yields_nothing(self, handler):
         """Unknown event types should not raise; should yield nothing."""
-        class UnknownEvent: pass
+
+        class UnknownEvent:
+            pass
+
         events = [e async for e in handler.handle(UnknownEvent())]
         assert len(events) == 0
 
