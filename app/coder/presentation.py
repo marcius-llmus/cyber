@@ -63,16 +63,17 @@ class WebSocketOrchestrator:
             return
         await handler(event, turn=turn)
 
-    async def _prepare_ui_for_new_turn(self, message_content: str, turn_id: str) -> str:
-        await self._render_user_message(message_content, turn_id)
-        await self._render_ai_bubble_placeholder(turn_id)
-        return turn_id
+    async def _prepare_ui_for_new_turn(self, message_content: str, turn: Turn) -> str:
+        await self._render_user_message(message_content, turn.turn_id)
+        await self._render_ai_bubble_placeholder(turn.turn_id)
+        await self._render_composer_running(turn.turn_id)
+        return turn.turn_id
 
-    # todo: some receive turn, others turn id? what is the logic? let's make a pattern
-    async def _prepare_ui_for_retry_turn(self, turn_id: str) -> str:
-        await self._render_ai_bubble_placeholder(turn_id)
-        await self._remove_user_message_controls(turn_id)
-        return turn_id
+    async def _prepare_ui_for_retry_turn(self, turn: Turn) -> str:
+        await self._render_ai_bubble_placeholder(turn.turn_id)
+        await self._remove_user_message_controls(turn.turn_id)
+        await self._render_composer_running(turn.turn_id)
+        return turn.turn_id
 
     async def handle_connection(self):
         logger.info("WebSocket connection established.")
@@ -98,15 +99,17 @@ class WebSocketOrchestrator:
                 )
 
                 if message.retry_turn_id:
-                    await self._prepare_ui_for_retry_turn(execution.turn.turn_id)
+                    await self._prepare_ui_for_retry_turn(execution.turn)
                 else:
                     await self._prepare_ui_for_new_turn(
-                        message.message, execution.turn.turn_id
+                        message.message, execution.turn
                     )
 
                 try:
                     async for event in execution.stream:
                         await self._process_event(event, execution.turn)
+                    
+                    await self._render_composer_idle()
 
                 except WebSocketDisconnect:
                     logger.info("Client disconnected during turn stream.")
@@ -125,6 +128,7 @@ class WebSocketOrchestrator:
                         ),
                         turn=execution.turn,
                     )
+                    await self._render_composer_idle()
 
         except WebSocketDisconnect:
             logger.info("Client disconnected. Connection handled gracefully.")
@@ -155,6 +159,7 @@ class WebSocketOrchestrator:
         )
         await self.ws_manager.send_html(template)
 
+    # todo: some receive turn, others turn id? what is the logic? let's make a pattern
     async def _render_ai_bubble_placeholder(self, turn_id: str):
         template = templates.get_template(
             "chat/partials/ai_message_placeholder.html"
@@ -303,6 +308,17 @@ class WebSocketOrchestrator:
                 level=LogLevel.INFO,
             )
         )
+
+    async def _render_composer_running(self, turn_id: str):
+        template = templates.get_template("chat/partials/message_form_running.html").render(
+            {"turn_id": turn_id}
+        )
+        await self.ws_manager.send_html(template)
+
+    async def _render_composer_idle(self, content: str = ""):
+        context = {"content": content}
+        template = templates.get_template("chat/partials/message_form.html").render(context)
+        await self.ws_manager.send_html(template)
 
     async def _render_context_files_updated(
         self, event: ContextFilesUpdatedEvent, turn: Turn, **kwargs
