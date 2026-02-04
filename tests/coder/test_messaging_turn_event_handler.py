@@ -36,3 +36,13 @@ class TestMessagingTurnEventHandlerUnknownEvents:
     async def test_unknown_event_type_yields_nothing(self):
         """Unknown event types should not raise; should yield nothing."""
         pass
+
+
+class TestMessagingTurnEventHandlerStopAndCancel:
+    async def test_stop_event_yields_nothing(self):
+        """StopEvent should be handled gracefully and yield nothing."""
+        pass
+
+    async def test_workflow_cancelled_event_yields_nothing(self):
+        """WorkflowCancelledEvent should be handled gracefully and yield nothing."""
+        pass
