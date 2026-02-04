@@ -5,13 +5,13 @@ from app.chat.dependencies import get_chat_service
 from app.chat.services import ChatService
 from app.coder.dependencies import (
     CoderPageService,
-    get_active_run_registry,
+    get_turn_execution_registry,
     get_coder_page_service,
     get_coder_service,
 )
 from app.coder.presentation import WebSocketOrchestrator
-from app.coder.services import CoderService
-from app.coder.services.active_runs import ActiveRunRegistry
+from app.coder.services import CoderService, TurnExecutionRegistry
+
 from app.commons.websockets import WebSocketConnectionManager
 from app.commons.fastapi_htmx import htmx
 from app.core.templating import templates
@@ -62,7 +62,7 @@ async def read_session(
 async def cancel_turn(
     request: Request,
     turn_id: str,
-    registry: ActiveRunRegistry = Depends(get_active_run_registry),
+    registry: TurnExecutionRegistry = Depends(get_turn_execution_registry),
 ):
     original_message = await registry.cancel(turn_id=turn_id)
 

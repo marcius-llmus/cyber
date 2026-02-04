@@ -42,3 +42,14 @@ class TurnExecutionRegistry:
             if turn_id in self._runs:
                 del self._runs[turn_id]
                 logger.debug(f"Unregistered run for turn {turn_id}")
+
+_registry: TurnExecutionRegistry | None = None
+
+def initialize_global_registry(registry: TurnExecutionRegistry) -> None:
+    global _registry
+    _registry = registry
+
+def get_global_registry() -> TurnExecutionRegistry:
+    if _registry is None:
+        raise RuntimeError("TurnExecutionRegistry is not initialized. Call initialize_global_registry() first.")
+    return _registry
