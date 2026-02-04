@@ -1,4 +1,5 @@
 from contextvars import ContextVar
+import logging
 from typing import Any
 
 from llama_index.core.instrumentation import get_dispatcher
@@ -10,6 +11,8 @@ from llama_index.core.instrumentation.events.llm import (
     LLMPredictEndEvent,
     LLMStructuredPredictEndEvent,
 )
+
+logger = logging.getLogger(__name__)
 
 # Private module-level ContextVar.
 # Implementation detail: hidden from the rest of the app.
@@ -59,8 +62,15 @@ class UsageCollector:
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        # Stop capturing and cleanup
-        _usage_events_ctx.reset(self._token)
+        # Stop capturing and cleanup.
+        # During forced shutdown (GeneratorExit), the context is dying and
+        # resetting the token is pointless (and will raise ValueError).
+        if exc_type is GeneratorExit:
+            logger.info("Skipping UsageCollector context reset due to GeneratorExit (shutdown/close).")
+            return
+
+        if self._token is not None:
+            _usage_events_ctx.reset(self._token)
 
     def consume(self) -> list[BaseEvent]:
         """
