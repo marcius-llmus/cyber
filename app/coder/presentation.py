@@ -120,7 +120,7 @@ class WebSocketOrchestrator:
                 # so we don't really need to call handler.cancel() again
                 except asyncio.CancelledError:
                     logger.info("Turn cancelled.")
-                    return
+                    pass
 
                 except Exception as e:
                     logger.error(
