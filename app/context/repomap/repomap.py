@@ -7,7 +7,7 @@ import aiofiles
 import networkx as nx
 from grep_ast import TreeContext, filename_to_lang
 from grep_ast.tsl import get_language, get_parser
-from tree_sitter import QueryCursor
+from tree_sitter import QueryCursor, Query
 
 from app.context.exceptions import RepoMapExtractionException
 from app.context.schemas import Tag
@@ -144,7 +144,9 @@ class RepoMap:
             tree = parser.parse(bytes(code, "utf8"))
 
             query_scm = scm_path.read_text()
-            query = language.query(query_scm)
+
+            query = Query(language, query_scm)
+
             captures = QueryCursor(query).captures(tree.root_node)
 
             all_nodes = []
