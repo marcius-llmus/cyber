@@ -89,8 +89,13 @@ class WebSocketOrchestrator:
                 try:
                     message = WebSocketMessage(**data)
                 except ValidationError as e:
-                    logger.error(f"WebSocket validation error: {e}", exc_info=True)
-                    await self._render_error(f"Invalid message format: {e}")
+                    await self._handle_workflow_log(
+                        WorkflowLogEvent(
+                            message=str(e.errors()),
+                            level=LogLevel.ERROR,
+                        )
+                    )
+                    logger.info(f"WebSocket validation error: {e}")
                     continue
 
                 execution = await self.coder_service.handle_user_message(

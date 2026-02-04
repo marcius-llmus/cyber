@@ -1,7 +1,7 @@
 from enum import StrEnum
 from typing import Any, TypeAlias, Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from app.context.schemas import ContextFileListItem
 
@@ -14,6 +14,14 @@ class LogLevel(StrEnum):
 class WebSocketMessage(BaseModel):
     message: str
     retry_turn_id: str | None = None
+
+    @field_validator("message")
+    @classmethod
+    def _message_must_not_be_empty(cls, v: str) -> str:
+        if not (v := (v or "").strip()):
+            raise ValueError("Message cannot be empty")
+
+        return v
 
 
 class AIMessageChunkEvent(BaseModel):

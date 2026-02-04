@@ -12,6 +12,7 @@
             class="w-full bg-dark-card border border-dark-light rounded-lg px-4 py-3 pr-14 resize-none text-gray-200"
             placeholder="Ask me anything about your code..."
             autofocus
+            required
             oninput="this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px'; this.style.overflowY = this.scrollHeight > 200 ? 'auto' : 'hidden'"
             x-data
             x-init="$el.style.height = ($el.scrollHeight) + 'px'"
