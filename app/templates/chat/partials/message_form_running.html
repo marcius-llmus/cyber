@@ -1,0 +1,27 @@
+<form
+    id="message-form"
+    class="p-4 border-t border-dark-light bg-dark-lighter flex-shrink-0"
+    hx-swap-oob="true"
+>
+    <div class="relative">
+        <textarea
+            name="message"
+            rows="1"
+            class="w-full bg-dark-card border border-dark-light rounded-lg px-4 py-3 pr-14 resize-none text-gray-400 cursor-not-allowed opacity-75"
+            placeholder="Agent is working..."
+            disabled
+            id="message-input"
+        ></textarea>
+        <button 
+            type="button" 
+            hx-post="/coder/turns/{{ turn_id }}/cancel"
+            hx-swap="none"
+            class="absolute right-3 bottom-2 p-1.5 rounded-lg bg-red-600 hover:bg-red-700 transition-colors group"
+            title="Stop generation"
+        >
+            <div class="h-5 w-5 flex items-center justify-center">
+                <div class="h-3 w-3 bg-white rounded-sm"></div>
+            </div>
+        </button>
+    </div>
+</form>

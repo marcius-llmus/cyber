@@ -113,6 +113,7 @@ class ChatTurnUpdate(BaseModel):
     status: ChatTurnStatus
 
 
+# todo: should it be here, my friend?
 class Turn(BaseModel):
     turn_id: str
     settings_snapshot: AgentSettingsSnapshot

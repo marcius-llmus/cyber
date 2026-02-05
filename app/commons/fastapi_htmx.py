@@ -170,6 +170,7 @@ def htmx(  # noqa: C901
                 name=template_name, file_extension=template_extension
             )
             return template.collection.TemplateResponse(
+                request,
                 template.file_name,
                 {
                     "request": request,

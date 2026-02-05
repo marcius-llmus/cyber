@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from collections.abc import Callable, Coroutine
 from datetime import datetime
@@ -17,13 +18,13 @@ from app.coder.schemas import (
     SingleShotDiffAppliedEvent,
     ToolCallEvent,
     ToolCallResultEvent,
-    TurnExecution,
     UsageMetricsUpdatedEvent,
     WebSocketMessage,
     WorkflowErrorEvent,
     WorkflowLogEvent,
 )
-from app.coder.services import CoderService
+from app.coder.services.coder import CoderService
+from app.coder.services.execution_registry import TurnExecution
 from app.commons.websockets import WebSocketConnectionManager
 from app.core.templating import templates
 from app.patches.schemas.commons import PatchRepresentation
@@ -63,16 +64,17 @@ class WebSocketOrchestrator:
             return
         await handler(event, turn=turn)
 
-    async def _prepare_ui_for_new_turn(self, message_content: str, turn_id: str) -> str:
-        await self._render_user_message(message_content, turn_id)
-        await self._render_ai_bubble_placeholder(turn_id)
-        return turn_id
+    async def _prepare_ui_for_new_turn(self, message_content: str, turn: Turn) -> str:
+        await self._render_user_message(message_content, turn.turn_id)
+        await self._render_ai_bubble_placeholder(turn.turn_id)
+        await self._render_composer_running(turn.turn_id)
+        return turn.turn_id
 
-    # todo: some receive turn, others turn id? what is the logic? let's make a pattern
-    async def _prepare_ui_for_retry_turn(self, turn_id: str) -> str:
-        await self._render_ai_bubble_placeholder(turn_id)
-        await self._remove_user_message_controls(turn_id)
-        return turn_id
+    async def _prepare_ui_for_retry_turn(self, turn: Turn) -> str:
+        await self._render_ai_bubble_placeholder(turn.turn_id)
+        await self._remove_user_message_controls(turn.turn_id)
+        await self._render_composer_running(turn.turn_id)
+        return turn.turn_id
 
     async def handle_connection(self):
         logger.info("WebSocket connection established.")
@@ -87,8 +89,13 @@ class WebSocketOrchestrator:
                 try:
                     message = WebSocketMessage(**data)
                 except ValidationError as e:
-                    logger.error(f"WebSocket validation error: {e}", exc_info=True)
-                    await self._render_error(f"Invalid message format: {e}")
+                    await self._handle_workflow_log(
+                        WorkflowLogEvent(
+                            message=str(e.errors()),
+                            level=LogLevel.ERROR,
+                        )
+                    )
+                    logger.info(f"WebSocket validation error: {e}")
                     continue
 
                 execution = await self.coder_service.handle_user_message(
@@ -98,20 +105,27 @@ class WebSocketOrchestrator:
                 )
 
                 if message.retry_turn_id:
-                    await self._prepare_ui_for_retry_turn(execution.turn.turn_id)
+                    await self._prepare_ui_for_retry_turn(execution.turn)
                 else:
-                    await self._prepare_ui_for_new_turn(
-                        message.message, execution.turn.turn_id
-                    )
+                    await self._prepare_ui_for_new_turn(message.message, execution.turn)
 
                 try:
                     async for event in execution.stream:
                         await self._process_event(event, execution.turn)
 
+                    await self._render_composer_idle()
+
                 except WebSocketDisconnect:
                     logger.info("Client disconnected during turn stream.")
                     await self._cancel_active_run(execution)
                     return
+
+                # cancelled by user, we ignore as it was already cancelled
+                # CancelledError means that by some other reason, it was cancelled already
+                # so we don't really need to call handler.cancel() again
+                except asyncio.CancelledError:
+                    logger.info("Turn cancelled.")
+                    pass
 
                 except Exception as e:
                     logger.error(
@@ -125,6 +139,7 @@ class WebSocketOrchestrator:
                         ),
                         turn=execution.turn,
                     )
+                    await self._render_composer_idle()
 
         except WebSocketDisconnect:
             logger.info("Client disconnected. Connection handled gracefully.")
@@ -143,11 +158,10 @@ class WebSocketOrchestrator:
 
     @staticmethod
     async def _cancel_active_run(execution: TurnExecution | None) -> None:
-        if not execution or not execution.handler:
+        if not execution:
             return
 
-        logger.info("Cancelling active workflow run...")
-        await execution.handler.cancel_run()
+        await execution.cancel()
 
     async def _render_user_message(self, message: str, turn_id: str):
         template = templates.get_template("chat/partials/user_message.html").render(
@@ -155,6 +169,7 @@ class WebSocketOrchestrator:
         )
         await self.ws_manager.send_html(template)
 
+    # todo: some receive turn, others turn id? what is the logic? let's make a pattern
     async def _render_ai_bubble_placeholder(self, turn_id: str):
         template = templates.get_template(
             "chat/partials/ai_message_placeholder.html"
@@ -303,6 +318,19 @@ class WebSocketOrchestrator:
                 level=LogLevel.INFO,
             )
         )
+
+    async def _render_composer_running(self, turn_id: str):
+        template = templates.get_template(
+            "chat/partials/message_form_running.html"
+        ).render({"turn_id": turn_id})
+        await self.ws_manager.send_html(template)
+
+    async def _render_composer_idle(self, content: str = ""):
+        context = {"content": content}
+        template = templates.get_template("chat/partials/message_form.html").render(
+            context
+        )
+        await self.ws_manager.send_html(template)
 
     async def _render_context_files_updated(
         self, event: ContextFilesUpdatedEvent, turn: Turn, **kwargs

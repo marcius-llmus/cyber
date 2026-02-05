@@ -6,7 +6,9 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.chat.routes.htmx import router as chat_htmx_router
+from app.coder.factories import build_turn_execution_registry
 from app.coder.routes.htmx import router as coder_htmx_router
+from app.coder.services.execution_registry import initialize_global_registry
 from app.commons.fastapi_htmx import htmx_init
 from app.context.routes.htmx import router as context_htmx_router
 from app.core.config import settings
@@ -34,6 +36,10 @@ async def lifespan(app: FastAPI):  # noqa
     Also ensures that the workspace directories exist and are seeded.
     """
     initialize_workspace()
+
+    # Initialize global in-memory turn execution handler registries
+    registry = build_turn_execution_registry()
+    initialize_global_registry(registry)
 
     price_updater = build_price_updater()
     # Start the background price updater (wait=False to avoid blocking startup)

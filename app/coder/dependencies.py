@@ -8,7 +8,12 @@ from app.coder.factories import (
     build_messaging_turn_event_handler,
     build_single_shot_patch_service,
 )
-from app.coder.services import CoderPageService, CoderService
+from app.coder.services.coder import CoderService
+from app.coder.services.execution_registry import (
+    TurnExecutionRegistry,
+    get_global_registry,
+)
+from app.coder.services.page import CoderPageService
 from app.context.dependencies import get_context_service
 from app.context.factories import build_workspace_service
 from app.context.services import WorkspaceService
@@ -20,6 +25,10 @@ from app.settings.services import SettingsService
 from app.usage.dependencies import get_usage_page_service
 from app.usage.factories import build_usage_service
 from app.usage.services import UsagePageService
+
+
+def get_turn_execution_registry() -> TurnExecutionRegistry:
+    return get_global_registry()
 
 
 async def get_coder_page_service(
@@ -36,7 +45,10 @@ async def get_coder_page_service(
     )
 
 
-async def get_coder_service() -> CoderService:
+# note: we can keep get_turn_execution_registry as dep because it is global
+async def get_coder_service(
+    execution_registry: TurnExecutionRegistry = Depends(get_turn_execution_registry),
+) -> CoderService:
     return CoderService(
         db=sessionmanager,
         chat_service_factory=build_chat_service,
@@ -49,4 +61,5 @@ async def get_coder_service() -> CoderService:
         diff_patch_service_factory=build_diff_patch_service,
         context_service_factory=build_workspace_service,
         single_shot_patch_service_factory=build_single_shot_patch_service,
+        execution_registry=execution_registry,
     )

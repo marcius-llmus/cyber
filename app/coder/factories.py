@@ -1,4 +1,5 @@
 from app.chat.schemas import Turn
+from app.coder.services.execution_registry import TurnExecutionRegistry
 from app.coder.services.messaging import MessagingTurnEventHandler
 from app.coder.services.single_shot_patching import SingleShotPatchService
 from app.context.factories import build_workspace_service
@@ -18,3 +19,7 @@ async def build_single_shot_patch_service() -> SingleShotPatchService:
         diff_patch_service_factory=build_diff_patch_service,
         context_service_factory=build_workspace_service,
     )
+
+
+def build_turn_execution_registry() -> TurnExecutionRegistry:
+    return TurnExecutionRegistry()

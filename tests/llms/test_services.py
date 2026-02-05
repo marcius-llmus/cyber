@@ -144,26 +144,6 @@ async def test_llm_service__get_coding_llm__when_no_coder_role__assigns_default_
     llm_service.llm_settings_repo.update = AsyncMock(return_value=expected_return)
 
 
-async def test_llm_service__get_coding_llm__default_assignment_returns_coder_role_even_if_model_was_preloaded():
-    """Scenario: no CODER exists, but the default model row exists.
-
-    This exercises a potential stale identity-map case:
-        - the default model instance is loaded into the Session identity map
-        - service assigns CODER role via bulk UPDATE
-        - service then calls Session.get() inside update_settings
-
-    Asserts:
-        - returned LLMSettings has active_role=CODER
-
-    Notes:
-        - This can fail if bulk updates do not expire/refresh already-loaded instances.
-    """
-    # This test is specific to DB Identity Map behavior, which is irrelevant for Unit Tests with Mocks.
-    # We can skip it or remove it as it tests SQLAlchemy/Integration behavior.
-    # todo: let's keep it so we don't forget
-    pytest.skip("Integration test irrelevant for unit testing with mocks.")
-
-
 async def test_llm_service__update_settings__raises_when_missing(llm_service):
     """Scenario: update settings for non-existent llm_id.
 

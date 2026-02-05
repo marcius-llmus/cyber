@@ -7,9 +7,12 @@ from app.coder.dependencies import (
     CoderPageService,
     get_coder_page_service,
     get_coder_service,
+    get_turn_execution_registry,
 )
 from app.coder.presentation import WebSocketOrchestrator
-from app.coder.services import CoderService
+from app.coder.services.coder import CoderService
+from app.coder.services.execution_registry import TurnExecutionRegistry
+from app.commons.fastapi_htmx import htmx
 from app.commons.websockets import WebSocketConnectionManager
 from app.core.templating import templates
 from app.projects.exceptions import ActiveProjectRequiredException
@@ -52,6 +55,24 @@ async def read_session(
         )
     except ChatSessionNotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
+@router.post("/turns/{turn_id}/cancel", response_class=HTMLResponse)
+@htmx("chat/partials/cancel_turn_response")
+async def cancel_turn(
+    request: Request,
+    turn_id: str,
+    registry: TurnExecutionRegistry = Depends(get_turn_execution_registry),
+):
+    user_message = ""
+
+    if run := await registry.cancel(turn_id=turn_id):
+        user_message = run.user_message
+
+    return {
+        "content": user_message,
+        "turn_id": turn_id,
+    }
 
 
 @router.websocket("/ws/session/{session_id}", name="conversation_websocket")
