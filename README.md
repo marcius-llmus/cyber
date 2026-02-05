@@ -10,10 +10,7 @@
 ### discord: https://discord.gg/sKxfuMZq28
 ---
 
-## **‼️ Must Read ‼️**
-Before you start, know that this is a project in the **alpha stage**. Diff patching is slow and totally dependent on OpenAI GPT-4.1 (you must set an OpenAI key in settings even if you want to code with Gemini). It is accurate, and *fast enough* for small files, but don’t try to patch big files. It uses predicted outputs, but it is still not ideal. It is on the TODO list to improve it. It only has 3 core tools: AST grep, read, and patch. It will create but won’t delete files for you. It won’t execute lint, run tests, or any other terminal commands for you. In general, you should be using your preferred IDE normally and Cyber for changing code / codebase understanding. You should not open parallel projects. Currently, you can have only 1 session. You can delete or clear a session in order to reset it. It is a bit weird, but the way you create projects in it is by adding a folder (or your actual project) inside `~/cyber/projects` on your host. BTW, that’s the only interaction the app has with your host: a shared folder. The app cannot access your host due to containerization.
-
-**IN SHORT**, at this stage, this app is only recommended for experienced devs and power users. I personally have been using it consistently to build Cyber itself, so I can assure you that it works very well. You should use it along with an IDE. Whenever it patches something, you should verify it in your IDE. If you want a simple coding agent that has excellent discovery skills and decent context management, that’s a good try!
+- It now supports diff patching without any llm! You can use with gemini, openai and anthropic models
 
 ## Features
 
