@@ -6,10 +6,6 @@
   <img src="docs/screenshot.png" alt="Cyber Interface">
 </div>
 
----
-### discord: https://discord.gg/sKxfuMZq28
----
-
 - It now supports diff patching without any llm! You can use with gemini, openai and anthropic models
 
 ## Features
